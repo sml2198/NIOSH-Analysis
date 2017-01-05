@@ -17,8 +17,9 @@ library(stringr)
 ################################################################################
 
 # define root directory
-# root = "/Injury-Classification/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/Injury-Classification/data"
+# root = "/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 input.path = paste0(root, "/0_originals", collapse = NULL)
