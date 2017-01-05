@@ -14,9 +14,9 @@ library(zoo)
 
 ################################################################################
 
-# set root directory
-# root = "/Injury-Classification/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/Injury-Classification/data"
+# root = "/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 clean.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
