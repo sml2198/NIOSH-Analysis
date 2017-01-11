@@ -19,7 +19,6 @@
 
 ######################################################################################################
 
-# Confirm that the necessary packages are installed
 library(tree)
 library(randomForest)
 library(ggplot2)
@@ -121,49 +120,6 @@ names(ps.data)[names(ps.data) == "X"] = "PS"
 
 if (data.type == "real accidents data") {
   
-  # Remove uncommon variables from the training data (ps.data)
-#   drops = c("averagemineheight", 
-#             "bomstatecode",
-#             "directionstominemodified",
-#             "district", 
-#             "fipscountycode", 
-#             "fipscountyname", 
-#             "highwallminerindicator", 
-#             "hourspershift", 
-#             "i", 
-#             "longitude", 
-#             "latitude",
-#             "maintenanceshiftsperday",
-#             "methaneliberation", 
-#             "milesfromoffice", 
-#             "minegascategorycode", 
-#             "minersrepindicator",
-#             "multiplepitsindicator", 
-#             "nearesttown",
-#             "noofnonproducingpits",
-#             "noofproducingpits", 
-#             "nooftailingponds",
-#             "numberofemployees", 
-#             "officecode", 
-#             "officename", 
-#             "portableoperationindicator", 
-#             "portablefipsstatecode", 
-#             "primarycanvasscode", 
-#             "primarycanvasscodedesc",
-#             "primarysiccode", 
-#             "primarysiccodegroup", 
-#             "primarysiccodesuffix",
-#             "primarysicdesc", 
-#             "roomandpillarindicator",
-#             "safetycommitteeindicator", 
-#             "secondarysiccode", 
-#             "secondarysicdesc",
-#             "secondarysiccodegroup", 
-#             "secondarysiccodesuffix", 
-#             "secondarycanvasscode",
-#             "secondarycanvasscodedesc")
-#   ps.data = ps.data[, !(names(ps.data) %in% drops)]  
-#  
   drops = c("closed_doc_no",
             "fiscalyear", 
             "fiscalquarter", 

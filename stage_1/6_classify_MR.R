@@ -719,11 +719,11 @@ if (data.type == "real accidents data") {
   # POST-PROCESSING
   
   # Merge back in the rest of the variables from the original accidents data     
-  accidents.mines = readRDS(accidents_data_file_name)
-  accidents.data = merge(accidents.data, accidents.mines, by="documentno", all = TRUE)
+  accidents.original = readRDS(accidents.data.file.name)
+  accidents.data = merge(accidents.data, accidents.original, by="documentno", all = TRUE)
   
   # Clean up variable names from the merge
-  rm(train, simple, simple.data, mr.fatalities, accidents.mines)
+  rm(train, simple, simple.data, mr.fatalities, accidents.original)
   accidents.data = accidents.data[, c(-grep("\\.x", names(accidents.data)))]
   names(accidents.data) = gsub("\\.[x|y]", "", names(accidents.data))
   
