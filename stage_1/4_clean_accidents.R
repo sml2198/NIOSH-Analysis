@@ -45,10 +45,6 @@ dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file struc
   # 212611 rows; 57 columns; unique on documentno
 accidents = read.table(accidents.in.file.name, header = TRUE, sep = "|", na.strings = c("","NA"))
 
-# drop unnecessary variables
-accidents$CLOSED_DOC_NO = 
-  accidents$COAL_METAL_IND = NULL
-
 # rename variables
 names(accidents)[names(accidents) == "MINE_ID"] = "mineid"
 names(accidents)[names(accidents) == "ACCIDENT_DT"] = "accidentdate"
@@ -121,12 +117,26 @@ accidents$mineid = str_pad(accidents$mineid, 7, pad = "0")
 accidents$documentno = as.character(as.numeric(accidents$documentno))
 accidents$documentno = str_pad(accidents$documentno, 12, pad = "0")
 
+# drop data from environments not of interest 
+  # 75672 rows; 57 columns; unique on documentno
+accidents = accidents[accidents$coal_metal_ind == "C", ]
+accidents = accidents[accidents$subunit == "UNDERGROUND", ]
+
+# now drop these unnecessary variables
+accidents$coal_metal_ind = NULL
+
+# remove observations after Q1 2016
+  # 75016 rows; 58 columns; unique on documentno
+accidents$drop = ifelse((accidents$calendaryear == 2016 & accidents$calendarquarter > 1), 1, 0)
+accidents = accidents[accidents$drop == 0,] 
+accidents = accidents[,-match("drop", names(accidents))]
+
 ################################################################################
 
 # OUPUT CLEAN ACCIDENTS DATA
 
 # output clean accidents data
-  # 212611 rows; 55 columns; unique on documentno
+  # 75016 rows; 58 columns; unique on documentno
 saveRDS(accidents, file = accidents.out.file.name)
 
 ################################################################################

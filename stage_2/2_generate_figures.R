@@ -5,10 +5,10 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 2 - Generate Figures
-  # Outputs stage 2 figures
+  # Generates stage 2 figures
 
-# Coded by JUlia Bodson, juliabodson@gmail.com
-# Last edit 1/4/17
+# Coded by Julia Bodson, juliabodson@gmail.com
+# Last edit 1/6/17
 
 ################################################################################
 
@@ -16,116 +16,148 @@ library(plyr)
 
 ################################################################################
 
+# define root directory
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+
+# define file paths
+input.path = paste0(root, "/data/2_merged", collapse = NULL)
+output.path = paste0(root, "/figures", collapse = NULL)
+
+# inputs
+  # MR mine-year-level dataset created in file X
+MR.data.file.name = paste0(input.path, "/mr_data.rds", collapse = NULL) ############## CHECK ME
+  # PS mine-year-level dataset created in file X
+PS.data.file.name = paste0(input.path, "/ps_data.rds", collapse = NULL) ############## CHECK ME
+
+# outputs
+  # figures in paper
+out.path = paste0(output.path, "/Figure_", collapse = NULL)
+  # figures in appendix
+out.path.appendix = paste0(output.path, "/Appendix_Figure_", collapse = NULL)
+
+
+# generate file paths 
+dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
+
+################################################################################
+
+fig.num = 1
+fig.ab = "a"
+
 for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   
-  # SETTINGS
-  
   if (injury == "MR") {
-    data_file_name = "~/Dropbox (Stanford Law School)/R-code/data/MR-data.csv"
-    out_directory = "~/Dropbox (Stanford Law School)/R-code/LATEX/Plots2/MR_Plot"
+    data.file.name = MR.data.file.name
   }
   
   if (injury == "PS") {
-    data_file_name ="~/Dropbox (Stanford Law School)/R-code/data/PS-data.csv"
-    out_directory = "~/Dropbox (Stanford Law School)/R-code/LATEX/Plots2/PS_Plot"
+    data.file.name = PS.data.file.name
   }
-  
-  plot_num = 1
   
   ##############################################################################
   
   # READ DATA
   
   # input data
-  data = read.csv(data_file_name)
+  data = readRDS(data.file.name)
   
   # keep variables of interest
-  dataPS = data[, c("mineid", "year", 
+  data = data[, c("mineid", "year", 
                   "dv", "total_injuries",
                   "hours", "coal_prod", "employment",
                   "district", "apalachia")]
   
   # generate outcome variables
-  data$dv_exp = data$dv / data$hours
-  data$dv_rel = data$dv / data$total_injuries
+  data$dv.exp = data$dv / data$hours
+  data$dv.rel = data$dv / data$total_injuries
   data[is.na(data)] = NA
   
   # bye
   data$dv = NULL
-  rm(data_file_name)
+  rm(data.file.name)
   
   ##############################################################################
   
   # CALCULATE YEAR AVERAGES AND MEDIANS
   
   # averages
-  data_year_avg = aggregate(data, list(data$year),
+  data.year.avg = aggregate(data, list(data$year),
                             FUN = function(x) mean(as.numeric(x), na.rm = TRUE))
   
   # medians
-  data_year_med = aggregate(data, list(data$year),
+  data.year.med = aggregate(data, list(data$year),
                             FUN = function(x) median(as.numeric(x), na.rm = TRUE))
   
   ##############################################################################
   
   # PLOT YEAR AVERAGES AND MEDIANS
   
-  for (dv in c("dv_exp", "dv_rel")) {
+  for (dv in c("dv.exp", "dv.rel")) {
     
     for (method in c("avg", "med")) {
       
-      if (dv == "dv_exp") {
-        y_lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
+      # set labels
+      if (dv == "dv.exp") {
+        y.lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
       }
-      if (dv == "dv_rel") {
-        y_lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
+      if (dv == "dv.rel") {
+        y.lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
       }
       
       if (method == "avg") {
-        y_lab = paste("Mean", y_lab, sep = " ")
+        y.lab = paste("Mean", y.lab, sep = " ")
       }
       if (method == "med") {
-        y_lab = paste("Median", y_lab, sep = " ")
+        y.lab = paste("Median", y.lab, sep = " ")
       }
       
-      d = eval(parse(text = paste("data_year", method, sep = "_")))
+      # generate figures
+      d = eval(parse(text = paste("data.year", method, sep = ".")))
       
-      out_file = paste(out_directory, plot_num, ".png", sep = "")
-      png(out_file)
-      par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0))  
+      out.file = paste(out.path, paste0(toString(fig.num), fig.ab, collapse = NULL), ".png", sep = "")
+      png(out.file)
+      par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0)) # set margins
       
       plot(d$year, d[, dv], 
-           xlab = "Year", ylab = y_lab,
+           xlab = "Year", ylab = y.lab,
            type = "l", cex.axis = 1.5, cex.lab = 1.5)
       
       dev.off()
-      plot_num = plot_num + 1
+      
+      # update naming scheme
+      if (fig.ab == "a") {
+        fig.ab = "b"
+      }
+      if (fig.ab == "b") {
+        fig.num = fig.num + 1
+        fig.ab = "a"
+      }
       
     }
   }
   
   # bye
-  rm(d, dv, method, out_file, y_lab, data_year_avg, data_year_med)
+  rm(d, dv, method, out.file, y.lab, data.year.avg, data.year.med)
   
   ##############################################################################
   
   # GROUP MINES BY COVARIATES OF INTEREST
   
   # calculate percentile cutoffs for variables of interest
-  year_info = data.frame(unique(data$year))
-  names(year_info) = "year"
+  year.info = data.frame(unique(data$year))
+  names(year.info) = "year"
   for (var in c("hours", "employment", "coal_prod")) {
-    year_info[, c(paste(var, seq(5, 100, 5), sep = "_"))] = NA
+    year.info[, c(paste(var, seq(5, 100, 5), sep = "."))] = NA
   }
   
   for (var in c("hours", "employment", "coal_prod")) {
     for (p in seq(5, 100, 5)) {
-      x = paste(var, p, sep = "_")
-      for (i in 1:nrow(year_info)) {
-        year = year_info$year[i]
+      x = paste(var, p, sep = ".")
+      for (i in 1:nrow(year.info)) {
+        year = year.info$year[i]
         temp = data[data$year == year, ]
         q = quantile(temp[, var], probs = seq(0, 1, 0.01), na.rm = TRUE)[p + 1]
-        year_info[i, x] = q
+        year.info[i, x] = q
       }
     }
   }
@@ -134,58 +166,59 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   rm(temp, i, p, q, var, x, year)
   
   # create dynamic groups
-  cutoff_high = 80
-  cutoff_low = 50
+  cutoff.high = 80
+  cutoff.low = 50
   for (var in c("hours", "employment", "coal_prod")) {
-    new_var = paste(var, "dynamic", sep = "_")
-    data[, new_var] = NA
+    new.var = paste(var, "dynamic", sep = ".")
+    data[, new.var] = NA
     for (i in 1:nrow(data)) {
       year = data[i, "year"]
-      data[i, new_var] = ifelse(data[i, var] >= year_info[year_info$year == year, paste(var, toString(cutoff_high), sep = "_")], 2, 
-                                ifelse(data[i, var] < year_info[year_info$year == year, paste(var, toString(cutoff_low), sep = "_")], 0, 1))
+      data[i, new.var] = ifelse(data[i, var] >= year.info[year.info$year == year, paste(var, toString(cutoff.high), sep = ".")], 2, 
+                                ifelse(data[i, var] < year.info[year.info$year == year, paste(var, toString(cutoff.low), sep = ".")], 0, 1))
     }
   }
   
   # bye
-  rm(cutoff_high, cutoff_low, i, new_var, var, year)
+  rm(cutoff.high, cutoff.low, i, new.var, var, year)
   
   # create static groups
-  make_static_var = function(mine_data, var) {
-    static_var = paste(var, "static", sep = "_")
-    dynamic_var = paste(var, "dynamic", sep = "_")
-    mine_data[, static_var] = ifelse(nrow(mine_data) == sum(mine_data[, dynamic_var] == 2), 2, 
-                                     ifelse(nrow(mine_data) == sum(mine_data[, dynamic_var] >= 1), 1, 0))
-    return(mine_data)
+  make.static.var = function(mine.data, var) {
+    static.var = paste(var, "static", sep = ".")
+    dynamic.var = paste(var, "dynamic", sep = ".")
+    mine.data[, static.var] = ifelse(nrow(mine.data) == sum(mine.data[, dynamic.var] == 2), 2, 
+                                     ifelse(nrow(mine.data) == sum(mine.data[, dynamic.var] >= 1), 1, 0))
+    return(mine.data)
   }
   
-  data$hours_static = NA
-  data = ddply(data, "mineid", make_static_var, var = "hours")
+  data$hours.static = NA
+  data = ddply(data, "mineid", make.static.var, var = "hours")
   
-  data$employment_static = NA
-  data = ddply(data, "mineid", make_static_var, var = "employment")
+  data$employment.static = NA
+  data = ddply(data, "mineid", make.static.var, var = "employment")
   
-  data$coal_prod_static = NA
-  data = ddply(data, "mineid", make_static_var, var = "coal_prod")
+  data$coal_prod.static = NA
+  data = ddply(data, "mineid", make.static.var, var = "coal_prod")
   
   # bye
-  rm(make_static_var, year_info)
+  rm(make.static.var, year.info)
   
   ##############################################################################  
   
   # PLOT YEAR AVERAGES AND MEDIANS BY GROUPS OF COVARIATES OF INTEREST
   
-  data$hours_dynamic = factor(data$hours_dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
-  data$hours_static = factor(data$hours_static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  # format variables
+  data$hours.dynamic = factor(data$hours.dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  data$hours.static = factor(data$hours.static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
   data$district = factor(data$district, levels = seq(1, 10), labels = seq(1, 10))
   data$apalachia = factor(data$apalachia, levels = c(0, 1), labels = c("Out", "In"))
   
   # collapse datasets by groups
-  for (var in c("hours_dynamic", "hours_static", "district", "apalachia")) {
+  for (var in c("hours.dynamic", "hours.static", "district", "apalachia")) {
     for (level in unique(data[, var])) {
-      assign(paste("data_year_avg", var, level, sep = "_"), 
+      assign(paste("data.year.avg", var, level, sep = "."), 
              aggregate(data[data[, var] == level, ], list(data[data[, var] == level, "year"]),
                        FUN = function(x) mean(as.numeric(x), na.rm = TRUE)))
-      assign(paste("data_year_med", var, level, sep = "_"), 
+      assign(paste("data.year.med", var, level, sep = "."), 
              aggregate(data[data[, var] == level, ], list(data[data[, var] == level, "year"]),
                        FUN = function(x) median(as.numeric(x), na.rm = TRUE)))
     }
@@ -194,32 +227,34 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   # bye
   rm(level, var)
   
-  # generate plots
-  for (var in c("hours_dynamic", "hours_static", "district", "apalachia")) {
+  # generate figures
+  for (var in c("hours.dynamic", "hours.static", "district", "apalachia")) {
     
     # not sure why this needs to be done twice, but it really freaks out otherwise
     color = palette(rainbow(length(unique(data[, var]))))
     color = palette(rainbow(length(unique(data[, var])))) 
     
-    for (dv in c("dv_exp", "dv_rel")) {
+    for (dv in c("dv.exp", "dv.rel")) {
       
       for (method in c("avg", "med")) {
         
-        if (dv == "dv_exp") {
-          y_lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
+        # set labels
+        if (dv == "dv.exp") {
+          y.lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
         }
-        if (dv == "dv_rel") {
-          y_lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
+        if (dv == "dv.rel") {
+          y.lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
         }
         
         if (method == "avg") {
-          y_lab = paste("Mean", y_lab, sep = " ")
+          y.lab = paste("Mean", y.lab, sep = " ")
         }
         if (method == "med") {
-          y_lab = paste("Median", y_lab, sep = " ")
+          y.lab = paste("Median", y.lab, sep = " ")
         }
         
-        x = ls()[grepl(paste("data_year", method, var, sep = "_"), ls())]
+        # generate figures
+        x = ls()[grepl(paste("data.year", method, var, sep = "."), ls())]
         n = eval(parse(text = x[1]))
         for (j in 2:length(x)) {
           n2 = eval(parse(text = x[j]))
@@ -229,32 +264,36 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
         lb = min(n[, dv])
         ub = max(n[, dv])
         
-        out_file = paste(out_directory, plot_num, ".png", sep = "")
+        # force figure numbers to match report
+          # without this change, the figures by mine size would be incorrectly ordered
+        if (fig.num == 4) {
+          fig.num.modified = 5
+        }
+        else if (fig.num == 5) {
+          fig.num.modified = 4
+        }
+        else if (fig.num == 14) {
+          fig.num.modified = 15
+        }
+        else if (fig.num == 15) {
+          fig.num.modified = 14
+        }
+        else {
+          fig.num.modified = fig.num
+        }
         
-        if (plot_num == 7) {
-          out_file = paste(out_directory, "9.png", sep = "")
-        }
-        if (plot_num == 8) {
-          out_file = paste(out_directory, "10.png", sep = "")
-        }
-        if (plot_num == 9) {
-          out_file = paste(out_directory, "7.png", sep = "")
-        }
-        if (plot_num == 10) {
-          out_file = paste(out_directory, "8.png", sep = "")
-        }
+        out.file = paste(out.path, paste0(toString(fig.num.modified), fig.ab, collapse = NULL), ".png", sep = "")
+        png(out.file)
+        par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0)) # set margins
         
-        png(out_file)
-        par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0))  
-        
-        i = 1
+        i = 1 # track levels to know when to create new plot vs. modify existing plot
         for (level in sort(unique(data[, var]))) {
           
-          d = eval(parse(text = paste("data_year", method, var, level, sep = "_")))
+          d = eval(parse(text = paste("data.year", method, var, level, sep = ".")))
           
           if (i == 1) {
             plot(d[, "year"], d[, dv], 
-                 xlab = "Year", ylab = y_lab,
+                 xlab = "Year", ylab = y.lab,
                  ylim = c(lb, ub),
                  type = "l", col = color[i], cex.axis = 1.5, cex.lab = 1.5)
           }
@@ -271,87 +310,112 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
                lty = c(rep(1, length(unique(data[, var])))), col = color)
         
         dev.off()
-        plot_num = plot_num + 1
         
+        # update naming scheme
+        if (fig.ab == "a") {
+          fig.ab = "b"
+        }
+        if (fig.ab == "b") {
+          fig.num = fig.num + 1
+          fig.ab = "a"
+        }
+
       }
     }
   }
   
   # bye
-  rm(list = ls()[grepl("data_year", ls())])
-  rm(color, dv, i, j, lb, level, method, out_file, ub, var, x, y_lab, d, n, n2) 
+  rm(list = ls()[grepl("data.year", ls())])
+  rm(color, dv, i, j, lb, level, method, out.file, ub, var, x, y.lab, d, n, n2) 
   
   ##############################################################################
   
   # CALCULATE MINE AVERAGES ANE MEDIANS
   
   # averages
-  data_mine_avg = aggregate(data, list(data$mineid),
+  data.mine.avg = aggregate(data, list(data$mineid),
                             FUN = function(x) mean(as.numeric(x), na.rm = TRUE))
   
   # medians
-  data_mine_med = aggregate(data, list(data$mineid),
+  data.mine.med = aggregate(data, list(data$mineid),
                             FUN = function(x) median(as.numeric(x), na.rm = TRUE))
   
   ##############################################################################
   
   # PLOT MINE AVERAGES AND MEDIANS
   
-  for (dv in c("dv_exp", "dv_rel")) {
+  for (dv in c("dv.exp", "dv.rel")) {
     
     for (method in c("avg", "med")) {
       
-      if (dv == "dv_exp") {
-        x_lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
+      # set labels
+      if (dv == "dv.exp") {
+        x.lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
       }
-      if (dv == "dv_rel") {
-        x_lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
+      if (dv == "dv.rel") {
+        x.lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
       }
       
       if (method == "avg") {
-        x_lab = paste("Mean", x_lab, sep = " ")
+        x.lab = paste("Mean", x.lab, sep = " ")
       }
       if (method == "med") {
-        x_lab = paste("Median", x_lab, sep = " ")
+        x.lab = paste("Median", x.lab, sep = " ")
       }
       
-      d = eval(parse(text = paste("data_mine", method, sep = "_")))
+      # generate figures 
+      d = eval(parse(text = paste("data.mine", method, sep = ".")))
       
-      out_file = paste(out_directory, plot_num, ".png", sep = "")
-      png(out_file)
-      par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0))  
+      out.file = paste(out.path, paste0(toString(fig.num), fig.ab, collapse = NULL), ".png", sep = "")
+      png(out.file)
+      par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0)) # set margins
       
-      
-      hist(d[, dv], main = NULL, xlab = x_lab, cex.axis = 1.5, cex.lab = 1.5)
+      hist(d[, dv], main = NULL, xlab = x.lab, cex.axis = 1.5, cex.lab = 1.5)
       
       dev.off()
-      plot_num = plot_num + 1
+      
+      # update naming scheme
+      if (fig.ab == "a") {
+        fig.ab = "b"
+      }
+      if (fig.ab == "b") {
+        fig.num = fig.num + 1
+        fig.ab = "a"   
+      }
       
     }
   }
   
   # bye
-  rm (d, data_mine_avg, data_mine_med, dv, method, x_lab, out_file)
+  rm (d, data.mine.avg, data.mine.med, dv, method, x.lab, out.file)
 
   ##############################################################################
   
   # MAKE APPENDIX PLOTS
   
-  out_directory = paste(out_directory, "APP", sep = "_")
-  plot_num = 1
-
-  data$employment_dynamic = factor(data$employment_dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
-  data$employment_static = factor(data$employment_static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
-  data$coal_prod_dynamic = factor(data$coal_prod_dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
-  data$coal_prod_static = factor(data$coal_prod_static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  if (injury == "MR") {
+    appendix.fig.num = 1
+    appendix.fig.ab = "a"
+  }
+  
+  if (injury == "PS") {
+    appendix.fig.num = 1
+    appendix.fig.ab = "a"
+  }
+  
+  # format variables
+  data$employment.dynamic = factor(data$employment.dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  data$employment.static = factor(data$employment.static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  data$coal_prod.dynamic = factor(data$coal_prod.dynamic, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
+  data$coal_prod.static = factor(data$coal_prod.static, levels = c(0, 1, 2), labels = c("Small", "Medium", "Large"))
   
   # collapse datasets by groups
-  for (var in c("employment_dynamic", "employment_static", "coal_prod_dynamic", "coal_prod_static")) {
+  for (var in c("employment.dynamic", "employment.static", "coal_prod.dynamic", "coal_prod.static")) {
     for (level in unique(data[, var])) {
-      assign(paste("data_year_avg", var, level, sep = "_"), 
+      assign(paste("data.year.avg", var, level, sep = "."), 
              aggregate(data[data[, var] == level, ], list(data[data[, var] == level, "year"]),
                        FUN = function(x) mean(as.numeric(x), na.rm = TRUE)))
-      assign(paste("data_year_med", var, level, sep = "_"), 
+      assign(paste("data.year.med", var, level, sep = "."), 
              aggregate(data[data[, var] == level, ], list(data[data[, var] == level, "year"]),
                        FUN = function(x) median(as.numeric(x), na.rm = TRUE)))
     }
@@ -361,31 +425,33 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   rm(level, var)
   
   # generate plots
-  for (var in c("employment_dynamic", "employment_static", "coal_prod_dynamic", "coal_prod_static")) {
+  for (var in c("employment.dynamic", "employment.static", "coal_prod.dynamic", "coal_prod.static")) {
     
     # not sure why this needs to be done twice, but it really freaks out otherwise
     color = palette(rainbow(length(unique(data[, var]))))
     color = palette(rainbow(length(unique(data[, var])))) 
     
-    for (dv in c("dv_exp", "dv_rel")) {
+    for (dv in c("dv.exp", "dv.rel")) {
       
       for (method in c("avg", "med")) {
         
-        if (dv == "dv_exp") {
-          y_lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
+        # set labels
+        if (dv == "dv.exp") {
+          y.lab = paste("Number of", injury, "Injuries per Hour Worked", sep = " ")
         }
-        if (dv == "dv_rel") {
-          y_lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
+        if (dv == "dv.rel") {
+          y.lab = paste("Share of Total Injuries that are", injury, "Injuries", sep = " ")
         }
         
         if (method == "avg") {
-          y_lab = paste("Mean", y_lab, sep = " ")
+          y.lab = paste("Mean", y.lab, sep = " ")
         }
         if (method == "med") {
-          y_lab = paste("Median", y_lab, sep = " ")
+          y.lab = paste("Median", y.lab, sep = " ")
         }
         
-        x = ls()[grepl(paste("data_year", method, var, sep = "_"), ls())]
+        # generate figures
+        x = ls()[grepl(paste("data.year", method, var, sep = "."), ls())]
         n = eval(parse(text = x[1]))
         for (j in 2:length(x)) {
           n2 = eval(parse(text = x[j]))
@@ -395,44 +461,36 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
         lb = min(n[, dv])
         ub = max(n[, dv])
         
-        out_file = paste(out_directory, plot_num, ".png", sep = "")
-        
-        if (plot_num == 3) {
-          out_file = paste(out_directory, "5.png", sep = "")
+        # force figure numbers to match report
+          # without this change, the figures by mine size would be incorrectly ordered
+        if (appendix.fig.num == 2) {
+          appendix.fig.num.modified = 3
         }
-        if (plot_num == 4) {
-          out_file = paste(out_directory, "6.png", sep = "")
+        else if (appendix.fig.num == 3) {
+          appendix.fig.num.modified = 2
         }
-        if (plot_num == 5) {
-          out_file = paste(out_directory, "3.png", sep = "")
+        else if (appendix.fig.num == 6) {
+          appendix.fig.num.modified = 7
         }
-        if (plot_num == 6) {
-          out_file = paste(out_directory, "4.png", sep = "")
+        else if (appendix.fig.num == 7) {
+          appendix.fig.num.modified = 6
         }
-        if (plot_num == 11) {
-          out_file = paste(out_directory, "13.png", sep = "")
-        }
-        if (plot_num == 12) {
-          out_file = paste(out_directory, "14.png", sep = "")
-        }
-        if (plot_num == 13) {
-          out_file = paste(out_directory, "11.png", sep = "")
-        }
-        if (plot_num == 14) {
-          out_file = paste(out_directory, "12.png", sep = "")
+        else {
+          appendix.fig.num.modified = appendix.fig.num
         }
         
-        png(out_file)
-        par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0))  
+        out.file = paste(out.path, paste0(toString(appendix.fig.num.modified), fig.ab, collapse = NULL), ".png", sep = "")
+        png(out.file)
+        par(mar = c(7, 7, 4.1, 2.1), mgp = c(4, 1, 0)) # set margins
         
-        i = 1
+        i = 1 # track levels to know when to create new plot vs. modify existing plot
         for (level in sort(unique(data[, var]))) {
           
-          d = eval(parse(text = paste("data_year", method, var, level, sep = "_")))
+          d = eval(parse(text = paste("data.year", method, var, level, sep = ".")))
           
           if (i == 1) {
             plot(d[, "year"], d[, dv], 
-                 xlab = "Year", ylab = y_lab,
+                 xlab = "Year", ylab = y.lab,
                  ylim = c(lb, ub),
                  type = "l", col = color[i], cex.axis = 1.5, cex.lab = 1.5)
           }
@@ -449,7 +507,15 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
                lty = c(rep(1, length(unique(data[, var])))), col = color)
         
         dev.off()
-        plot_num = plot_num + 1
+
+        # update naming scheme
+        if (appendix.fig.ab == "a") {
+          appendix.fig.ab = "b"
+        }
+        if (appendix.fig.ab == "b") {
+          appendix.fig.num = appendix.fig.num + 1
+          appendix.fig.ab = "a"   
+        }
         
       }
     }
