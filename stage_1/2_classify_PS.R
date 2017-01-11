@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 5 - Classify PS (Pinning and Striking)
+# 2 - Classify PS (Pinning and Striking)
   # This file loads the PS training set sent to the Morantz team by Miguel Reyes on January 29th, 2016 for use 
   # in constructing a pinning and striking (PS) injury classification algorithm. In this file, we clean and 
   # format the variables in the training set, conduct narrative analysis on the injury description fields, 
