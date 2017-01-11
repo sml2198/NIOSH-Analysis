@@ -4,8 +4,9 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 3 - Merge Mines Data
-  # Merges cleaned mines and cleaned employment data
+# 4 - Prepare Mines Data
+  # Merges cleaned mines and cleaned employment data and collapses
+  # Then merges collapsed accidents data
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/4/17
