@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 6 - Classify MR (Maintenance and Repair Injuries)
+# 3 - Classify MR (Maintenance and Repair Injuries)
   # This file loads the MR training set sent to the Morantz team by Miguel Reyes on August 8th, 2015 for use 
   # in constructing a maintenance and repair (MR) injury classification algorithm. In this file, we clean and 
   # format the variables in the training set, conduct narrative analysis on the injury description fields, 
