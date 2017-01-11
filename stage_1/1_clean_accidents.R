@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 4 - Clean Accidents Data
+# 1 - Clean Accidents Data
   # Cleans accidents data from the MSHA open data portal
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
