@@ -30,7 +30,7 @@ cleaned.path = paste0(root, "/1_cleaned", collapse = NULL)
 coded.path = paste0(root, "/3_coded", collapse = NULL) 
 collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
 
-#inputs 
+# inputs 
   # cleaned mine-types key produced in produced in 1_clean_mines.R
 mine.types.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
   # coded MR accidents data produced in 5_analyze_MR.R
