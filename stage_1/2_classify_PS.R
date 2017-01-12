@@ -36,12 +36,12 @@ library(stringr)
 
 ################################################################################
 
-# File preferences (these were used in algorithm testing but have now been hard-coded in, in accordance
-# with the algorithm that we determined to be most successful)
+# SETTINGS
+  # file can be used to train and test various algorithms OR 
+  # to train the best algorithm and use it to classify all accidents (PS/non-PS)
 
-# Data type - either "training data" for model selection and testing, or "real accidents data" for classification
-data.type = "training data"
-data.type = "real accidents data"
+data.type = "training data" # trains and test various algorithms
+data.type = "real accidents data" # trains superior algorithm and classifies all injuries and PS/non-PS
 
 ################################################################################
 
@@ -63,9 +63,9 @@ training.set.file.name = paste0(originals.input.path, "/training-sets/Training_S
 accidents.data.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
-  # all accidents, now classified as PS after algorithm (R dataset)
+  # accidents data, classified as PS/non-PS (R dataset)
 classified.accidents.file.name = paste0(coded.output.path, "/PS_accidents_with_predictions.rds", collapse = NULL)
-  # all accidents, now classified as PS after algorithm (csv)
+  # accidents data, classified as PS/non-PS (csv)
 classified.accidents.file.name.csv = paste0(coded.output.path, "/PS_accidents_with_predictions.csv", collapse = NULL)
 
 # generate file paths

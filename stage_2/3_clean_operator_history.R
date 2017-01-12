@@ -26,11 +26,11 @@ originals.path = paste0(root, "/0_originals", collapse = NULL)
 clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # prepped mine-years
+  # original controller and operator history 
 history.in.file.name = paste0(originals.path, "/ControllerOperatorHistory.txt", collapse = NULL)
 
 # outputs
-  # merged and prepped mine-years data
+  # clean operator history
 history.out.file.name = paste0(clean.path, "/clean_operator_history.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
@@ -41,11 +41,11 @@ dir.create(clean.path, recursive = TRUE)
 # MERGE MINES AND EMPLOYMENT/PRODUCTION DATA, THEN FORMAT VARIABLES
 
 # read controller/operator history data 
-  # 144065 rows; 13 columns; unique on mineid-year
+  # 144065 rows; 13 columns; unique on operatorid-operatorstartdt
 history = read.table(history.in.file.name, header = T, sep = "|")
 
 # drop data from environments not of interest
-  # 63143 rows; 13 columns; unique on mineid-year
+  # 63143 rows; 13 columns; unique on operatorid-operatorstartdt
 history = history[(history$COAL_METAL_IND == "C"), ]
 
 # rename variables
@@ -64,7 +64,7 @@ enddtvars = "operatorenddt"
 for (i in 1:length(enddtvars)) {
   history[, enddtvars[i]] = as.character(history[, enddtvars[i]])
   history[, enddtvars[i]] = ifelse(history[, enddtvars[i]] == "", NA, history[, enddtvars[i]])
-  history[, enddtvars[i]] = ifelse(is.na(history[, enddtvars[i]]), "01/01/2016", history[, enddtvars[i]]) # Q1 2016
+  history[, enddtvars[i]] = ifelse(is.na(history[, enddtvars[i]]), "01/01/2016", history[, enddtvars[i]])
 }
 datevars = c("operatorstartdt", "operatorenddt")
 for (i in 1:length(datevars)) {
@@ -74,7 +74,8 @@ for (i in 1:length(datevars)) {
 
 ################################################################################
 
-# output mine-level data
+# output data 
+  # 63143 rows; 13 columns; unique on operatorid-operatorstartdt
 saveRDS(history, file = history.out.file.name)
 
 ################################################################################
