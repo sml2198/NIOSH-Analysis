@@ -12,14 +12,15 @@
 
 ################################################################################
 
-library(zoo)
+# install.packages("stringr")
+library(stringr)
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 input.path = paste0(root, "/0_originals", collapse = NULL)
@@ -27,6 +28,7 @@ output.path = paste0(root, "/1_cleaned", collapse = NULL)
 
 # inputs
   # accidents data from the MSHA open data portal 
+    # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 accidents.in.file.name = paste0(input.path, "/Accidents.txt", collapse = NULL)
 
 # outputs
@@ -41,7 +43,6 @@ dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file struc
 # READ AND CLEAN ACCIDENTS DATA 
 
 # read accidents data
-  # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
   # 212611 rows; 57 columns; unique on documentno
 accidents = read.table(accidents.in.file.name, header = TRUE, sep = "|", na.strings = c("","NA"))
 
@@ -103,7 +104,7 @@ names(accidents)[names(accidents) == "UG_MINING_METHOD"] = "ugminingmethod"
 names(accidents)[names(accidents) == "UG_MINING_METHOD_CD"] = "ugminingmethodcode"
 
 # format narrative
-  # must remove encoded characters (or else tolower won't work)
+  # must remove encoded characters (otherwise tolower won't work)
 accidents$narrative = iconv(accidents$narrative,"WINDOWS-1252","UTF-8")
 
 # format variables
@@ -122,21 +123,22 @@ accidents$documentno = str_pad(accidents$documentno, 12, pad = "0")
 accidents = accidents[accidents$coal_metal_ind == "C", ]
 accidents = accidents[accidents$subunit == "UNDERGROUND", ]
 
-# now drop these unnecessary variables
-accidents$coal_metal_ind = NULL
-
-# remove observations after Q1 2016
+# drop data after 2016 Q1
   # 75016 rows; 58 columns; unique on documentno
 accidents$drop = ifelse((accidents$calendaryear == 2016 & accidents$calendarquarter > 1), 1, 0)
 accidents = accidents[accidents$drop == 0,] 
-accidents = accidents[,-match("drop", names(accidents))]
+
+# drop unnecessary variables
+  # 75016 rows; 56 columns; unique on documentno
+accidents$coal_metal_ind = NULL
+accidents$drop = NULL
 
 ################################################################################
 
 # OUPUT CLEAN ACCIDENTS DATA
 
 # output clean accidents data
-  # 75016 rows; 58 columns; unique on documentno
+  # 75016 rows; 56 columns; unique on documentno
 saveRDS(accidents, file = accidents.out.file.name)
 
 ################################################################################

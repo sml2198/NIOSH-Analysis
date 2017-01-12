@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 2 - Classify PS (Pinning and Striking)
+# 2 - Classify Pinning and Striking INjuries
   # This file loads the PS training set sent to the Morantz team by Miguel Reyes on January 29th, 2016 for use 
   # in constructing a pinning and striking (PS) injury classification algorithm. In this file, we clean and 
   # format the variables in the training set, conduct narrative analysis on the injury description fields, 
@@ -15,9 +15,10 @@
   # classify all injuries in the "Accidents Injuries Data Set" as PS/not-PS.
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 # Last edit 1/11/17
 
-######################################################################################################
+################################################################################
 
 library(tree)
 library(randomForest)
@@ -33,19 +34,29 @@ library(caret)
 library(dummies)
 library(stringr)
 
-######################################################################################################
+################################################################################
 
+# File preferences (these were used in algorithm testing but have now been hard-coded in, in accordance
+# with the algorithm that we determined to be most successful)
+
+# Data type - either "training data" for model selection and testing, or "real accidents data" for classification
+data.type = "training data"
+data.type = "real accidents data"
+
+################################################################################
+
+# define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
-# Define file paths
+# define file paths
 originals.input.path = paste0(root, "/0_originals", collapse = NULL)
 clean.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # coded PS training set - sent to the Morantz team by NIOSH on 8/28/2015
+  # master PS training set - coded by NIOSH representatives and sent to the Morantz team on 8/28/2015
 training.set.file.name = paste0(originals.input.path, "/training-sets/Training_Set_Pinning_And_Striking_Accidents-January-29-2016.csv", collapse = NULL)
   # all accidents data, unclassified, cleaned in 2_clean_accidents.R and merged on mines in 3_merge_accidents.R
 accidents.data.file.name = paste0(clean.input.path, "/clean_accidents.rds", collapse = NULL)
@@ -56,18 +67,10 @@ classified.accidents.file.name = paste0(coded.output.path, "/PS_accidents_with_p
   # all accidents, now classified as PS after algorithm (csv)
 classified.accidents.file.name.csv = paste0(coded.output.path, "/PS_accidents_with_predictions.csv", collapse = NULL)
 
-# Create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(coded.output.path, recursive = TRUE)
+# generate file paths
+dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
 
-######################################################################################################
-
-# File preferences (these were used in algorithm testing but have now been hard-coded in, in accordance
-# with the algorithm that we determined to be most successful)
-
-# Data type - either "training data" for model selection and testing, or "real accidents data" for classification
-data.type = "real accidents data"
-
-##################################################################################################
+################################################################################
 
 # LOAD IN DATA
 
@@ -79,7 +82,7 @@ if (data.type == "real accidents data") {
   accidents.data = readRDS(accidents.data.file.name)
 }
 
-##################################################################################################
+################################################################################
 
 # RENAME AND FORMAT VARIABLES
 
@@ -114,7 +117,7 @@ ps.data[, "type"] = "training"
 ps.data[, "X"] = factor(ifelse(ps.data[, "X"] == 1, "YES", "NO"))
 names(ps.data)[names(ps.data) == "X"] = "PS"
 
-##################################################################################################
+################################################################################
 
 # DO THIS CODE IF YOU'RE RUNNING ON THE REAL ACCIDENTS DATA (NOT THE TRAINING SET)
 
@@ -152,7 +155,7 @@ if (data.type == "real accidents data") {
   rm(accidents.data)
 }
 
-##################################################################################################
+################################################################################
 
 # CLEAN UP THE NARRATIVE FIELDS 
 
@@ -177,7 +180,7 @@ for (i in 0:9) {
 # Clean up common typos that may affect our keyword searches
 ps.data$narrative = gsub("ag(a)*( )*(in)*st", "against", ps.data$narrative)
 
-##################################################################################################
+################################################################################
 
 # CLEAN UP OTHER VARIABLES & RECODE MISCLASSIFIED OBSERVATIONS FROM THE TRAINING SET
 
@@ -245,7 +248,7 @@ for (i in indices_with_date) {
 # Convert accident type codes to factor to make this code usable with accidents data
 ps.data$accidenttypecode = as.factor(ps.data$accidenttypecode)
 
-##################################################################################################
+################################################################################
 
 # GENERATE LIKELY POSITIVELY PREDICTIVE KEY WORDS
 
@@ -297,7 +300,7 @@ ps.data[, "bent"] = ifelse(grepl("bent", ps.data[,"narrative"]) &
                              !grepl("bent( )*over", ps.data[,"narrative"]), 1, 0)
 ps.data[, "canopy"] = ifelse(grepl("canopy", ps.data[,"narrative"]), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # GENERATE KEY WORDS TO IDENTIFY FALSE POSITIVES
 
@@ -343,7 +346,7 @@ ps.data[, "entrapment"] = ifelse((grepl("drill.{1,5}steel", ps.data[,"narrative"
                                       grepl("(glove|shi(r)*t|sle(e)*ve).{1,10}(entangl|cau( )*ght|catching|snagg(ed|ing))", ps.data[,"narrative"])), 1, 0)
 ps.data[ps.data$glove == 1 & ps.data$entrapment == 0, c("narrative","drillsteel", "roofbolt")]
 
-##################################################################################################
+################################################################################
 
 # CREATE DUPLICATE NARRATIVE FIELDS AND THEN REPLACE ALL MENTIONS OF VEHICLES WITH "VEHICLE", BODY PARTS WITH "BODY", ETC.
 
@@ -498,7 +501,7 @@ ps.data$narrative = gsub("operat(o|e)r", "PERSON", ps.data$narrative)
 ps.data$narrative = gsub("passenger", "PERSON", ps.data$narrative)
 ps.data$narrative = gsub("driver", "PERSON", ps.data$narrative)
 
-##################################################################################################
+################################################################################
 
 # GENERATE VARIABLES TO COUNT NUMBER OF UPPERCASE WORDS PER NARRATIVE AND DISTANCES BETWEEN THEM
 
@@ -520,7 +523,7 @@ ps.data[, "dif_vehicle"] = ifelse(grepl("(second|another|different).{1,5}VEHICLE
 ps.data[, "loose_rbolting"] = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", ps.data[,"narrative"]), 1, 0)
 ps.data[, "drill_action"] = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", ps.data[,"narrative"]), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # CREATE A FEW MORE KEY WORDS ON THE NEW NARRATIVE FIELDS
 
@@ -587,7 +590,7 @@ ps.data[, "strikerib"] = ifelse((grepl("PINNED/STRUCK.{0,20}( )rib", ps.data[, "
                                      !grepl("PERSON.{0,10}( )rib", ps.data[, "old_narrative"]) & 
                                      !grepl(" ribs", ps.data[, "old_narrative"])), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # GENERATE LIKELY POSITIVELY PREDICTIVE CIRCUMSTANCES FLAGS
 
@@ -653,7 +656,7 @@ ps.data$maybe_false_keyword = ifelse((ps.data$digit == 1 |
                                         ps.data$canopy == 1 | 
                                         ps.data$flew == 1), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # GENERATE LIKELY/MAYBE LIKELY/UNLIKELY CATEGORY INDICATORS
 
@@ -841,7 +844,7 @@ ps.data$unlikely_body = ifelse((ps.data$bodypartcode == "200" |
                                   ps.data$bodypartcode == "340" | 
                                   ps.data$bodypartcode == "420"), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # SUM UP LIKELY AND UNLIKELY INDICATORS
 ps.data$keyword_pts = rowSums(ps.data[, c('pin', 'strike', 'drillsteel', 
@@ -859,7 +862,7 @@ ps.data$pos_pts = rowSums(ps.data[, c('likely_class', 'likely_equip', 'likely_na
 ps.data$neg_pts = rowSums(ps.data[, c('unlikely_class', 'unlikely_equip', 'unlikely_source', 
                                       'unlikely_nature', 'unlikely_type', 'uncertain_activity')], na.rm = TRUE)
 
-##################################################################################################
+################################################################################
 
 # A FEW MORE KEY WORDS, USING EXISTING KEYWORD FLAGS 
 
@@ -879,7 +882,7 @@ ps.data[, "int_obj_strike"] = ifelse((grepl("( )(block|rock|cho(c)*k|chunk|rail|
                                         ps.data$falling.accident == 0 & 
                                         ps.data$operating == 0), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # VARIOUS SIMPLE ALGORITHMS (JUST USING KEY WORDS AND INDICATORS)
 
@@ -919,7 +922,7 @@ ps.data$likely_ps = ifelse((ps.data$keyword == 1 |
                                 ps.data$pos_pts > 1 & 
                                 ps.data$neg_pts < 3), 1, 0)
 
-##################################################################################################
+################################################################################
 
 # Drop variables with redundant or no information while keeping codes used in the algorithms below
 all_vars = ps.data
@@ -951,7 +954,7 @@ ps.data = ps.data[, c(-match("accidenttime", names(ps.data)),
 # Drop date variables (now irrelevant)
 ps.data = ps.data[, c(-grep("date", names(ps.data)))]
 
-##################################################################################################
+################################################################################
 
 # PRODUCE DATASETS WITH ONLY VARIABLES OF INTEREST 
 
@@ -972,7 +975,7 @@ for (i in 1:length(vars)) {
  simple.data[, vars[i]] = factor(simple.data[, vars[i]])
 }
 
-##################################################################################################
+################################################################################
 
 # Randomly sort data (in case it was ordered)
 set.seed(625)
@@ -983,7 +986,7 @@ remove(rand)
 # Print out PS indicator column number
 which(colnames(simple.ps)=="PS") 
 
-######################################################################################################
+################################################################################
 
 # TO TEST VARIOUS MODELS
 
@@ -1079,7 +1082,7 @@ if (data.type == "training data" ) {
   table = table(predictions$prediction, predictions$PS)
 }
 
-######################################################################################################
+################################################################################
 
 # NOW PERFORM THE FINAL ALGORITHM WITH REAL ACCIDENTS DATA FOR CLASSIFICATION
 
@@ -1141,4 +1144,9 @@ if (data.type == "real accidents data") {
   saveRDS(accidents, file = classified.accidents.file.name)
 }
 
-##################################################################################################
+################################################################################
+
+rm(list = ls())
+
+################################################################################
+

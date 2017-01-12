@@ -20,7 +20,7 @@ library(zoo)
 
 # set root directory
 # root = "/NIOSH-Analysis/data"
-root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -31,6 +31,8 @@ prepped.path = paste0(root, "/5_prepped", collapse = NULL)
 # inputs
   # cleaned employment data
 employment.in.file.name = paste0(clean.path, "/clean_employment.rds", collapse = NULL)
+  # cleaned operator history data
+history.in.file.name = paste0(clean.path, "/clean_operator_history.rds", collapse = NULL)
   # cleaned mines data
 mines.in.file.name = paste0(clean.path, "/clean_mines.rds", collapse = NULL)
   # cleaned MR data
@@ -136,6 +138,101 @@ mine.quarters$appalachia = ifelse((mine.quarters$stateabbreviation == "VA" |
 
 # clean up safetycommittee
 mine.quarters$safetycommittee = ifelse(mine.quarters$safetycommittee  == "Y", 1, 0)
+
+################################################################################
+
+# MERGE IN OPERATOR HISTORY DATA
+
+# load in operator history data
+  # 63143 rows; 4 columns; unique on operatorid-operatorstartdt
+history = readRDS(history.in.file.name)
+
+
+mines = mine.quarters
+
+# remove duplicates and order history
+  # 55776 rows; 4 columns; unique on operatorid-operatorstartdt
+history = history[order(history$mineid),]
+history$operatorid = as.character(history$operatorid)
+history = history[!duplicated(history), ]
+
+
+mines$operatorid = NA
+
+fill_in_mines = function(t_mines) {
+  
+  mine = unique(t_mines$mineid)[1]
+  
+  t_history = history[history$mineid == mine, ]
+  if (nrow(t_history) != 0) {
+    t_history_o = t_history[, c("operatorid", "operatorstartdt", "operatorenddt")]
+    t_history_o = t_history_o[!duplicated(t_history_o), ]
+    
+    for (i in 1:nrow(t_mines)) {
+      for (j in 1:nrow(t_history_o)) {
+        t_mines$operatorid = 
+          ifelse(t_mines$quarter[i] >= t_history_o$operatorstartdt[j] 
+                 & t_mines$quarter[i] < t_history_o$operatorenddt[j], 
+                 t_history_o$operatorid[j], NA)
+      }
+    }
+  }
+  return(t_mines)
+}
+
+mines$mineid = as.character(mines$mineid)
+mines$mineid = str_pad(mines$mineid, 7, pad = "0")
+mines_new = ddply(mines, "mineid", fill_in_mines)
+
+# get missing mine-quarters trusting given bounds
+fill_in_ts = function(mine_df) {
+  times = data.frame(quarter = seq(min(mine_df$quarter), max(mine_df$quarter), by = 0.25))
+  full_ts = merge(times, mine_df, by = c("quarter"), all.x = TRUE)
+  full_ts$mineid[is.na(full_ts$mineid)] = unique(full_ts$mineid)[1]
+  return(full_ts)
+}
+
+mines_new_full = ddply(mines_new, "mineid", fill_in_ts)
+
+mines_new_full$operator_time = NA
+make_op_time = function(mine_data) {
+  print(mine_data$mineid[1])
+  for (i in 1:nrow(mine_data)) {
+    print(i)
+    if (is.na(mine_data$operatorid[i])) {
+      mine_data$operator_time[i] = NA
+    }
+    else { 
+      if (i <= 4) {
+        temp = mine_data[1:(i - 1), "operator_time"]
+        if (length(temp[!is.na(temp)]) == 0) {
+          mine_data$operator_time[i] = 1
+        }
+        else {
+          mine_data$operator_time[i] = temp[!is.na(temp)][length(temp[!is.na(temp)])] + 1
+        }
+      }
+      else {
+        if (sum(is.na(mine_data[(i - 4):(i - 1), "operatorid"])) == 4) {
+          mine_data$operator_time[i] = NA
+        }
+        else {
+          temp = mine_data[(i - 4):(i - 1), "operator_time"]
+          if (length(temp[!is.na(temp)]) == 0) {
+            mine_data$operator_time[i] = 1
+          }
+          else {
+            mine_data$operator_time[i] = temp[!is.na(temp)][length(temp[!is.na(temp)])] + 1
+          }
+        }
+      }
+    }
+  }
+  return(mine_data)
+}
+
+mines_with_ops = ddply(mines_new_full, "mineid", make_op_time)
+mines_out = mines_with_ops[mines_with_ops$quarter >= 2000, ]
 
 ################################################################################
 
