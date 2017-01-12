@@ -52,14 +52,15 @@ root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data
 
 # define file paths
 originals.input.path = paste0(root, "/0_originals", collapse = NULL)
-clean.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
+cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # master PS training set - coded by NIOSH representatives and sent to the Morantz team on 8/28/2015
+  # master PS training set
+    # coded by NIOSH representatives and sent to the Morantz team on 8/28/2015
 training.set.file.name = paste0(originals.input.path, "/training-sets/Training_Set_Pinning_And_Striking_Accidents-January-29-2016.csv", collapse = NULL)
-  # all accidents data, unclassified, cleaned in 2_clean_accidents.R and merged on mines in 3_merge_accidents.R
-accidents.data.file.name = paste0(clean.input.path, "/clean_accidents.rds", collapse = NULL)
+  # accidents data from the MSHA open data portal , cleaned in 1_clean_accidents
+accidents.data.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
   # all accidents, now classified as PS after algorithm (R dataset)
