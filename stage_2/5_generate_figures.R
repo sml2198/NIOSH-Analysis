@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 2 - Generate Figures
+# 5 - Generate Figures
   # Generates stage 2 figures
 
 # Coded by Julia Bodson, juliabodson@gmail.com
