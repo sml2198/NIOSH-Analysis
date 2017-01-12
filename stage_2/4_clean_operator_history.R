@@ -5,7 +5,7 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 4 - Clean Operator History
-  # Cleans controller/operator history
+  # Cleans controller/operator history data
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/11/17
