@@ -13,33 +13,37 @@
 
 ################################################################################
 
+library(plyr)
 library(zoo)
 
 ################################################################################
 
 # set root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-clean.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
-merged.output.path = paste0(root, "/2_merged", collapse = NULL) 
+clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
+prepped.path = paste0(root, "/5_prepped", collapse = NULL) 
 
 # inputs
   # cleaned employment data
-employment.in.file.name = paste0(clean.input.path, "/clean_employment.rds", collapse = NULL)
+employment.in.file.name = paste0(clean.path, "/clean_employment.rds", collapse = NULL)
   # cleaned mines data
-mines.in.file.name = paste0(clean.input.path, "/clean_mines.rds", collapse = NULL)
+mines.in.file.name = paste0(clean.path, "/clean_mines.rds", collapse = NULL)
+  # cleaned MR data
+MR.in.file.name = paste0(collapsed.path, "/collapsed_MR_accidents.rds", collapse = NULL)
+  # cleaned PS data
+PS.in.file.name = paste0(collapsed.path, "/collapsed_PS_accidents.rds", collapse = NULL)
 
 # outputs
-  # merged mines data
-merged.mines.out.file.name = paste0(merged.output.path, "/merged_mines.rds", collapse = NULL)
-  # merged mine-quarters data
-merged.mines.quarters.out.file.name = paste0(merged.output.path, "/merged_mine_quarters.rds", collapse = NULL)
+  # merged and prepped mine-years data
+mine.years.out.file.name = paste0(prepped.path, "/prepped_mine_years.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(merged.output.path, recursive = TRUE)
+dir.create(prepped.path, recursive = TRUE)
 
 ################################################################################
 
@@ -92,7 +96,7 @@ mine.quarters$too_early = NULL
 # retrieval System that there is really no employment information on these mines. This is usually because
 # they were abandoned and sealed during the first or second quarter of our study period, so no hours
 # data was ever recorded.
-  # 38259 rows; 66 columns; unique on mine-year-quarter
+  # 38295 rows; 66 columns; unique on mine-year-quarter
 mine.quarters = mine.quarters[!is.na(mine.quarters$hours_qtr),]
 
 # format date variables so quarter contains date-formatted year and quarter info (now observations will be unique on mineid-quarter)
@@ -100,11 +104,11 @@ mine.quarters$quarter = paste(mine.quarters$year, mine.quarters$quarter, sep = "
 mine.quarters$quarter = as.yearqtr(mine.quarters$quarter)
 
 # drop observations from after 2016 Q2
-  # 94187 rows; 66 columns; unique on mine-year-quarter
+  # 37925 rows; 66 columns; unique on mine-year-quarter
 mine.quarters = mine.quarters[which(mine.quarters$quarter <= "2016 Q1"),]
 
 # drop observations for mines that are abandoned or sealed when their status date comes before the current quarter
-  # 37297 rows; 67 columns; unique on mine-year-quarter
+  # 36940 rows; 67 columns; unique on mine-year-quarter
 mine.quarters$drop = ifelse((mine.quarters$minestatus == "Abandoned" | 
                              mine.quarters$minestatus == "Abandoned and Sealed") &
                             (mine.quarters$statusquarter <= mine.quarters$quarter), 1, 0)
@@ -120,45 +124,80 @@ mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$
                                    mine.quarters$minestatus == "Temporarily Idled" | 
                                    mine.quarters$minestatus == "NonProducing" ), "Unknown", mine.quarters$minestatus)
 
-# remove mine-quarters with minestatus "Temporarily Idled" and zero hours/employment/production (these are nonproducing) 
-  # 36916 rows; 67 columns; unique on mine-year-quarter
-mine.quarters = mine.quarters[(mine.quarters$minestatus != "Temporarily Idled" | 
-                               mine.quarters$hours_qtr != 0), ]
+# remove mine-quarters with zero hours
+  # 30289 rows; 67 columns; unique on mine-year-quarter
+mine.quarters = mine.quarters[( mine.quarters$hours_qtr != 0), ]
+
+# generate central appalachia indicator
+mine.quarters$appalachia = ifelse((mine.quarters$stateabbreviation == "VA" |
+                                   mine.quarters$stateabbreviation == "WV" |
+                                   mine.quarters$stateabbreviation == "KY" |
+                                   mine.quarters$stateabbreviation == "PA"), 1, 0)
+
+# clean up safetycommittee
+mine.quarters$safetycommittee = ifelse(mine.quarters$safetycommittee  == "Y", 1, 0)
 
 ################################################################################
 
-# drop unnecessary variables
-mine.quarters$statusyear = 
-  mine.quarters$statusquarter = 
-  mine.quarters$drop = NULL
+# COLLAPSE DATA TO THE MINE-YEAR LEVEL AND CLEAN
 
-################################################################################
-
-# COLLAPSE MERGED DATA TO THE MINE-YEAR LEVEL
-
-# preserve variables that don't need to be summed in the collapse (1850 unique mines)
-temp = mine.quarters[,c("stateabbreviation", "district", "mineid")]
+# preserve variables that don't need to be summed in the collapse (1582 unique mines)
+temp = mine.quarters[, c("appalachia", "district", "mineid", "safetycommittee")]
 temp = unique(temp)
 
-# collapse data to mine-year level to make sure nothing weird has happened
-# we wind up with 36,916 obs which is the same as before, as it should be, wahoo!
-mine.quarters = ddply(mine.quarters[, c("hours_qtr",
-                                        "employment_qtr", 
-                                        "prod_qtr", 
-                                        "mineid", 
-                                        "year", 
-                                        "quarter")], c("mineid", "quarter"), 
-                       function(x) colMeans(x[, c(match("hours_qtr", names(x)), 
-                                                  match("employment_qtr", names(x)), 
-                                                  match("prod_qtr", names(x)))], na.rm = TRUE))
+# generate a marker for each quarter so we can sum and count number of quarters 
+# for which we have data in each mine-year
+mine.quarters$num_quarts = 1
 
-mine.quarters = merge(mine.quarters, temp, by = c("mineid"), all = T)
+# collapse data to mine-year level to make sure nothing weird has happened
+  # 9023 rows; 9 columns; unique on mine-year-quarter
+mine.years = ddply(mine.quarters[, c("hours_qtr", "employment_qtr", "num_quarts", 
+                                     "prod_qtr", "mineid", "year")], c("mineid", "year"), 
+                       function(x) colSums(x[, c(match("hours_qtr", names(x)), 
+                                                 match("num_quarts", names(x)), 
+                                                 match("employment_qtr", names(x)), 
+                                                 match("prod_qtr", names(x)))], na.rm = TRUE))
+mine.years = merge(mine.years, temp, by = c("mineid"), all = T)
 rm(temp)
+
+# remove mine-years that are missing any quarters worth of data
+  # 6253 rows; 9 columns; unique on mine-year
+mine.years = mine.years[which(mine.years$num_quarts == 4),]
+
+# rename vars that are no longer quarterly
+names(mine.years)[names(mine.years) == "hours_qtr"] = "hours"
+names(mine.years)[names(mine.years) == "employment_qtr"] = "employment"
+names(mine.years)[names(mine.years) == "prod_qtr"] = "prod"
 
 ################################################################################
 
-# output mine-level data
-saveRDS(mines.quarters, file = mines_quarters_file_name)
+# MERGE IN PS AND MR DATA
+
+# load in datasets
+  # 6597 rows (each); 4 columns (each); unique on mineid-year
+MR = readRDS(MR.in.file.name)
+PS = readRDS(PS.in.file.name)
+
+# merge in MR
+mine.years = merge(mine.years, MR, by = c("mineid", "year"), all = TRUE)
+
+# merge in PS (we don't need total_injuries again)
+mine.years = merge(mine.years, PS[, c("mineid", "year", "PS")], by = c("mineid", "year"), all = TRUE)
+
+# this just drops all non-merging observations
+  # 6253 rows; 13 columns; unique on mineid-year
+mine.years = mine.years[!is.na(mine.years$appalachia), ]
+
+# replace all NA's in PS, MR, and total_injuries with 0's
+mine.years$MR = ifelse(is.na(mine.years$MR), 0, mine.years$MR)
+mine.years$PS = ifelse(is.na(mine.years$PS), 0, mine.years$PS)
+mine.years$total_injuries = ifelse(is.na(mine.years$total_injuries), 0, mine.years$total_injuries)
+
+################################################################################
+
+# output mine-year data
+  # 6253 rows; 13 columns; unique on mineid-year
+saveRDS(mine.years, file = mine.years.out.file.name)
 
 ################################################################################
 
