@@ -323,47 +323,49 @@ ps.data$canopy = ifelse(grepl("canopy", ps.data$narrative), 1, 0)
 
 # GENERATE KEY WORDS TO IDENTIFY FALSE POSITIVES
 
-# Use body/seat to remove false positive accidents of someone being jostled against the seat
-ps.data[, "bodyseat"] = ifelse(grepl("(back|head|neck|shoulder|elbo).{1,10}seat", ps.data[,"narrative"]) &
-                                 !grepl("backward.{1,10}seat", ps.data[,"narrative"]) &
-                                 !grepl("(bolt|over|drill)( )*head.{1,10}seat", ps.data[,"narrative"]), 1, 0) 
-# Hitting head against canopy
-ps.data[, "headcanopy"] = ifelse((grepl("(head|neck).{1,5}(on|str(ike|uck)|hit|against).{1,5}(canopy)", ps.data[,"narrative"]) |
-                                    grepl("(bump|str(ike|uck)|hit).{1,5}(head|neck).{1,5}(canopy)", ps.data[,"narrative"])) &
-                                   !grepl("drill( )*head.{1,10}canopy", ps.data[,"narrative"]) &
-                                   !grepl("over( )*head.{1,10}canopy", ps.data[,"narrative"]) &
-                                   !grepl("head(ing|er|ed).{1,10}canopy", ps.data[,"narrative"]), 1, 0) 
-# Going over a bump and operator hitting head 
-ps.data[, "hole"] = ifelse(grepl("(hit|str(ike|uck)|r(a|u)n( )*over|(went|go)( )*over).{1,10}(rock|hole|(h|b)ump(s| |$|\\.|,)|dip|depression|uneven|off( |-)*set|((low|bad|rough)( |-)*(spot|patch|place)))", 
-                                 ps.data[,"narrative"]), 1, 0)
-ps.data[, "unevenbottom"] = ifelse(grepl("(hole|bump(s| |$|\\.|,)|dip|depression|uneven|off( |-)*set|((low|bad|rough)( |-)*(spot|place|patch)))", 
-                                         ps.data[,"narrative"]) & 
-                                     !grepl("(bolt|drill|steel|cable|test|pin).{1,15}hole", ps.data[,"narrative"]), 1, 0)
+# being jostled against the seat
+ps.data$bodyseat = ifelse(grepl("(back|head|neck|shoulder|elbo).{1,10}seat", ps.data$narrative) &
+                            !grepl("backward.{1,10}seat", ps.data$narrative) &
+                            !grepl("(bolt|over|drill)( )*head.{1,10}seat", ps.data$narrative), 1, 0) 
 
-# GENERATE KEY WORDS TO IDENTIFY ROOFBOLTING ACCIDENTS AND THEIR FALSE POSITIVES
+# hitting head against canopy
+ps.data$headcanopy = ifelse((grepl("(head|neck).{1,5}(on|str(ike|uck)|hit|against).{1,5}(canopy)", ps.data$narrative) |
+                               grepl("(bump|str(ike|uck)|hit).{1,5}(head|neck).{1,5}(canopy)", ps.data$narrative)) &
+                              !grepl("drill( )*head.{1,10}canopy", ps.data$narrative) &
+                              !grepl("over( )*head.{1,10}canopy", ps.data$narrative) &
+                              !grepl("head(ing|er|ed).{1,10}canopy", ps.data$narrative), 1, 0) 
+
+# going over a bump and operator hitting head 
+ps.data$hole = ifelse(grepl("(hit|str(ike|uck)|r(a|u)n( )*over|(went|go)( )*over).{1,10}(rock|hole|(h|b)ump(s| |$|\\.|,)|dip|depression|uneven|off( |-)*set|((low|bad|rough)( |-)*(spot|patch|place)))", ps.data$narrative), 1, 0)
+
+ps.data$unevenbottom = ifelse(grepl("(hole|bump(s| |$|\\.|,)|dip|depression|uneven|off( |-)*set|((low|bad|rough)( |-)*(spot|place|patch)))", ps.data$narrative) & 
+                                !grepl("(bolt|drill|steel|cable|test|pin).{1,15}hole", ps.data$narrative), 1, 0)
 
 # roof bolting/drilling steel injuries
-ps.data[, "drillsteel"] = ifelse(grepl("drill.{1,5}steel", ps.data[,"narrative"]) & 
-                                   grepl("(between|btwn).{1,17}steel.{1,25}(drill|head|roof|guide|canopy|ring)", ps.data[,"narrative"]), 1, 0)
-# drill steel breaking/bending during roofbolting and caught an injury is not considered PS
-ps.data[, "brokensteel"] = ifelse(grepl("drill.{1,5}steel", ps.data[,"narrative"]) & 
-                                    (grepl("(drill|roof).{1,5}(steel|bolt).{1,15}(burst|ben(t|d)|br(eak|oke)|loose|drop(ped|ping)*|c(a|o)*me( )*( )*out|f(a|e)ll|stuck|clog)", ps.data[,"narrative"]) |
-                                       grepl("wrench.{1,5}(slip|c(a|o)me).{1,5}off.{1,15}(bolt|drill head)", ps.data[,"narrative"]) |  
-                                       grepl("wrench.{1,15}broke", ps.data[,"narrative"])), 1, 0)
-ps.data[, "roofbolt"] = ifelse(grepl("(roof|( |^)rib).{1,10}bolt", ps.data[,"narrative"]) | 
-                                 grepl("(roof|rib).{1,25}bolting", ps.data[,"narrative"]) |
-                                 grepl("roof.{1,35}bolting", ps.data[,"narrative"]) |
-                                 grepl("bolt.{1,10}instal", ps.data[,"narrative"]) |
-                                 grepl("instal.{1,20}bolt", ps.data[,"narrative"]), 1, 0)
-ps.data[, "bolting"] = ifelse(grepl("bolting", ps.data[,"narrative"]) |
-                                grepl("put(t)*(ing)*( )*bolt.{1,10}top", ps.data[,"narrative"]), 1, 0)
-# gloves getting caught during roof bolting counts as "entrapment" and should not be marked as PS
-ps.data[, "entrapment"] = ifelse((grepl("drill.{1,5}steel", ps.data[,"narrative"]) | 
-                                    ps.data$roofbolt == 1 |
-                                    ps.data$bolting == 1 ) & 
-                                   (grepl("(caught|catching|snagg(ed|ing)|grab).{1,10}(glove|shirt|sleeve)", ps.data[,"narrative"]) | 
-                                      grepl("(glove|shi(r)*t|sle(e)*ve).{1,10}(entangl|cau( )*ght|catching|snagg(ed|ing))", ps.data[,"narrative"])), 1, 0)
-ps.data[ps.data$glove == 1 & ps.data$entrapment == 0, c("narrative","drillsteel", "roofbolt")]
+ps.data$drillsteel = ifelse(grepl("drill.{1,5}steel", ps.data$narrative) & 
+                              grepl("(between|btwn).{1,17}steel.{1,25}(drill|head|roof|guide|canopy|ring)", ps.data$narrative), 1, 0)
+
+# drill steel breaking/bending during roofbolting
+ps.data$brokensteel = ifelse(grepl("drill.{1,5}steel", ps.data$narrative) & 
+                               (grepl("(drill|roof).{1,5}(steel|bolt).{1,15}(burst|ben(t|d)|br(eak|oke)|loose|drop(ped|ping)*|c(a|o)*me( )*( )*out|f(a|e)ll|stuck|clog)", ps.data$narrative) |
+                                  grepl("wrench.{1,5}(slip|c(a|o)me).{1,5}off.{1,15}(bolt|drill head)", ps.data$narrative) |  
+                                  grepl("wrench.{1,15}broke", ps.data$narrative)), 1, 0)
+
+ps.data$roofbolt = ifelse(grepl("(roof|( |^)rib).{1,10}bolt", ps.data$narrative) | 
+                            grepl("(roof|rib).{1,25}bolting", ps.data$narrative) |
+                            grepl("roof.{1,35}bolting", ps.data$narrative) |
+                            grepl("bolt.{1,10}instal", ps.data$narrative) |
+                            grepl("instal.{1,20}bolt", ps.data$narrative), 1, 0)
+
+ps.data$bolting = ifelse(grepl("bolting", ps.data$narrative) |
+                           grepl("put(t)*(ing)*( )*bolt.{1,10}top", ps.data$narrative), 1, 0)
+
+# gloves getting caught during roof bolting
+ps.data$entrapment = ifelse((grepl("drill.{1,5}steel", ps.data$narrative) | 
+                               ps.data$roofbolt == 1 |
+                               ps.data$bolting == 1 ) & 
+                              (grepl("(caught|catching|snagg(ed|ing)|grab).{1,10}(glove|shirt|sleeve)", ps.data$narrative) | 
+                                 grepl("(glove|shi(r)*t|sle(e)*ve).{1,10}(entangl|cau( )*ght|catching|snagg(ed|ing))", ps.data$narrative)), 1, 0)
 
 ################################################################################
 
