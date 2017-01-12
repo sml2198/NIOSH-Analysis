@@ -147,27 +147,27 @@ mine.quarters$safetycommittee = ifelse(mine.quarters$safetycommittee  == "Y", 1,
   # 63143 rows; 4 columns; unique on operatorid-operatorstartdt
 history = readRDS(history.in.file.name)
 
-
-mines = mine.quarters
-
 # remove duplicates and order history
   # 55776 rows; 4 columns; unique on operatorid-operatorstartdt
 history = history[order(history$mineid),]
 history$operatorid = as.character(history$operatorid)
 history = history[!duplicated(history), ]
 
-
+# format mines
+mines = mine.quarters
 mines$operatorid = NA
+mines$quarter = as.character(mines$quarter)
+mines$quarter = as.yearqtr(mines$quarter)
+mines$mineid = as.character(mines$mineid)
+mines$mineid = str_pad(mines$mineid, 7, pad = "0")
 
+# fill in operator id for all mine-quarters based on operator start/end dates from history
 fill_in_mines = function(t_mines) {
-  
   mine = unique(t_mines$mineid)[1]
-  
   t_history = history[history$mineid == mine, ]
   if (nrow(t_history) != 0) {
     t_history_o = t_history[, c("operatorid", "operatorstartdt", "operatorenddt")]
     t_history_o = t_history_o[!duplicated(t_history_o), ]
-    
     for (i in 1:nrow(t_mines)) {
       for (j in 1:nrow(t_history_o)) {
         t_mines$operatorid = 
@@ -179,9 +179,6 @@ fill_in_mines = function(t_mines) {
   }
   return(t_mines)
 }
-
-mines$mineid = as.character(mines$mineid)
-mines$mineid = str_pad(mines$mineid, 7, pad = "0")
 mines_new = ddply(mines, "mineid", fill_in_mines)
 
 # get missing mine-quarters trusting given bounds
@@ -191,9 +188,9 @@ fill_in_ts = function(mine_df) {
   full_ts$mineid[is.na(full_ts$mineid)] = unique(full_ts$mineid)[1]
   return(full_ts)
 }
-
 mines_new_full = ddply(mines_new, "mineid", fill_in_ts)
 
+# calculate operator time for each mine-quarter
 mines_new_full$operator_time = NA
 make_op_time = function(mine_data) {
   print(mine_data$mineid[1])
@@ -230,7 +227,6 @@ make_op_time = function(mine_data) {
   }
   return(mine_data)
 }
-
 mines_with_ops = ddply(mines_new_full, "mineid", make_op_time)
 mines_out = mines_with_ops[mines_with_ops$quarter >= 2000, ]
 

@@ -4,15 +4,19 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 2 - Classify Pinning and Striking INjuries
-  # This file loads the PS training set sent to the Morantz team by Miguel Reyes on January 29th, 2016 for use 
-  # in constructing a pinning and striking (PS) injury classification algorithm. In this file, we clean and 
-  # format the variables in the training set, conduct narrative analysis on the injury description fields, 
-  # generate key word flags, and group existing categorical variables by how likely they are to correctly
-  # classify injuries as either PS or not-PS. This file contains the code that was used to test the relative
-  # classification power of various machine learning algorithms including CaRT, Random Forest decision trees, 
-  # and Apadtive Boosting. If this file is run "as-is", it will employ an Adaptive Boosting algorithm to 
-  # classify all injuries in the "Accidents Injuries Data Set" as PS/not-PS.
+# 2 - Classify Pinning and Striking Accidents
+  # Train/Test:
+    # Inputs master PS dataset
+    # Conducts narrative analysis on description of accidents, generates flags for key words and phrases, 
+      # and groups existing categorical variables based on utility in classifying accidents
+    # Trains and tests various classification algorithms to classify accidents (PS/non-PS)
+      # Results printed to screen
+  # Classify:
+    # Inputs master PS dataset and accidents data from the MSHA open data portal, (cleaned in 1_clean_accidents)
+    # Conducts narrative analysis on description of accidents, generates flags for key words and phrases, 
+      # and groups existing categorical variables based on utility in classifying accidents
+    # Trains classification algorithm using best method determined in train/test phase (Adaptive Boosting)
+    # Classifies all accidents from MSHA open data portal as PS/non-PS
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
@@ -20,28 +24,28 @@
 
 ################################################################################
 
-library(tree)
-library(randomForest)
-library(ggplot2)
-library(reshape2)
-library(pROC)
-library(ROSE)
-library(rpart)
-library(rpart.plot)
-library(adabag)
-library(DMwR)
-library(caret)
-library(dummies)
-library(stringr)
+# library(tree)
+#library(randomForest)
+#library(ggplot2)
+#library(reshape2)
+#library(pROC)
+#library(ROSE)
+#library(rpart)
+#library(rpart.plot)
+#library(adabag)
+#library(DMwR)
+#library(caret)
+#library(dummies)
+#library(stringr)
 
 ################################################################################
 
 # SETTINGS
-  # file can be used to train and test various algorithms OR 
-  # to train the best algorithm and use it to classify all accidents (PS/non-PS)
+  # file can be used to train and test various algorithms OR to train the best 
+  # algorithm and use it to classify all accidents (PS/non-PS)
 
-data.type = "training data" # trains and test various algorithms
-data.type = "real accidents data" # trains superior algorithm and classifies all injuries and PS/non-PS
+purpose = "train.test" # trains and test various algorithms
+# purpose = "classify" # trains best algorithm and classifies accidents as PS/non-PS
 
 ################################################################################
 
@@ -56,43 +60,54 @@ cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL)
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # master PS training set
-    # coded by NIOSH representatives and sent to the Morantz team on 8/28/2015
+  # master PS dataset
+    # coded by NIOSH representatives and sent to the Morantz team on 1/29/2016
 training.set.file.name = paste0(originals.input.path, "/training-sets/Training_Set_Pinning_And_Striking_Accidents-January-29-2016.csv", collapse = NULL)
   # accidents data from the MSHA open data portal , cleaned in 1_clean_accidents
 accidents.data.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
   # accidents data, classified as PS/non-PS (R dataset)
-classified.accidents.file.name = paste0(coded.output.path, "/PS_accidents_with_predictions.rds", collapse = NULL)
+classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_PS.rds", collapse = NULL)
   # accidents data, classified as PS/non-PS (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/PS_accidents_with_predictions.csv", collapse = NULL)
+classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_PS.csv", collapse = NULL)
 
 # generate file paths
 dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
 
 ################################################################################
 
-# LOAD IN DATA
+# READ DATA
 
-# Load in training set
+# master PS dataset
+  # 1002 rows; 104 columns; unique on documentno 
 ps.data = read.csv(training.set.file.name)
 
-# Load in real accidents data (unclassified as PS or not-PS) for classification
-if (data.type == "real accidents data") {
+# read unclassified accidents data 
+  # X rows; X columns; unique on documentno 
+if (purpose == "classify") {
   accidents.data = readRDS(accidents.data.file.name)
 }
 
 ################################################################################
 
-# RENAME AND FORMAT VARIABLES
+# CLEAN VARIABLES
 
-# Drop anything missing mine ID (not a real observation)
-ps.data = ps.data[!is.na(ps.data$mineid),]
+# drop data without mineid 
+  # 1000 rows; 104 columns; unique on documentno
+ps.data = ps.data[!is.na(ps.data$mineid), ]
 
-# Make all string variables lowercase
+# rename variables
 names(ps.data)[names(ps.data) == 'narrativemodified'] = 'narrative'
-ps.data[, "narrative"] = tolower(ps.data[, "narrative"])
+
+# format variables
+ps.data$narrative = as.character(ps.data$narrative)
+ps.data$occupcode3digit = as.character(ps.data$occupcode3digit)
+ps.data$occupation = as.character(ps.data$occupation)
+ps.data$returntoworkdate = as.character(ps.data$returntoworkdate)
+
+# make variables lowercase
+ps.data$narrative = tolower(ps.data$narrative)
 ps.data$mineractivity = tolower(ps.data$mineractivity)
 ps.data$natureofinjury = tolower(ps.data$natureofinjury)
 ps.data$degreeofinjury = tolower(ps.data$degreeofinjury)
@@ -105,24 +120,15 @@ ps.data$typeofequipment = tolower(ps.data$typeofequipment)
 ps.data$occupation = tolower(ps.data$occupation)
 ps.data$mineractivity = tolower(ps.data$mineractivity)
 
-# Format fields as characters
-ps.data[, "narrative"] = as.character(ps.data[, "narrative"])
-ps.data[, "occupcode3digit"] = as.character(ps.data[, "occupcode3digit"])
-ps.data[, "occupation"] = as.character(ps.data[, "occupation"])
-ps.data[, "returntoworkdate"] = as.character(ps.data[, "returntoworkdate"])
-
-# This is used for identifying training from testing observations, or training from real observations 
-ps.data[, "type"] = "training" 
-
-# Format PS indicator as a binary factor
-ps.data[, "X"] = factor(ifelse(ps.data[, "X"] == 1, "YES", "NO"))
+# format PS indicator
+ps.data$X = factor(ifelse(ps.data$X == 1, "YES", "NO"))
 names(ps.data)[names(ps.data) == "X"] = "PS"
 
 ################################################################################
 
 # DO THIS CODE IF YOU'RE RUNNING ON THE REAL ACCIDENTS DATA (NOT THE TRAINING SET)
 
-if (data.type == "real accidents data") {
+if (prupose == "classify") {
   
   # make training set and accidents data compatible to append
   drops = c("closed_doc_no",
@@ -131,6 +137,8 @@ if (data.type == "real accidents data") {
             "investigationbegindate")
   accidents.data = accidents.data[, !(names(accidents.data) %in% drops)] 
   accidents.data[, "PS"] = ""
+  # This is used for identifying training from testing observations, or training from real observations 
+  ps.data$type[, "type"] = "training" 
   accidents.data[, "type"] = "unclassified" 
   
   # drop any remaining variables not common to the real accidents data and mr.data (training set)
@@ -158,11 +166,13 @@ if (data.type == "real accidents data") {
 
 ################################################################################
 
-# CLEAN UP THE NARRATIVE FIELDS 
+# CLEAN NARRATIVE FIELDS 
 
 # 23 narrative fields are polluted with other columns - split and replace these  
-ps.data[, "messy"] = ifelse(grepl("\\|[0-9]*[0-9]*[0-9]*\\|", ps.data[,"narrative"]), 1, 0)
-narrative_split = strsplit(ps.data[ps.data$messy == 1, "narrative"], "|", fixed = T)
+ps.data$messy = ifelse(grepl("\\|[0-9]*[0-9]*[0-9]*\\|", ps.data[,"narrative"]), 1, 0)
+
+narrative.split = strsplit(ps.data[ps.data$messy == 1, "narrative"], "|", fixed = T)
+
 messy_rows = row.names(ps.data[ps.data$messy == 1, ])
 for (i in 1:length(messy_rows)) {
   ps.data[messy_rows[i], "narrative"] = unlist(narrative_split[i])[1]
