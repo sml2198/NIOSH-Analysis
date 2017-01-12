@@ -45,6 +45,11 @@ dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file struc
   # 1803837 rows; 13 columns; unique on mine-year-quarter
 employment = read.table(employment.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
 
+# remove observations from environments not of interest
+  # 42019 rows; 13 columns; unique on mine-year-quarter
+employment = employment[which(employment$COAL_METAL_IND == "C"), ]
+employment = employment[which(employment$SUBUNIT == "UNDERGROUND"), ]
+
 # drop unnecessary variables
 employment$COAL_METAL_IND = 
   employment$STATE = 
@@ -59,8 +64,8 @@ names(employment)[names(employment) == "CAL_YR"] = "year"
 names(employment)[names(employment) == "CAL_QTR"] = "quarter"
 names(employment)[names(employment) == "MINE_ID"] = "mineid"
 names(employment)[names(employment) == "HOURS_WORKED"] = "hours_qtr"
-names(employment)[names(employment) == "AVG_EMPLOYEE_CNT"] = "avg_employee_cnt_qtr"
-names(employment)[names(employment) == "COAL_PRODUCTION"] = "coal_prod_qtr"
+names(employment)[names(employment) == "AVG_EMPLOYEE_CNT"] = "employment_qtr"
+names(employment)[names(employment) == "COAL_PRODUCTION"] = "prod_qtr"
 
 # format mineid
 employment$mineid = str_pad(employment$mineid, 7, pad = "0")
@@ -70,7 +75,7 @@ employment$mineid = str_pad(employment$mineid, 7, pad = "0")
 # OUPUT CLEAN QUARTERLY EMPLOYMENT/PRODUCTION DATA
 
 # output clean employment data
-  # 1803837 rows; 6 variables; unique on mine-year-quarter
+  # 42019 rows; 6 variables; unique on mine-year-quarter
 saveRDS(employment, file = employment.out.file.name)
 
 ################################################################################
