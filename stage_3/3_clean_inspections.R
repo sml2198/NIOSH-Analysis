@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-#  - Clean Inspections
+# 3 - Clean Inspections
   # Cleans inspections
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
