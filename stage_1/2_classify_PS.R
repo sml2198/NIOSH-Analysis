@@ -24,7 +24,7 @@
 
 ################################################################################
 
-# library(tree)
+#library(tree)
 #library(randomForest)
 #library(ggplot2)
 #library(reshape2)
@@ -91,7 +91,7 @@ if (purpose == "classify") {
 
 ################################################################################
 
-# CLEAN VARIABLES
+# CLEAN MASTER DATASET
 
 # drop data without mineid 
   # 1000 rows; 104 columns; unique on documentno
@@ -124,11 +124,66 @@ ps.data$mineractivity = tolower(ps.data$mineractivity)
 ps.data$X = factor(ifelse(ps.data$X == 1, "YES", "NO"))
 names(ps.data)[names(ps.data) == "X"] = "PS"
 
+# some narrative fields are polluted with other columns; split and replace these  
+ps.data$messy = ifelse(grepl("\\|[0-9]*[0-9]*[0-9]*\\|", ps.data$narrative), 1, 0)
+narrative.split = strsplit(ps.data[ps.data$messy == 1, "narrative"], "|", fixed = T) # 23
+messy.rows = row.names(ps.data[ps.data$messy == 1, ])
+for (i in 1:length(messy.rows)) {
+  ps.data[messy.rows[i], "narrative"] = unlist(narrative.split[i])[1]
+  ps.data[messy.rows[i], "occupcode3digit"] = unlist(narrative.split[i])[2]
+  ps.data[messy.rows[i], "occupation"] = unlist(narrative.split[i])[3]
+  ps.data[messy.rows[i], "returntoworkdate"] = unlist(narrative.split[i])[4]
+}
+ps.data$messy = NULL
+
 ################################################################################
 
-# DO THIS CODE IF YOU'RE RUNNING ON THE REAL ACCIDENTS DATA (NOT THE TRAINING SET)
+# RECODE MISCLASSIFIED ACCIDENTS
 
-if (prupose == "classify") {
+# recoded in light of Miguel's 5/27/2016 response to our questions
+ps.data[ps.data$documentno == "219891280164", "PS"] = "YES"
+ps.data[ps.data$documentno == "219852170075", "PS"] = "YES"
+ps.data[ps.data$documentno == "219901620109", "PS"] = "YES"
+ps.data[ps.data$documentno == "220011070020", "PS"] = "NO"
+ps.data[ps.data$documentno == "219892570061", "PS"] = "NO"
+ps.data[ps.data$documentno == "219893100251", "PS"] = "NO"
+ps.data[ps.data$documentno == "219872990054", "PS"] = "NO"
+ps.data[ps.data$documentno == "219983280016", "PS"] = "NO"
+ps.data[ps.data$documentno == "220082800043", "PS"] = "NO"
+ps.data[ps.data$documentno == "219830320021", "PS"] = "NO"
+ps.data[ps.data$documentno == "219912970040", "PS"] = "NO"
+ps.data[ps.data$documentno == "219942900032", "PS"] = "NO"
+ps.data[ps.data$documentno == "219982380025", "PS"] = "NO"
+
+# recoded in light of Miguel's 6/7/2016 response to our questions
+ps.data[ps.data$documentno == "219912970040", "PS"] = "YES"
+ps.data[ps.data$documentno == "219871460076", "PS"] = "NO"
+ps.data[ps.data$documentno == "219861280065", "PS"] = "NO"
+ps.data[ps.data$documentno == "220000310115", "PS"] = "NO"
+ps.data[ps.data$documentno == "220001180052", "PS"] = "NO"
+ps.data[ps.data$documentno == "219831430047", "PS"] = "NO"
+ps.data[ps.data$documentno == "219943180016", "PS"] = "NO"
+ps.data[ps.data$documentno == "220112090013", "PS"] = "NO"
+
+# recoded on 9/13/2016 in light of Miguel's lack of response to our questions
+ps.data[ps.data$documentno == "220090630033", "PS"] = "YES"
+ps.data[ps.data$documentno == "220050800006", "PS"] = "YES"
+ps.data[ps.data$documentno == "219892210062", "PS"] = "YES"
+ps.data[ps.data$documentno == "219950870035", "PS"] = "YES"
+ps.data[ps.data$documentno == "219972890025", "PS"] = "YES"
+ps.data[ps.data$documentno == "219930390025", "PS"] = "NO"
+ps.data[ps.data$documentno == "219992320012", "PS"] = "NO"
+ps.data[ps.data$documentno == "219853190080", "PS"] = "NO"
+ps.data[ps.data$documentno == "219973490121", "PS"] = "NO"
+ps.data[ps.data$documentno == "219852050003", "PS"] = "NO"
+ps.data[ps.data$documentno == "219891140147", "PS"] = "NO"
+ps.data[ps.data$documentno == "220020100051", "PS"] = "NO"
+
+################################################################################
+
+# COMBINE MASTER DATASET AND ACCIDENTS DATA
+
+if (purpose == "classify") {
   
   # make training set and accidents data compatible to append
   drops = c("closed_doc_no",
@@ -137,6 +192,7 @@ if (prupose == "classify") {
             "investigationbegindate")
   accidents.data = accidents.data[, !(names(accidents.data) %in% drops)] 
   accidents.data[, "PS"] = ""
+  
   # This is used for identifying training from testing observations, or training from real observations 
   ps.data$type[, "type"] = "training" 
   accidents.data[, "type"] = "unclassified" 
@@ -166,150 +222,102 @@ if (prupose == "classify") {
 
 ################################################################################
 
-# CLEAN NARRATIVE FIELDS 
+# CLEAN MASTER DATASET (IF PURPOSE == TRAIN.TEST) OR COMBINED DATASET (IF PURPOSE == CLASSIFY)
 
-# 23 narrative fields are polluted with other columns - split and replace these  
-ps.data$messy = ifelse(grepl("\\|[0-9]*[0-9]*[0-9]*\\|", ps.data[,"narrative"]), 1, 0)
-
-narrative.split = strsplit(ps.data[ps.data$messy == 1, "narrative"], "|", fixed = T)
-
-messy_rows = row.names(ps.data[ps.data$messy == 1, ])
-for (i in 1:length(messy_rows)) {
-  ps.data[messy_rows[i], "narrative"] = unlist(narrative_split[i])[1]
-  ps.data[messy_rows[i], "occupcode3digit"] = unlist(narrative_split[i])[2]
-  ps.data[messy_rows[i], "occupation"] = unlist(narrative_split[i])[3]
-  ps.data[messy_rows[i], "returntoworkdate"] = unlist(narrative_split[i])[4]
-}
-ps.data = ps.data[, c(-match("messy", names(ps.data)))]
-
-# Deal with messy number typos in the narrative fields
-ps.data[, "numbertypo"] = ifelse(grepl("[a-z][0-9][a-z]", ps.data[,"narrative"]), 1, 0)
+# clean number typos in the narratives
+ps.data$numbertypo = ifelse(grepl("[a-z][0-9][a-z]", ps.data$narrative), 1, 0)
 for (i in 0:9) {
-  ps.data[ps.data$numbertypo == 1,]$narrative = gsub(i, "", ps.data[ps.data$numbertypo == 1,]$narrative)
+  ps.data[ps.data$numbertypo == 1, "narrative"] = gsub(i, "", ps.data[ps.data$numbertypo == 1, "narrative"])
 }
+ps.data$numbertypo = NULL
 
-# Clean up common typos that may affect our keyword searches
+# clean common typos that may affect keyword searches
 ps.data$narrative = gsub("ag(a)*( )*(in)*st", "against", ps.data$narrative)
 
-################################################################################
+# standardize "not-found" values within variables (e.g., "Unknown" or "Other" are changed to "NO VALUE FOUND")
+ps.data$uglocation = ifelse(ps.data$uglocation == "NOT MARKED", "NO VALUE FOUND", ps.data$uglocation)
+ps.data$accidenttype = ifelse(ps.data$accidenttype == "not elsewhereclassified", "NO VALUE FOUND", ps.data$accidenttype)
+ps.data$immediatenotificationclass = ifelse(ps.data$immediatenotificationclass == "NOT MARKED", "NO VALUE FOUND", ps.data$immediatenotificationclass)
+ps.data$natureofinjury = ifelse(ps.data$natureofinjury == "unclassified,not determed", "NO VALUE FOUND", ps.data$natureofinjury)
+ps.data$equipmanufacturer = ifelse(ps.data$equipmanufacturer == "Not Reported", "NO VALUE FOUND", ps.data$equipmanufacturer)
 
-# CLEAN UP OTHER VARIABLES & RECODE MISCLASSIFIED OBSERVATIONS FROM THE TRAINING SET
-
-# Recoded in light of Miguel's 5/27/16 response to our questions
-ps.data$PS[ps.data$documentno=="219891280164"] = "YES"
-ps.data$PS[ps.data$documentno=="219852170075"] = "YES"
-ps.data$PS[ps.data$documentno=="219901620109"] = "YES"
-ps.data$PS[ps.data$documentno=="220011070020"] = "NO"
-ps.data$PS[ps.data$documentno=="219892570061"] = "NO"
-ps.data$PS[ps.data$documentno=="219893100251"] = "NO"
-ps.data$PS[ps.data$documentno=="219872990054"] = "NO"
-ps.data$PS[ps.data$documentno=="219983280016"] = "NO"
-ps.data$PS[ps.data$documentno=="220082800043"] = "NO"
-ps.data$PS[ps.data$documentno=="219830320021"] = "NO"
-ps.data$PS[ps.data$documentno=="219912970040"] = "NO"
-ps.data$PS[ps.data$documentno=="219942900032"] = "NO"
-ps.data$PS[ps.data$documentno=="219982380025"] = "NO"
-
-# Recoded in light of Miguel's 6/7/16 response to our questions
-ps.data$PS[ps.data$documentno=="219912970040"] = "YES"
-ps.data$PS[ps.data$documentno=="219871460076"] = "NO"
-ps.data$PS[ps.data$documentno=="219861280065"] = "NO"
-ps.data$PS[ps.data$documentno=="220000310115"] = "NO"
-ps.data$PS[ps.data$documentno=="220001180052"] = "NO"
-ps.data$PS[ps.data$documentno=="219831430047"] = "NO"
-ps.data$PS[ps.data$documentno=="219943180016"] = "NO"
-ps.data$PS[ps.data$documentno=="220112090013"] = "NO"
-
-# Recoded on 9/13/2016 in light of Miguel's lack of response to our questions
-ps.data$PS[ps.data$documentno=="220090630033"] = "YES"
-ps.data$PS[ps.data$documentno=="220050800006"] = "YES"
-ps.data$PS[ps.data$documentno=="219892210062"] = "YES"
-ps.data$PS[ps.data$documentno=="219950870035"] = "YES"
-ps.data$PS[ps.data$documentno=="219972890025"] = "YES"
-ps.data$PS[ps.data$documentno=="219930390025"] = "NO"
-ps.data$PS[ps.data$documentno=="219992320012"] = "NO"
-ps.data$PS[ps.data$documentno=="219853190080"] = "NO"
-ps.data$PS[ps.data$documentno=="219973490121"] = "NO"
-ps.data$PS[ps.data$documentno=="219852050003"] = "NO"
-ps.data$PS[ps.data$documentno=="219891140147"] = "NO"
-ps.data$PS[ps.data$documentno=="220020100051"] = "NO"
-
-# Destring these numeric variables
-ps.data[,grep("numberofemployees", names(ps.data))] = gsub(pattern = ",",replacement =  "", ps.data[,grep("numberofemployees", names(ps.data))])
-ps.data[,grep("numberofemployees", names(ps.data))] = as.numeric(ps.data[,grep("numberofemployees", names(ps.data))])
-ps.data[,grep("methaneliberation", names(ps.data))] = gsub(pattern = ",",replacement =  "", ps.data[,grep("methaneliberation", names(ps.data))])
-ps.data[,grep("methaneliberation", names(ps.data))] = as.numeric(ps.data[,grep("methaneliberation", names(ps.data))])
-ps.data[,grep("averagemineheight", names(ps.data))] = gsub(pattern = ",",replacement =  "", ps.data[,grep("averagemineheight", names(ps.data))])
-ps.data[,grep("averagemineheight", names(ps.data))] = as.numeric(ps.data[,grep("averagemineheight", names(ps.data))])
-
-# Merge redundant "not-found" values within variables. Note: Values like "Unknown" or "Other" are not funneled into "No Value Found"
-ps.data[, "uglocation"] = ifelse(ps.data[, "uglocation"] == "NOT MARKED", "NO VALUE FOUND", ps.data[, "uglocation"])
-ps.data[, "accidenttype"] = ifelse(ps.data[, "accidenttype"] == "not elsewhereclassified", "no value found", ps.data[, "accidenttype"])
-ps.data[, "immediatenotificationclass"] = ifelse(ps.data[, "immediatenotificationclass"] == "NOT MARKED", "NO VALUE FOUND", 
-                                                 ps.data[, "immediatenotificationclass"])
-ps.data[, "natureofinjury"] = ifelse(ps.data[, "natureofinjury"] == "unclassified,not determed", "no value found", ps.data[, "natureofinjury"])
-ps.data[, "equipmanufacturer"] = ifelse(ps.data[, "equipmanufacturer"] == "Not Reported", "NO VALUE FOUND", ps.data[, "equipmanufacturer"])
-
-# Convert date variables. We drop date variables now, but eventually will make use of them.
-indices_with_date = grep("date", names(ps.data))
-for (i in indices_with_date) {
-  ps.data[,i] = as.Date(ps.data[,i], "%m/%d/%Y")
+# convert date variables
+indices.with.date = grep("date", names(ps.data))
+for (i in indices.with.date) {
+  ps.data[, i] = as.Date(ps.data[, i], "%m/%d/%Y")
 }
 
-# Convert accident type codes to factor to make this code usable with accidents data
+# format accident type codes
 ps.data$accidenttypecode = as.factor(ps.data$accidenttypecode)
 
 ################################################################################
 
-# GENERATE LIKELY POSITIVELY PREDICTIVE KEY WORDS
+# GENERATE POSITIVELY PREDICTIVE KEY WORDS
 
-# Flag "pin" but not "pinion," "pinner," "pinning top," or "pinned himself"
-ps.data[, "pin"] = ifelse(grepl("(^| )pin(n*)(e|i)[a-z]+", ps.data[,"narrative"]) &
-                            !grepl("(^| )pinion", ps.data[,"narrative"]) &
-                            !grepl("(^| )pinner", ps.data[,"narrative"]) &
-                            !grepl("pinn(ing|ed)( ).{1,5}top", ps.data[,"narrative"]) &
-                            !grepl("pinn(ing|ed).{1,5}(him|his|her)self", ps.data[,"narrative"]), 1, 0)
-ps.data[, "strike"] = ifelse(grepl("str(i|u)(.*)k[a-z]*", ps.data[,"narrative"]) &
-                               !grepl("str(i|u)(.*)k[a-z]*.{1,6}head", ps.data[,"narrative"]) &
-                               !grepl("head.{1,6}str(i|u)(.*)k[a-z]*", ps.data[,"narrative"]), 1, 0)
-ps.data[, "trap"] = ifelse(grepl("( )trap[a-z]*", ps.data[,"narrative"]), 1, 0)
-ps.data[, "collided"] = ifelse(grepl("col(l)*i(de|ded|sion|ssion)", ps.data[,"narrative"]), 1, 0)
+ps.data$pin = ifelse(grepl("(^| )pin(n*)(e|i)[a-z]+", ps.data$narrative) &
+                       !grepl("(^| )pinion", ps.data$narrative) &
+                       !grepl("(^| )pinner", ps.data$narrative) &
+                       !grepl("pinn(ing|ed)( ).{1,5}top", ps.data$narrative) &
+                       !grepl("pinn(ing|ed).{1,5}(him|his|her)self", ps.data$narrative), 1, 0)
 
-# Generate maybe likely positively predictive key words
-ps.data[, "ranover"] = ifelse(grepl("( |^)r(a|u)n( )*(over|into)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "rolled"] = ifelse(grepl("rolled( )*(over|into|onto|on|down)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "between"] = ifelse(grepl("between", ps.data[,"narrative"]) | 
-                                grepl("btwn", ps.data[,"narrative"]), 1, 0)
-ps.data[, "wheel"] = ifelse(grepl("wheel", ps.data[,"narrative"]) & 
-                              !grepl("wheeler", ps.data[,"narrative"]), 1, 0)
-ps.data[, "by"] = ifelse(grepl("by", ps.data[,"narrative"]), 1, 0)
+ps.data$strike = ifelse(grepl("str(i|u)(.*)k[a-z]*", ps.data$narrative) &
+                          !grepl("str(i|u)(.*)k[a-z]*.{1,6}head", ps.data$narrative) &
+                          !grepl("head.{1,6}str(i|u)(.*)k[a-z]*", ps.data$narrative), 1, 0)
 
-# Generate likely negatively predictive key words
+ps.data$trap = ifelse(grepl("( )trap[a-z]*", ps.data$narrative), 1, 0)
 
-# jarred, jolted, jostled
-ps.data[, "jarring"] = ifelse(grepl("jar(r)*(ed|ing)", ps.data[,"narrative"]) |
-                                grepl("jo(lt|stl)(ed|ing)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "bounced"] = ifelse(grepl("boun(c)*( )*(e|ing)", ps.data[,"narrative"]), 1, 0)
-# avoid sprocket, rockduster, etc
-ps.data[, "rock"] = ifelse((grepl("rock( |$|\\.|s|,)", ps.data[,"narrative"]) & 
-                              !grepl("rock( )*dust", ps.data[,"narrative"])), 1, 0)
-ps.data[, "digit"] = ifelse(grepl("(finger(s)*|pinky|hand(s)*|thumb|hand( |\\.|,|$))", ps.data[,"narrative"]), 1, 0)
-ps.data[, "derail"] = ifelse((grepl("(left|off|jumped).{1,15}track", ps.data[,"narrative"]) & 
-                                !grepl("(left|off|jumped).{1,15}track.{1,3}switch", ps.data[,"narrative"])) | 
-                               grepl("derai", ps.data[,"narrative"]), 1, 0)
-ps.data[, "steering"] = ifelse(grepl("ste(e|a)ring( )*wheel.{1,15}sp(u|i)n", ps.data[,"narrative"]), 1, 0)
+ps.data$collided = ifelse(grepl("col(l)*i(de|ded|sion|ssion)", ps.data$narrative), 1, 0)
 
-# Generate less good negative key words
-ps.data[, "wrench"] = ifelse(grepl("wrench", ps.data[,"narrative"]), 1, 0)
-ps.data[, "controls"] = ifelse(grepl("(lever|stick)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "resin"] = ifelse(grepl("resin", ps.data[,"narrative"]), 1, 0)
-ps.data[, "atrs"] = ifelse(grepl("a(\\.)*t(\\.)*r(\\.)*s(\\.)*", ps.data[,"narrative"]), 1, 0)
-ps.data[, "flew"] = ifelse(grepl("fl(ew|y|ing)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "loose"] = ifelse(grepl("loose", ps.data[,"narrative"]), 1, 0)
-ps.data[, "broke"] = ifelse(grepl("br(oke|eak)", ps.data[,"narrative"]), 1, 0)
-ps.data[, "bent"] = ifelse(grepl("bent", ps.data[,"narrative"]) & 
-                             !grepl("bent( )*over", ps.data[,"narrative"]), 1, 0)
-ps.data[, "canopy"] = ifelse(grepl("canopy", ps.data[,"narrative"]), 1, 0)
+ps.data$ranover = ifelse(grepl("( |^)r(a|u)n( )*(over|into)", ps.data$narrative), 1, 0)
+
+ps.data$rolled = ifelse(grepl("rolled( )*(over|into|onto|on|down)", ps.data$narrative), 1, 0)
+
+ps.data$between = ifelse(grepl("between", ps.data$narrative) | 
+                           grepl("btwn", ps.data$narrative), 1, 0)
+
+ps.data$wheel = ifelse(grepl("wheel", ps.data$narrative) & 
+                         !grepl("wheeler", ps.data$narrative), 1, 0)
+
+ps.data$by = ifelse(grepl("by", ps.data$narrative), 1, 0)
+
+################################################################################
+
+# GENERATE NEGATIVELY PREDICTIVE KEY WORDS
+
+ps.data$jarring = ifelse(grepl("jar(r)*(ed|ing)", ps.data$narrative) |
+                           grepl("jo(lt|stl)(ed|ing)", ps.data$narrative), 1, 0)
+
+ps.data$bounced = ifelse(grepl("boun(c)*( )*(e|ing)", ps.data$narrative), 1, 0)
+
+ps.data$rock = ifelse(grepl("rock( |$|\\.|s|,)", ps.data$narrative) & 
+                        !grepl("rock( )*dust", ps.data$narrative), 1, 0)
+
+ps.data$digit = ifelse(grepl("(finger(s)*|pinky|hand(s)*|thumb|hand( |\\.|,|$))", ps.data$narrative), 1, 0)
+
+ps.data$derail = ifelse((grepl("(left|off|jumped).{1,15}track", ps.data$narrative) & 
+                           !grepl("(left|off|jumped).{1,15}track.{1,3}switch", ps.data$narrative)) | 
+                          grepl("derai", ps.data$narrative), 1, 0)
+
+ps.data$steering = ifelse(grepl("ste(e|a)ring( )*wheel.{1,15}sp(u|i)n", ps.data$narrative), 1, 0)
+
+ps.data$wrench = ifelse(grepl("wrench", ps.data$narrative), 1, 0)
+
+ps.data$controls = ifelse(grepl("(lever|stick)", ps.data$narrative), 1, 0)
+
+ps.data$resin = ifelse(grepl("resin", ps.data$narrative), 1, 0)
+
+ps.data$atrs = ifelse(grepl("a(\\.)*t(\\.)*r(\\.)*s(\\.)*", ps.data$narrative), 1, 0)
+
+ps.data$flew = ifelse(grepl("fl(ew|y|ing)", ps.data$narrative), 1, 0)
+
+ps.data$loose = ifelse(grepl("loose", ps.data$narrative), 1, 0)
+
+ps.data$broke = ifelse(grepl("br(oke|eak)", ps.data$narrative), 1, 0)
+
+ps.data$bent = ifelse(grepl("bent", ps.data$narrative) & 
+                        !grepl("bent( )*over", ps.data$narrative), 1, 0)
+
+ps.data$canopy = ifelse(grepl("canopy", ps.data$narrative), 1, 0)
 
 ################################################################################
 

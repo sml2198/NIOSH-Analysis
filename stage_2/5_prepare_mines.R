@@ -14,7 +14,7 @@
 ################################################################################
 
 library(plyr)
-library(zoo)
+library(stringr)
 
 ################################################################################
 
@@ -168,18 +168,22 @@ fill_in_mines = function(t_mines) {
   if (nrow(t_history) != 0) {
     t_history_o = t_history[, c("operatorid", "operatorstartdt", "operatorenddt")]
     t_history_o = t_history_o[!duplicated(t_history_o), ]
+    t_history_o = t_history_o[order(t_history_o$operatorstartdt), ]
     for (i in 1:nrow(t_mines)) {
       for (j in 1:nrow(t_history_o)) {
-        t_mines$operatorid = 
+        t_mines$operatorid[i] = 
           ifelse(t_mines$quarter[i] >= t_history_o$operatorstartdt[j] 
-                 & t_mines$quarter[i] < t_history_o$operatorenddt[j], 
-                 t_history_o$operatorid[j], NA)
+                 & t_mines$quarter[i] <= t_history_o$operatorenddt[j], 
+                 t_history_o$operatorid[j], t_mines$operatorid[i])
       }
     }
   }
   return(t_mines)
 }
+t_mines = mines[mines$mineid == mines$mineid[1], ]
+yo = fill_in_mines(t_mines)
 mines_new = ddply(mines, "mineid", fill_in_mines)
+
 
 # get missing mine-quarters trusting given bounds
 fill_in_ts = function(mine_df) {
