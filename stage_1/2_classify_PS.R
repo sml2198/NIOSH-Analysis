@@ -15,7 +15,7 @@
   # classify all injuries in the "Accidents Injuries Data Set" as PS/not-PS.
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/4/17
+# Last edit 1/11/17
 
 ######################################################################################################
 
@@ -120,6 +120,7 @@ names(ps.data)[names(ps.data) == "X"] = "PS"
 
 if (data.type == "real accidents data") {
   
+  # make training set and accidents data compatible to append
   drops = c("closed_doc_no",
             "fiscalyear", 
             "fiscalquarter", 
@@ -128,23 +129,25 @@ if (data.type == "real accidents data") {
   accidents.data[, "PS"] = ""
   accidents.data[, "type"] = "unclassified" 
   
-  # Drop any remaining variables not common to the real accidents data and mr.data (training set)
+  # drop any remaining variables not common to the real accidents data and mr.data (training set)
   accident.names = names(accidents.data)
   ps.data = ps.data[, names(ps.data) %in% accident.names]
   
-  # Create lists of document numbers from each dataset 
+  # create lists of document numbers from each dataset 
   ps.docnos = ps.data$documentno
   ps.docnos = as.character(ps.docnos)
   accident.docnos = accidents.data$documentno
   
-  # Identify common document numbers
+  # identify common document numbers
   keep.docnos = setdiff(accident.docnos, ps.docnos) 
   
-  # Remove observations from accidents data present in the ps.data (training set)
+  # save a dataset of all accidents
+  all.accidents = accidents.data 
+  
+  # remove observations from accidents data present in the ps.data (training set)
   accidents.data = accidents.data[which(accidents.data$documentno %in% keep.docnos),]
   
-  # Append dataset of training observations and real accidents for classification - should be unique on document number
-  all.accidents = rbind(ps.data, accidents.data) 
+  # append dataset of training observations and real accidents for classification - should be unique on document number
   ps.data = rbind(ps.data, accidents.data)
   rm(accidents.data)
 }
@@ -1096,8 +1099,8 @@ if (data.type == "real accidents data") {
   # Generate variable with boosting predictions
   adaboost.pred$class = as.factor(adaboost.pred$class)
   accidents = cbind(simple.ps[simple.ps$type=="unclassified",], adaboost.pred$class)
-  accidents = accidents[, c(-match("PS", names(accidents)))]
   names(accidents)[names(accidents) == 'adaboost.pred$class'] = 'prediction'
+  accidents = accidents[, c(-match("PS", names(accidents)))]
   
   # Re-code common false positives
   accidents$prediction = ifelse(accidents$entrapment == 1, 1, accidents$prediction) 
@@ -1115,17 +1118,26 @@ if (data.type == "real accidents data") {
   # Merge predictions back onto real data (we just need mine IDs and accidentdate for the next stage)
   accidents = accidents[, c(match("prediction", names(accidents)),
                             match("documentno", names(accidents)))]
-  accidents = merge(accidents, all.accidents, by = "documentno")
+  accidents = merge(all.accidents, accidents, by = "documentno", all = T)
   accidents$PS = ifelse(!is.na(accidents$prediction), accidents$prediction, accidents$PS)
+  accidents = accidents[, c(match("PS", names(accidents)),
+                            match("mineid", names(accidents)),
+                            match("accidentdate", names(accidents)),
+                            match("documentno", names(accidents)))]  
+  
+  # Merge real classifications onto remaining observations 
+  accidents = merge(accidents, simple.ps, by = "documentno", all = F)
+  accidents$PS.y = ifelse(accidents$PS.y == "YES", "2", "1")
+  accidents$PS = ifelse(accidents$PS.x == "", accidents$PS.y, accidents$PS.x)
+  accidents = accidents[, c(match("PS", names(accidents)),
+                            match("mineid", names(accidents)),
+                            match("accidentdate", names(accidents)),
+                            match("documentno", names(accidents)))]  
   
   # Save a CSV file with narrative information 
   write.csv(accidents, file = classified.accidents.file.name.csv)
   
   # Save R dataset
-  accidents = accidents[, c(match("PS", names(accidents)),
-                            match("mineid", names(accidents)),
-                            match("accidentdate", names(accidents)),
-                            match("documentno", names(accidents)))]
   saveRDS(accidents, file = classified.accidents.file.name)
 }
 

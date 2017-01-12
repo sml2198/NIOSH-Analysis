@@ -15,7 +15,7 @@
   # classify all injuries in the "Accidents Injuries Data Set" as MR/not-MR.
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/4/17
+# Last edit 1/11/17
 
 ######################################################################################################
 
@@ -720,7 +720,7 @@ if (data.type == "real accidents data") {
   
   # Merge back in the rest of the variables from the original accidents data     
   accidents.original = readRDS(accidents.data.file.name)
-  accidents.data = merge(accidents.data, accidents.original, by="documentno", all = TRUE)
+  accidents.data = merge(accidents.data, accidents.original, by = "documentno", all = TRUE)
   
   # Clean up variable names from the merge
   rm(train, simple, simple.data, mr.fatalities, accidents.original)
@@ -825,84 +825,30 @@ if (data.type == "real accidents data") {
                                       accidents.data$maybe.keyword == 0 & 
                                       accidents.data$other.keyword == 0, 1, accidents.data$false.pos)  
   
-  # Save final MR predictions dataset with only variables for document numbers and predictions
+  # format classifications
   accidents.data$MR  = ifelse((accidents.data$adaboost == "YES" & 
                                  accidents.data$false.pos == 0) | 
                                 accidents.data$false.neg == 1, 1, 0)
-  accidents.data = accidents.data[, c(-grep("accident.only", names(accidents.data)), 
-                                      -grep("adaboost", names(accidents.data)), 
-                                      -grep("barring", names(accidents.data)), 
-                                      -grep("battery", names(accidents.data)),
-                                      -grep("bits", names(accidents.data)), 
-                                      -grep("belt", names(accidents.data)),
-                                      -grep("carpal.tunnel", names(accidents.data)), 
-                                      -grep("belt", names(accidents.data)) 
-                                      -grep("changing", names(accidents.data)), 
-                                      -grep("check", names(accidents.data)),
-                                      -grep("cleaning", names(accidents.data)), 
-                                      -grep("cover", names(accidents.data)),
-                                      -grep("conveyor", names(accidents.data)), 
-                                      -grep("cumulative", names(accidents.data)),
-                                      -grep("datasource", names(accidents.data)), 
-                                      -grep("dismantl", names(accidents.data)),
-                                      -grep("district", names(accidents.data)), 
-                                      -grep("exposure", names(accidents.data)),
-                                      -match("falling.accident", names(accidents.data)), 
-                                      -grep("false.", names(accidents.data)),
-                                      -grep("fix", names(accidents.data)), 
-                                      -grep("flashburn", names(accidents.data)),
-                                      -grep("grease", names(accidents.data)), 
-                                      -grep("hearingloss", names(accidents.data)),
-                                      -grep("heartattack", names(accidents.data)), 
-                                      -grep("helping", names(accidents.data)),
-                                      -grep("hoist", names(accidents.data)), 
-                                      -grep("inspect", names(accidents.data)),
-                                      -grep("install", names(accidents.data)), 
-                                      -grep("latitude", names(accidents.data)),
-                                      -grep("longitude", names(accidents.data)), 
-                                      -grep("likely", names(accidents.data)),
-                                      -grep("like", names(accidents.data)), 
-                                      -grep("loosen", names(accidents.data)),
-                                      -grep("lug", names(accidents.data)), 
-                                      -grep("maintain", names(accidents.data)),
-                                      -grep("manual.predict", names(accidents.data)), 
-                                      -grep("maybe", names(accidents.data)),
-                                      -grep("moretools", names(accidents.data)), 
-                                      -grep("mrworker", names(accidents.data)),  
-                                      -grep("oil", names(accidents.data)), 
-                                      -grep("other", names(accidents.data)),
-                                      -grep("pain", names(accidents.data)), 
-                                      -grep("power", names(accidents.data)), 
-                                      -grep("pullbelt", names(accidents.data)),
-                                      -grep("repair", names(accidents.data)), 
-                                      -grep("reposition", names(accidents.data)),
-                                      -grep("rethread", names(accidents.data)), 
-                                      -grep("retrack", names(accidents.data)),
-                                      -grep("rethread", names(accidents.data)), 
-                                      -grep("roller", names(accidents.data)), 
-                                      -grep("remove", names(accidents.data)),
-                                      -grep("rplace", names(accidents.data)), 
-                                      -grep("shovel", names(accidents.data)), 
-                                      -grep("splice", names(accidents.data)),
-                                      -grep("surgery", names(accidents.data)), 
-                                      -grep("tests", names(accidents.data)), 
-                                      -grep("service", names(accidents.data)),
-                                      -grep("tighten", names(accidents.data)), 
-                                      -grep("tire", names(accidents.data)),
-                                      -grep("toolbox", names(accidents.data)), 
-                                      -grep("trash", names(accidents.data)),
-                                      -grep("type", names(accidents.data)), 
-                                      -grep("unrelated", names(accidents.data)),
-                                      -grep("washingdown", names(accidents.data)), 
-                                      -grep("welding", names(accidents.data)),
-                                      -grep("working.on", names(accidents.data)), 
-                                      -grep("wrench", names(accidents.data)))]
   
-  # Save R dataset
-  saveRDS(accidents.data, file = classified.accidents.file.name)
+  # remove unessential variables
+  accidents.data = accidents.data[, c(match("MR", names(accidents.data)),
+                                      match("mineid", names(accidents.data)),
+                                      match("accidentdate", names(accidents.data)),
+                                      match("documentno", names(accidents.data)))]
   
-  # Save a CSV file
+  # merge on predictions from training obs
+  accidents.data = merge(accidents.data, mr.data[,c("documentno", "MR")], by = "documentno", all = F)
+  accidents.data$MR.y = ifelse(accidents.data$MR.y == "YES", "1", "0")
+  accidents.data$MR = ifelse(!is.na(accidents.data$MR.x), accidents.data$MR.x, accidents.data$MR.y)
+  
+  # remove unessential variables
+  accidents.data = accidents.data[, c(-grep("MR\\.[x|y]", names(accidents.data)))]
+  
+  # save a CSV file
   write.csv(accidents.data, file = classified.accidents.file.name.csv)
+  
+  # save R dataset
+  saveRDS(accidents.data, file = classified.accidents.file.name)
 }
 
 ######################################################################################################
