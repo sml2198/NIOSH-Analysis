@@ -1,5 +1,3 @@
-# resume line 104
-
 # NIOSH Project 2014-N-15776
 # Designing a Statistical Algorithm for Strategic Identification and Development 
 # of New Mine Safety Technologies and Technological Applications
@@ -45,8 +43,8 @@
   # file can be used to train and test various algorithms OR to train the best 
   # algorithm and use it to classify all accidents (MR/non-MR)
 
-purpose = "train.test" # trains and test various algorithms
-# purpose = "classify" # trains best algorithm and classifies accidents as MR/non-MR
+# purpose = "train.test" # trains and test various algorithms
+purpose = "classify" # trains best algorithm and classifies accidents as MR/non-MR
 
 ################################################################################
 
@@ -141,6 +139,8 @@ mr.data$death = ifelse(grepl("fatality", mr.data$degreeofinjury), 1, 0)
 ################################################################################
 
 # CLEAN EXTRA ACCIDENTS
+# rename variable
+mr.fatalities$MR = as.factor(mr.fatalities$MR_fatality)
 
 # drop unnecessary variables
 drop = c("MR_fatality", "v56", "v57", "v58", "v59")
@@ -159,41 +159,55 @@ mr.fatalities = mr.fatalities[!(mr.fatalities$documentno == "220030290001") &
 
 # COMBINE MR MASTER DATASET AND EXTRA ACCIDENTS
 
-# Append dataset of additional fatality observations for training set
+# 1019 rows; 106 columns; unique on documentno
 mr.data = rbind(mr.data, mr.fatalities) 
 
-# One of these was redundant (same document number) so we drop this
+# drop redundant documentno
+  # 1018 rows; 106 columns; unique on documentno
 mr.data = mr.data[!duplicated(mr.data$documentno), ]
 
-# make MR a factor variable
-mr.data[, "MR"] = factor(ifelse(mr.data[, "MR"] == 1, "YES", "NO"))
-names(mr.data)[names(mr.data) == "MR"] = "MR"
-
-# RECODE MISCODED INJURIES AS NON-M&R. 
-# See email with J. Heberger from NIOSH on May 2, 2016. About the following injury, he explains "even though 
-# mine worker activity is MR, installing roof bolts is not considered MR. Should be coded 2." Here we manually 
-# recode this one observation. 
-mr.data$MR[mr.data$documentno=="219932950056"] = "NO"
-
-if (data.type == "training data") {
-  mr.data$type = "training"
-}
+# format variable
+mr.data$MR = factor(ifelse(mr.data$MR == 1, "YES", "NO"))
 
 ################################################################################
 
-# THIS CODE IS RUN IF USING THE REAL ACCIDENTS DATA (NOT THE TRAINING SET FOR ALGORITHM TESTING)
+# RECODE ACCIDENTS
 
-if (data.type == "real accidents data") {
+# Based on J. Heberger's email 5/2/2016
+  # "even though mine worker activity is MR, installing roof bolts is not considered MR"
+
+mr.data[mr.data$documentno == "219932950056", "MR"] = "NO"
+
+################################################################################
+
+# COMBINE MASTER DATASET AND ACCIDENTS DATA
+
+if (purpose == "classify") {
   
-  # First make a flag to identify the training observations
-  mr.data[, "type"] = "training"  
-  mr.data[, "datasource"] = "training"  
-  mr.data[, "investigationbegindate"] = "" 
-  accidents.data[, "type"] = "unclassified" 
-  accidents.data[, "contractor_accident"] = "" 
-  accidents.data[, "MR"] = "" 
+  # distinguish classified/unclassified accidents
+  mr.data$type = "classified" 
+  accidents.data$type = "unclassified"
   
-  # Clean up injury narrative fields: drop redundant variables and keep the lowercase versions
+  # make master dataset and accidents data compatible
+  mr.data$datasource = "training"  
+  mr.data$investigationbegindate = "" 
+  
+  accidents.data$contractor_accident = "" 
+  accidents.data$MR = "" 
+  
+  drop = c("assesscontrolno", "part48training", "controllerbegindate", 
+           "fiscalquarter", "fiscalyear", "year", "closed_doc_no",
+           "quarter", "avg_hours_qtr", "avg_employment_qtr", 
+           "avg_coal_prod_qtr")
+  accidents.data = accidents.data[, !(names(accidents.data) %in% drop)]
+  
+  drop = c("death", "i", "fiscalquarter", "fiscalyear", "year", "closed_doc_no")
+  mr.data = mr.data[, !(names(mr.data) %in% drop)]  
+  
+  accident.names = names(accidents.data)
+  mr.data = mr.data[, names(mr.data) %in% accident.names]
+  
+  # format variables
   accidents.data$narrative = tolower(accidents.data$narrative)
   accidents.data$degreeofinjury = tolower(accidents.data$degreeofinjury)
   accidents.data$accidentclassification = tolower(accidents.data$accidentclassification)
@@ -208,33 +222,21 @@ if (data.type == "real accidents data") {
   accidents.data$immediatenotificationclass = tolower(accidents.data$immediatenotificationclass)
   accidents.data$uglocation = tolower(accidents.data$uglocation)
   
-  # Drop variables not common to the accidents data set and the mr data (training set)
-  drops = c("death", "i" )
-  mr.data = mr.data[, !(names(mr.data) %in% drops)]  
-  drops = c("assesscontrolno", "part48training", "controllerbegindate", 
-            "fiscalquarter", "fiscalyear", "year", "closed_doc_no",
-            "quarter", "avg_hours_qtr", "avg_employment_qtr", 
-            "avg_coal_prod_qtr")
-  accidents.data = accidents.data[, !(names(accidents.data) %in% drops)]
+  # deal with duplicated documentnos between datasets
+    # create lists of document numbers from each dataset 
+  mr.docnos = as.character(mr.data$documentno)
+  accident.docnos = as.character(accidents.data$documentno)
   
-  # Drop any remaining variables not common to the real accidents data and mr.data (training set)
-  accident.names = names(accidents.data)
-  mr.data = mr.data[, names(mr.data) %in% accident.names]
-  
-  # Create lists of document numbers from each dataset (training data and real accidents data)
-  mr.docnos = mr.data$documentno
-  mr.docnos = as.character(mr.docnos)
-  accident.docnos = accidents.data$documentno
-  
-  # Identify common document numbers (the real accidents data should contain all document numbers from the training data)
+    # identify common document numbers
   keep.docnos = setdiff(accident.docnos, mr.docnos)  
   
-  # Remove observations from accidents data present in the mr.data (training set) - should now be unique on document number
+    # remove observations from accidents data present in the mr.data (training set)
   accidents.data = accidents.data[which(accidents.data$documentno %in% keep.docnos), ]
-  rm(mr.names, accident.names, mr.docnos, accident.docnos, keep.docnos)
   
-  # Append the training data and the real accidents dataset for classification
+  # combine master MR dataset and accidents dataset
+    # 75700 rows; 56 columns; unique on documentno  
   mr.data = rbind(mr.data, accidents.data) 
+  
 }
 
 ################################################################################
