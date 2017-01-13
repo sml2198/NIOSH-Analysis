@@ -1185,7 +1185,7 @@ if (purpose == "classify") {
   accidents = cbind(simple.ps[simple.ps$type == "unclassified", ], adaboost.pred$class)
   names(accidents)[names(accidents) == "adaboost.pred$class"] = "prediction"
   accidents$PS = NULL
-
+  
   # re-code common false positives
   accidents$prediction = ifelse(accidents$entrapment == 1, 1, accidents$prediction) 
   accidents$prediction = ifelse(accidents$brokensteel == 1, 1, accidents$prediction)
@@ -1199,32 +1199,24 @@ if (purpose == "classify") {
   accidents$prediction = ifelse(accidents$falling.accident == 1, 1, accidents$prediction)
   accidents$prediction = as.factor(accidents$prediction)
   
-  # merge predictions onto data
+  # merge algorithm-classified accidents onto data
   accidents = accidents[, c("prediction", "documentno")]
   accidents = merge(all.accidents, accidents, by = "documentno", all = T)
   accidents$PS = ifelse(!is.na(accidents$prediction), accidents$prediction, accidents$PS)
-  accidents = accidents[, c(match("PS", names(accidents)),
-                            match("mineid", names(accidents)),
-                            match("accidentdate", names(accidents)),
-                            match("documentno", names(accidents)))]  
+  accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
   
-  # Merge real classifications onto remaining observations 
+  # merge NIOSH-classified accidents onto data
   accidents = merge(accidents, simple.ps, by = "documentno", all = F)
   accidents$PS.y = ifelse(accidents$PS.y == "YES", "2", "1")
   accidents$PS = ifelse(accidents$PS.x == "", accidents$PS.y, accidents$PS.x)
-  accidents = accidents[, c(match("PS", names(accidents)),
-                            match("mineid", names(accidents)),
-                            match("accidentdate", names(accidents)),
-                            match("documentno", names(accidents)))]  
+  accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
   
-  # Save a CSV file with narrative information 
+  # output CSV
   write.csv(accidents, file = classified.accidents.file.name.csv)
   
-  # Save R dataset
+  # output R dataset
   saveRDS(accidents, file = classified.accidents.file.name)
 }
-
-################################################################################
 
 rm(list = ls())
 

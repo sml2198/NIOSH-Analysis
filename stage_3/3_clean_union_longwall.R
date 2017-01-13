@@ -157,7 +157,7 @@ longwall.8 = longwall.8[, c("mineid", "year", "longwall")]
 longwall.8 = longwall.8[which(!is.na(longwall.8$mineid)), ]
 
 # append longwall datasets
-  #708 rows; 3 columns; unique on mineid-year
+  # 708 rows; 3 columns; unique on mineid-year
 longwall = rbind(longwall.1, longwall.2, longwall.3, longwall.4, longwall.5, longwall.6, longwall.7, longwall.8)
 rm(longwall.1, longwall.2, longwall.3, longwall.4, longwall.5, longwall.6, longwall.7, longwall.8)
 
@@ -165,18 +165,19 @@ rm(longwall.1, longwall.2, longwall.3, longwall.4, longwall.5, longwall.6, longw
 longwall$mineid = str_pad(longwall$mineid, 7, pad = "0")
 
 # append union and longwall data
- # 708 rows; 3 columns; unique on mineid-year
-union.longwall = merge(union, longwall, by = c("mineid", "year"), all = T)
+ # 24403 rows; 4 columns; unique on mineid-year
+union.longwall = merge(union[,c("mineid", "year", "union")], longwall, by = c("mineid", "year"), all = T)
 
 # replace longwall with zero if it's not a 1 and the year is one for which we have data (2000-2015)
-union.longwall$longwall = ifelse(is.na(union$longwall) & union$year < 2016, 0, union$longwall)
+union.longwall$longwall = ifelse(is.na(union.longwall$longwall) & union.longwall$year < 2016, 0, union.longwall$longwall)
 
 # replace union with zero if it's not a 1 and the year is one for which we have data (2000-2013)
-union.longwall$union = ifelse(is.na(union$union) & union$year < 2014, 0, union$union)
+union.longwall$union = ifelse(is.na(union.longwall$union) & union.longwall$year < 2014, 0, union.longwall$union)
 
 ################################################################################
 
 # save
+  # 24403 rows; 4 columns; unique on mineid-year
 saveRDS(union.longwall, ulw.out.file.name)
 
 ################################################################################
