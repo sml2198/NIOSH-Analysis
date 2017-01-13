@@ -25,7 +25,7 @@ originals.path = paste0(root, "/0_originals", collapse = NULL)
 clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # inspections data
+  # cfr key 
 cfr.key.in.file.name = paste0(originals.path, "/cfr_key/cfr_key.csv", collapse = NULL)
 
 # outputs

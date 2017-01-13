@@ -110,6 +110,7 @@ inspections = inspections[, (names(inspections) %in% keep)]
 ################################################################################
 
 # output inspection-level data
+  # 192652 rows; 10 columns; unique on eventno
 saveRDS(inspections, file = inspections.out.file.name)
 
 ################################################################################

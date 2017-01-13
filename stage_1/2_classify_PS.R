@@ -1086,38 +1086,38 @@ if (purpose == "train.test") {
   table(simple.ps[701:1000,74], predicted = rf.predictions)
   
   # RANDOM FOREST WITH SMOTE
-  smote.trainx = simple.ps[1:700,]
-  smote.test = simple.ps[701:1000,]
+  smote.trainx = simple.ps[1:700, ]
+  smote.test = simple.ps[701:1000, ]
   smote = SMOTE(PS ~ ., smote.trainx, perc.over = 100, perc.under = 100)
   rf.smo = randomForest(PS ~ . -documentno, data = smote, mtry = 10, ntree = 800)
   rf.smo.pred = predict(rf.smo, smote.test, type = "class")
-  table(simple.ps[701:1000,74], predicted = rf.smo.pred)
+  table(simple.ps[701:1000, 74], predicted = rf.smo.pred)
   
   # RANDOM FOREST WITH ROSE
-  simple.rosex = ROSE(PS ~ ., data = simple.ps[1:700,])$data
+  simple.rosex = ROSE(PS ~ ., data = simple.ps[1:700, ])$data
   rand3 = runif(nrow(simple.rosex))
-  simple.rose = simple.rosex[order(rand3),]
+  simple.rose = simple.rosex[order(rand3), ]
   rf.rose = randomForest(PS ~ . -documentno, data = simple.rose, mtry = 15, ntree = 1000)
-  rf.rose.pred = predict(rf.rose, simple.ps[701:1000,], type = "class")
-  table(simple.ps[701:1000,74], predicted = rf.rose.pred)
+  rf.rose.pred = predict(rf.rose, simple.ps[701:1000, ], type = "class")
+  table(simple.ps[701:1000, 74], predicted = rf.rose.pred)
   
   # DOWNSAMPLE NEGATIVE OUTCOMES FOR RANDOM FOREST
   nmin = sum(simple.ps$PS == "YES")
   nmin
   ctrl = trainControl(method = "cv", classProbs = TRUE, summaryFunction = twoClassSummary)
-  rf.downsampled = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c("documentno","narrative"))], 
+  rf.downsampled = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c("documentno", "narrative"))], 
                          method = "rf", ntree = 800,
                          tuneLength = 10, metric = "ROC", trControl = ctrl, 
                          strata = simple.ps$PS, sampsize = rep(nmin, 2))
-  rf.baseline = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c("documentno","narrative"))], 
+  rf.baseline = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c("documentno", "narrative"))], 
                       method = "rf", ntree = 800,
                       tuneLength = 10, metric = "ROC", trControl = ctrl)
   down.prob = predict(rf.downsampled, 
-                      simple.ps[701:1000,!(names(simple.ps) %in% c("documentno","narrative"))], type = "prob")[,1]
+                      simple.ps[701:1000,!(names(simple.ps) %in% c("documentno", "narrative"))], type = "prob")[,1]
   down.ROC = roc(response = 
                    simple.ps[701:1000,1], predictor = down.prob, levels = rev(levels(simple.ps[701:1000,1])))
   base.prob = predict(rf.baseline, 
-                      simple.ps[701:1000,!(names(simple.ps) %in% c("documentno","narrative"))], type = "prob")[,1]
+                      simple.ps[701:1000,!(names(simple.ps) %in% c("documentno", "narrative"))], type = "prob")[,1]
   base.ROC = roc(response = simple.ps[701:1000,1], 
                  predictor = base.prob, levels = rev(levels(simple.ps[701:1000,1])))
   plot(down.ROC, col = rgb(1, 0, 0, .5), lwd = 2)
