@@ -32,9 +32,9 @@ cfr.key.in.file.name = paste0(originals.path, "/cfr_key/cfr_key.csv", collapse =
   # cleaned cfr key (all relevant/maybe relevant subparts) 
 cfr.key.out.file.name = paste0(clean.path, "/clean_cfr_key.rds", collapse = NULL)
   # clean cfr key csv with PS relevance markings (only used to make latex tables for appendices)
-cfr.key.out.file.name = paste0(clean.path, "/PS_clean_cfr_key.csv", collapse = NULL)
+PS.cfr.key.csv.out.file.name = paste0(clean.path, "/PS_clean_cfr_key.csv", collapse = NULL)
   # clean cfr key csv with MR relevance markings (only used to make latex tables for appendices)
-cfr.key.out.file.name = paste0(clean.path, "/MR_clean_cfr_key.csv", collapse = NULL)
+MR.cfr.key.csv.out.file.name = paste0(clean.path, "/MR_clean_cfr_key.csv", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
 dir.create(clean.path, recursive = TRUE)
@@ -213,8 +213,8 @@ PS.cfr.key = PS.cfr.key[order(-PS.cfr.key$PSrelevant, PS.cfr.key$subsection_code
 MR.cfr.key = MR.cfr.key[order(-MR.cfr.key$MRrelevant, MR.cfr.key$subsection_code),]
 
 # replace relevant columns with the words
-PS.cfr.key$PSrelevant = ifelse(PS_cfr.key$PSrelevant == 0, "Maybe Relevant", "Relevant")
-MR.cfr.key$MRrelevant = ifelse(MR_cfr.key$MRrelevant == 0, "Maybe Relevant", "Relevant")
+PS.cfr.key$PSrelevant = ifelse(PS.cfr.key$PSrelevant == 0, "Maybe Relevant", "Relevant")
+MR.cfr.key$MRrelevant = ifelse(MR.cfr.key$MRrelevant == 0, "Maybe Relevant", "Relevant")
 
 # output clean cfr key with PS and MR relevance markings
 write.csv(PS.cfr.key[, c("cfr_section_code_desc", "PSrelevant")], file = PS.cfr.key.csv.out.file.name, row.names = FALSE, na = "")

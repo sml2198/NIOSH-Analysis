@@ -118,11 +118,9 @@ ps.data$degreeofinjury = tolower(ps.data$degreeofinjury)
 ps.data$sourceofinjury = tolower(ps.data$sourceofinjury)
 ps.data$accidenttype = tolower(ps.data$accidenttype)
 ps.data$accidentclassification = tolower(ps.data$accidentclassification)
-ps.data$accidenttype = tolower(ps.data$accidenttype)
 ps.data$bodypart = tolower(ps.data$bodypart)
 ps.data$typeofequipment = tolower(ps.data$typeofequipment)
 ps.data$occupation = tolower(ps.data$occupation)
-ps.data$mineractivity = tolower(ps.data$mineractivity)
 
 # format PS indicator
 ps.data$X = factor(ifelse(ps.data$X == 1, "YES", "NO"))
@@ -1075,8 +1073,7 @@ rm(drop, vars, i, rand, simple.data, ps.data)
 
 # TO TEST VARIOUS MODELS
 
-if (purpose == "train.test" ) {
-  simple.ps = simple.ps[,c(-grep("type", names(simple.ps)))]
+if (purpose == "train.test") {
   
   # CART
   cart = rpart(PS ~ ., data = simple.ps[1:700, !(names(simple.ps) %in% c("documentno"))], method = "class")
@@ -1085,7 +1082,7 @@ if (purpose == "train.test" ) {
   
   # RANDOM FOREST
   rf = randomForest(PS ~ . -documentno, data = simple.ps[1:700,], mtry = 3, importance = TRUE, type = "class", ntree = 800)
-  rf.predictions = predict(rf, simple.ps[701:1000,], type="class")
+  rf.predictions = predict(rf, simple.ps[701:1000,], type = "class")
   table(simple.ps[701:1000,74], predicted = rf.predictions)
   
   # RANDOM FOREST WITH SMOTE
@@ -1170,26 +1167,26 @@ if (purpose == "train.test" ) {
 
 # NOW PERFORM THE FINAL ALGORITHM WITH REAL ACCIDENTS DATA FOR CLASSIFICATION
 
-if (data.type == "real accidents data") {
+if (purpose == "classify") {
   
   set.seed(625)
   
-  # Run boosting on training observations
+  # run boosting on master dataset
   ps.adaboost = boosting(PS ~ ., 
-                         data = simple.ps[simple.ps$type=="training", !(names(simple.ps) %in% c("documentno", "type"))], 
+                         data = simple.ps[simple.ps$type == "classified", !(names(simple.ps) %in% c("documentno", "type"))], 
                          boos = T, mfinal = 300, coeflearn = "Freund")
   
-  # Predict PS for unclassified observations
+  # predict PS for unclassified accidetns
   adaboost.pred = predict.boosting(ps.adaboost, 
-                                   newdata = simple.ps[simple.ps$type=="unclassified", !(names(simple.ps) %in% c("documentno", "type"))])
+                                   newdata = simple.ps[simple.ps$type == "unclassified", !(names(simple.ps) %in% c("documentno", "type"))])
   
-  # Generate variable with boosting predictions
+  # generate variable with predictions
   adaboost.pred$class = as.factor(adaboost.pred$class)
-  accidents = cbind(simple.ps[simple.ps$type=="unclassified",], adaboost.pred$class)
+  accidents = cbind(simple.ps[simple.ps$type == "unclassified", ], adaboost.pred$class)
   names(accidents)[names(accidents) == "adaboost.pred$class"] = "prediction"
-  accidents = accidents[, c(-match("PS", names(accidents)))]
-  
-  # Re-code common false positives
+  accidents$PS = NULL
+
+  # re-code common false positives
   accidents$prediction = ifelse(accidents$entrapment == 1, 1, accidents$prediction) 
   accidents$prediction = ifelse(accidents$brokensteel == 1, 1, accidents$prediction)
   accidents$prediction = ifelse(accidents$headroof == 1, 1, accidents$prediction)
@@ -1202,9 +1199,8 @@ if (data.type == "real accidents data") {
   accidents$prediction = ifelse(accidents$falling.accident == 1, 1, accidents$prediction)
   accidents$prediction = as.factor(accidents$prediction)
   
-  # Merge predictions back onto real data (we just need mine IDs and accidentdate for the next stage)
-  accidents = accidents[, c(match("prediction", names(accidents)),
-                            match("documentno", names(accidents)))]
+  # merge predictions onto data
+  accidents = accidents[, c("prediction", "documentno")]
   accidents = merge(all.accidents, accidents, by = "documentno", all = T)
   accidents$PS = ifelse(!is.na(accidents$prediction), accidents$prediction, accidents$PS)
   accidents = accidents[, c(match("PS", names(accidents)),

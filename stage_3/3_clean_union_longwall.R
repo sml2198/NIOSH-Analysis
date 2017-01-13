@@ -5,8 +5,8 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 5 - Clean Union/Longwall Data
-# Merges cleaned mines and cleaned employment data and collapses
-# Then merges collapsed accidents data
+  # Merges cleaned mines and cleaned employment data and collapses
+  # Then merges collapsed accidents data
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/11/17
@@ -27,8 +27,8 @@ originals.path = paste0(root, "/0_originals", collapse = NULL)
 clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # original eia data (covers 1999-2013)
-employment.in.file.name = paste0(originals.path, "/EIA-data/Book1.csv", collapse = NULL)
+  # original union data (covers 1999-2013)
+union.in.file.name = paste0(originals.path, "/EIA-data/Book1.csv", collapse = NULL)
 
   # original longwall data 1: 1992-2008 (from Chris Mark at NIOSH to Nate Atkinson and Brian Karfunkel on 6/20/11)
 longwall.1.in.file.name = paste0(originals.path, "/NIOSH-data/Data from Chris Mark/longwallID1992_2008.csv", collapse = NULL)
@@ -56,139 +56,128 @@ dir.create(clean.path, recursive = TRUE)
 
 ################################################################################
 
+# BRING IN UNION DATA FROM EIA
 
-# BRING IN EIA DATA USED FOR UNDERREPORTING (LATEST DATA PULL FROM JOE CONKLIN)
+# load data
+  # 26338 rows; 100 columns; unique on mineid-year
+union = read.csv(union.in.file.name, header = T, na.strings = c("","NA"))
 
-# Import
-eia = read.csv(eia_5_in_file_name, header = T, na.strings = c("","NA"))
+# clean variable names and drop unnecessary vars
+names(union)[names(union) == "MSHA_ID"] = "mineid"
+names(union) = tolower(names(union))
+union = union[, c(match("mineid", names(union)),
+              match("year", names(union)),
+              match("mine_type_code", names(union)),
+              match("company_type", names(union)),
+              match("operation_type", names(union)),
+              match("longwall_pct", names(union)),
+              match("union_id", names(union)))]
 
-# Clean var names
-names(eia)[names(eia) == "MSHA_ID"] = "mineid"
-names(eia) = tolower(names(eia))
-eia = eia[, c(match("mineid", names(eia)),
-              match("year", names(eia)),
-              match("mine_type_code", names(eia)),
-              match("company_type", names(eia)),
-              match("operation_type", names(eia)),
-              match("longwall_pct", names(eia)),
-              match("union_id", names(eia)))]
+# format mineid
+union$mineid = str_pad(union$mineid, 7, pad = "0")
 
-# Format mineid
-eia$mineid = str_pad(eia$mineid, 7, pad = "0")
+# drop years before study period
+  # 24321 rows; 7 columns; unique on mineid-year
+union = union[union$year > 1999, ]
 
-# Drop years before study period
-eia = eia[eia$year > 1999, ]
-
-# Rename company-type categories
-eia$company_type = ifelse(eia$mine_type == 1, "independent", eia$mine_type)
-eia$company_type = ifelse(eia$mine_type == 2, "subsidiary", eia$mine_type)
-eia$company_type = ifelse(eia$mine_type == 3, "contractor", eia$mine_type)
-
-# Rename mine_type categories
-eia$mine_type = ifelse(eia$mine_type == 0, "prep plant", eia$mine_type)
-eia$mine_type = ifelse(eia$mine_type == 1, "underground", eia$mine_type)
-eia$mine_type = ifelse(eia$mine_type == 2, "strip", eia$mine_type)
-eia$mine_type = ifelse(eia$mine_type == 4, "auger", eia$mine_type)
-eia$mine_type = ifelse(eia$mine_type == 6, "strip/auger combo ", eia$mine_type)
-eia$mine_type = ifelse(eia$mine_type == 8, "refuse", eia$mine_type)
-
-# Rename operation_type categories
-eia$operation_type = ifelse(eia$operation_type == 1, "mine", eia$operation_type)
-eia$operation_type = ifelse(eia$operation_type == 2, "prep plant", eia$operation_type)
-eia$operation_type = ifelse(eia$operation_type == 3, "mine and prep plant", eia$operation_type)
-
-# Replace union ID with "None" with missing & create union indicator
-eia$union_id = ifelse(is.na(eia$union_id), 0, eia$union_id)
-eia$union = ifelse(eia$union_id != 0, 1, 0)
-
-# Collapse to the mine_year level - longwall_pct is just because ddply needs two arguments
-eia = ddply(eia[, c(match("union", names(eia)),
-                    match("longwall_pct", names(eia)),
-                    match("year", names(eia)),
-                    match("mineid", names(eia)))], c("mineid", "year"), 
-            function(x) colMeans(x[, c(match("union", names(x)),
-                                       match("longwall_pct", names(x)))], na.rm = T))
-eia = eia[order(eia$mineid, eia$year), c(-grep("longwall_pct", names(eia)))]
+# replace union ID with "None" with missing & create union indicator
+union$union_id = ifelse(is.na(union$union_id), 0, union$union_id)
+union$union = ifelse(union$union_id != 0, 1, 0)
 
 ######################################################################################################
 
 # BRING IN LONGWALL DATA
 
-# Import, clean & keep only mineid, year, and longwall indicator for all three longwall sheets
-longwall.1 = read.csv(longwall_1_in_file_name, header = T, na.strings = c("", "NA"))
+# load first longwall data set
+  # 899 rows; 11 columns; unique on mineid-year
+longwall.1 = read.csv(longwall.1.in.file.name, header = T, na.strings = c("", "NA"))
 names(longwall.1) = tolower(names(longwall.1))
+
 # keep only years after 2000
+  # 417 rows; 3 columns; unique on mineid-year
 longwall.1 = longwall.1[longwall.1$year > 1999, ]
 names(longwall.1)[names(longwall.1) == "lw.1"] = "longwall"
 longwall.1 = longwall.1[, c("mineid", "year", "longwall")]
 
-# two
-longwall.2 = read.csv(longwall_2_in_file_name, header = T, na.strings = c("", "NA"))
+# load second longwall data set
+  # 43 rows; 15 columns; unique on mineid-year
+longwall.2 = read.csv(longwall.2.in.file.name, header = T, na.strings = c("", "NA"))
 names(longwall.2) = tolower(names(longwall.2))
 names(longwall.2)[names(longwall.2) == "lw"] = "longwall"
+  
+# drop one empty row and unnecessary vars
+  # 42 rows; 3 columns; unique on mineid-year
 longwall.2 = longwall.2[which(!is.na(longwall.2$year)), c("mineid", "year", "longwall")]
 
-# three
-longwall.3 = read.csv(longwall_3_in_file_name,header = T, na.strings = c("", "NA"))
+# load third longwall data set
+  # 46 rows; 31 columns; unique on mineid-year
+longwall.3 = read.csv(longwall.3.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.3) = tolower(names(longwall.3))
+
 # create longwall indicator - everything in this sheet is a longwall mine
 longwall.3$longwall = 1
 longwall.3 = longwall.3[which(!is.na(longwall.3$year)), c("mineid", "year", "longwall")]
 
-# four
-longwall.4 = read.csv(longwall_4_in_file_name,header = T, na.strings = c("", "NA"))
+# load fourth longwall data set
+  # 40 rows; 5 columns; unique on mineid-year
+longwall.4 = read.csv(longwall.4.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.4) = tolower(names(longwall.4))
 names(longwall.4)[names(longwall.4) == "lw"] = "longwall"
 longwall.4 = longwall.4[, c("mineid", "year", "longwall")]
 
-# five
-longwall.5 = read.csv(longwall_5_in_file_name,header = T, na.strings = c("", "NA"))
+# load fifth longwall data set
+  # 42 rows; 5 columns; unique on mineid-year
+longwall.5 = read.csv(longwall.5.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.5) = tolower(names(longwall.5))
 names(longwall.5)[names(longwall.5) == "lw"] = "longwall"
 longwall.5 = longwall.5[, c("mineid", "year", "longwall")]
 
-# six
-longwall.6 = read.csv(longwall_6_in_file_name,header = T, na.strings = c("", "NA"))
+# load sixth longwall data set
+  # 44 rows; 19 columns; unique on mineid-year
+longwall.6 = read.csv(longwall.6.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.6) = tolower(names(longwall.6))
 names(longwall.6)[names(longwall.6) == "lw"] = "longwall"
 longwall.6 = longwall.6[, c("mineid", "year", "longwall")]
 longwall.6 = longwall.6[which(!is.na(longwall.6$mineid) & !(is.na(longwall.6$year))), ]
 
-# seven
-longwall.7 = read.csv(longwall_7_in_file_name,header = T, na.strings = c("", "NA"))
+# load seventh longwall data set
+  # 42 rows; 19 columns; unique on mineid-year
+longwall.7 = read.csv(longwall.7.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.7) = tolower(names(longwall.7))
 names(longwall.7)[names(longwall.7) == "lw"] = "longwall"
 longwall.7 = longwall.7[, c("mineid", "year", "longwall")]
 longwall.7 = longwall.7[which(!is.na(longwall.7$mineid) & !(is.na(longwall.7$year))), ]
 
-# eight
-longwall.8 = read.csv(longwall_8_in_file_name,header = T, na.strings = c("", "NA"))
+# load eighth longwall data set
+  # 40 rows; 19 columns; unique on mineid-year
+longwall.8 = read.csv(longwall.8.in.file.name,header = T, na.strings = c("", "NA"))
 names(longwall.8) = tolower(names(longwall.8))
 names(longwall.8)[names(longwall.8) == "lw"] = "longwall"
 longwall.8 = longwall.8[, c("mineid", "year", "longwall")]
 longwall.8 = longwall.8[which(!is.na(longwall.8$mineid)), ]
 
 # append longwall datasets
+  #708 rows; 3 columns; unique on mineid-year
 longwall = rbind(longwall.1, longwall.2, longwall.3, longwall.4, longwall.5, longwall.6, longwall.7, longwall.8)
-longwall = longwall[which(!is.na(longwall$mineid) & !is.na(longwall$year)), ] # should be 0
 rm(longwall.1, longwall.2, longwall.3, longwall.4, longwall.5, longwall.6, longwall.7, longwall.8)
 
 # format mineid
 longwall$mineid = str_pad(longwall$mineid, 7, pad = "0")
 
-# append eia and longwall data
-eia = merge(eia, longwall, by = c("mineid", "year"), all = T)
+# append union and longwall data
+ # 708 rows; 3 columns; unique on mineid-year
+union.longwall = merge(union, longwall, by = c("mineid", "year"), all = T)
 
 # replace longwall with zero if it's not a 1 and the year is one for which we have data (2000-2015)
-eia$longwall = ifelse(is.na(eia$longwall) & eia$year < 2016, 0, eia$longwall)
+union.longwall$longwall = ifelse(is.na(union$longwall) & union$year < 2016, 0, union$longwall)
 
 # replace union with zero if it's not a 1 and the year is one for which we have data (2000-2013)
-eia$union = ifelse(is.na(eia$union) & eia$year < 2014, 0, eia$union)
+union.longwall$union = ifelse(is.na(union$union) & union$year < 2014, 0, union$union)
 
 ################################################################################
 
 # save
-saveRDS(eia, ulw.out.file.name)
+saveRDS(union.longwall, ulw.out.file.name)
 
 ################################################################################
 
