@@ -202,6 +202,7 @@ cfr.key$MR_maybe_relevant = ifelse(cfr.key$cfr_part_code == "77" & (cfr.key$cfr_
 # OUTPUT CLEAN CFR KEY
 
 # output clean cfr key with PS and MR relevance markings
+  # 2026 rows; 11 columns; unique on subsection_code
 saveRDS(cfr.key, file = cfr.key.out.file.name)
 
 # anything with a 0 in the relevant column is now "maybe relevant" - sort "1"s to the top (relevant subparts)

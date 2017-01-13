@@ -29,16 +29,32 @@ inspections.in.file.name = paste0(clean.path, "/clean_inspections.rds", collapse
   # assessments data
 assessments.in.file.name = paste0(clean.path, "/clean_assessments.rds", collapse = NULL)
   # cfr key
-cfr.key.in.file.name = paste0(clean.path, "clean_cfr_key.rds", collapse = NULL)
+cfr.key.in.file.name = paste0(clean.path, "/clean_cfr_key.rds", collapse = NULL)
 
 # outputs
   # merged violations
 cfr.key.out.file.name = paste0(merged.path, "/merged_violations.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(clean.path, recursive = TRUE)
+dir.create(merged.path, recursive = TRUE)
 
 ################################################################################
+
+# load violations
+  # 868722 rows; 14 columns; unique on violationno
+violations = readRDS(violations.in.file.name)
+
+# load inspections
+  # 192652 rows; 10 columns; unique on eventno
+inspections = readRDS(inspections.in.file.name)
+
+# load assessments
+  # 843818 rows; 13 columns; unique on violationno
+assessments = readRDS(assessments.in.file.name)
+
+# load cfr key
+  # 2026 rows; 11 columns; unique on subsection_code
+cfr.key = readRDS(cfr.key.in.file.name)
 
 ################################################################################
 
