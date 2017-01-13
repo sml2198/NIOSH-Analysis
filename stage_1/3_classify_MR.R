@@ -103,44 +103,29 @@ rm(root, cleaned.input.path, coded.output.path, originals.input.path,
 
 ################################################################################
 
-# MAKE SURE TRAINING SET AND FATALITIES DATASETS HAVE ALL THE SAME VARIABLES NAMES BEFORE APPENDING - IF USING TRAINING DATA
+# CLEAN MASTER DATASET
 
+# drop unnecessary variables
+drop = c("narrativemodified", "degreeofinjury", "accidentclassification", 
+         "accidenttype", "natureofinjury", "mineractivity")
+mr.data = mr.data[, !(names(mr.data) %in% drop)]
+
+# rename variables
+names(mr.data)[names(mr.data) == "narrativemodified.1"] = "narrative"
+names(mr.data)[names(mr.data) == "degreeofinjury.1"] = "degreeofinjury"
+names(mr.data)[names(mr.data) == "accidentclassification.1"] = "accidentclassification"
+names(mr.data)[names(mr.data) == "accidenttype.1"] = "accidenttype"
+names(mr.data)[names(mr.data) == "natureofinjury.1"] = "natureofinjury"
+names(mr.data)[names(mr.data) == "mineractivity.1"] = "mineractivity"
+
+# format variables
 mr.data$MR = as.factor(mr.data$M.R.)
 mr.data$M.R. = NULL
-mr.data$death = ifelse(grepl("fatality", mr.data$degreeofinjury), 1, 0)
-
-# Clean up fatalities variables - drop variables not present in training set before appending
-mr.fatalities$MR = as.factor(mr.fatalities$MR_fatality)
-mr.fatalities = mr.fatalities[, c(-grep("MR_fatality", names(mr.fatalities)), 
-                                  -grep("v56", names(mr.fatalities)),
-                                  -grep("v57", names(mr.fatalities)), 
-                                  -grep("v58", names(mr.fatalities)), 
-                                  -grep("v59", names(mr.fatalities)))]
-
-# These four fatalgrams are considered MR and were included in a study by John H. from NIOSH as MR. 
-# However, it's really only evident from the fatalgrams (see open data folder) that these were sustained
-# during larger group MR activities. Nothing from the narrative field/occupation indicates that MR was the
-# activity at the time. Essentially, training on these observations will stack the deck against us.
-# We delete them and wind up with 19 additional fatality observations to append.
-mr.fatalities = mr.fatalities[!(mr.fatalities$documentno=="220030290001") & 
-                              !(mr.fatalities$documentno=="220030290002") &
-                              !(mr.fatalities$documentno=="220030290003") & 
-                              !(mr.fatalities$documentno=="220030130149"),]
-
-# Clean up narrative fields: drop redundant variables and keep the lowercase versions
-drops = c("narrativemodified", "degreeofinjury", "accidentclassification", "accidenttype", "natureofinjury", "mineractivity")
-mr.data = mr.data[, !(names(mr.data) %in% drops)]
-names(mr.data)[names(mr.data) == "narrativemodified.1"] = "narrative"
 mr.data$narrative = tolower(mr.data$narrative)
-names(mr.data)[names(mr.data) == "degreeofinjury.1"] = "degreeofinjury"
 mr.data$degreeofinjury = tolower(mr.data$degreeofinjury)
-names(mr.data)[names(mr.data) == "accidentclassification.1"] = "accidentclassification"
 mr.data$accidentclassification = tolower(mr.data$accidentclassification)
-names(mr.data)[names(mr.data) == "accidenttype.1"] = "accidenttype"
 mr.data$accidenttype = tolower(mr.data$accidenttype)
-names(mr.data)[names(mr.data) == "natureofinjury.1"] = "natureofinjury"
 mr.data$natureofinjury = tolower(mr.data$natureofinjury)
-names(mr.data)[names(mr.data) == "mineractivity.1"] = "mineractivity"
 mr.data$mineractivity = tolower(mr.data$mineractivity)
 mr.data$occupation = tolower(mr.data$occupation)
 mr.data$typeofequipment = tolower(mr.data$typeofequipment)
@@ -149,6 +134,30 @@ mr.data$bodypart = tolower(mr.data$bodypart)
 mr.data$equipmanufacturer = tolower(mr.data$equipmanufacturer)
 mr.data$immediatenotificationclass = tolower(mr.data$immediatenotificationclass)
 mr.data$uglocation = tolower(mr.data$uglocation)
+
+# generate death variable
+mr.data$death = ifelse(grepl("fatality", mr.data$degreeofinjury), 1, 0)
+
+################################################################################
+
+# CLEAN EXTRA ACCIDENTS
+
+# drop unnecessary variables
+drop = c("MR_fatality", "v56", "v57", "v58", "v59")
+mr.fatalities = mr.fatalities[, !(names(mr.fatalities) %in% drop)]
+
+# these four fatalgrams are considered MR and were included in a study by John H. from NIOSH as MR
+  # however, it's only evident from the fatalgrams that these were sustained during larger group MR activities
+  # nothing from the narrative field/occupation indicates that MR was the activity at the time
+  # training on these observations will not help; drop them
+mr.fatalities = mr.fatalities[!(mr.fatalities$documentno == "220030290001") & 
+                              !(mr.fatalities$documentno == "220030290002") &
+                              !(mr.fatalities$documentno == "220030290003") & 
+                              !(mr.fatalities$documentno == "220030130149"), ]
+
+################################################################################
+
+# COMBINE MR MASTER DATASET AND EXTRA ACCIDENTS
 
 # Append dataset of additional fatality observations for training set
 mr.data = rbind(mr.data, mr.fatalities) 

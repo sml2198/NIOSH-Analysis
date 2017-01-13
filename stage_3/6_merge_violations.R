@@ -33,7 +33,7 @@ cfr.key.in.file.name = paste0(clean.path, "/clean_cfr_key.rds", collapse = NULL)
 
 # outputs
   # merged violations
-cfr.key.out.file.name = paste0(merged.path, "/merged_violations.rds", collapse = NULL)
+violations.out.file.name = paste0(merged.path, "/merged_violations.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
 dir.create(merged.path, recursive = TRUE)
@@ -58,8 +58,8 @@ cfr.key = readRDS(cfr.key.in.file.name)
 
 ################################################################################
 
-# output inspection-level data
-saveRDS(inspections, file = inspections.out.file.name)
+# output violations-level data
+saveRDS(violations, file = violations.out.file.name)
 
 ################################################################################
 
