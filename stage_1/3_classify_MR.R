@@ -1,96 +1,113 @@
+# resume line 104
+
 # NIOSH Project 2014-N-15776
 # Designing a Statistical Algorithm for Strategic Identification and Development 
 # of New Mine Safety Technologies and Technological Applications
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 3 - Classify MR (Maintenance and Repair Injuries)
-  # This file loads the MR training set sent to the Morantz team by Miguel Reyes on August 8th, 2015 for use 
-  # in constructing a maintenance and repair (MR) injury classification algorithm. In this file, we clean and 
-  # format the variables in the training set, conduct narrative analysis on the injury description fields, 
-  # generate key word flags, and group existing categorical variables by how likely they are to correctly
-  # classify injuries as either MR or not-MR. This file contains the code that was used to test the relative
-  # classification power of various machine learning algorithms including CaRT, Random Forest decision trees, 
-  # and Apadtive Boosting. If this file is run "as-is", it will employ an Adaptive Boosting algorithm to 
-  # classify all injuries in the "Accidents Injuries Data Set" as MR/not-MR.
+# 3 - Classify Maintenance and Repair Accidents
+  # Train/Test:
+    # Inputs master MR dataset
+    # Conducts narrative analysis on description of accidents, generates flags for key words and phrases, 
+      # and groups existing categorical variables based on utility in classifying accidents
+    # Trains and tests various classification algorithms to classify accidents (MR/non-MR)
+      # Results printed to screen
+  # Classify:
+    # Inputs master MR dataset and accidents data from the MSHA open data portal, (cleaned in 1_clean_accidents)
+    # Conducts narrative analysis on description of accidents, generates flags for key words and phrases, 
+      # and groups existing categorical variables based on utility in classifying accidents
+    # Trains classification algorithm using best method determined in train/test phase (Adaptive Boosting)
+    # Classifies all accidents from MSHA open data portal as MR/non-MR
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 # Last edit 1/11/17
 
-######################################################################################################
+################################################################################
 
-library(zoo)
-library(tree)
-library(randomForest)
-library(ggplot2)
-library(reshape2)
-library(pROC)
-library(ROSE)
-library(rpart)
-library(rpart.plot)
-library(adabag)
-library(DMwR)
-library(caret)
+#library(zoo)
+#library(tree)
+#library(randomForest)
+#library(ggplot2)
+#library(reshape2)
+#library(pROC)
+#library(ROSE)
+#library(rpart)
+#library(rpart.plot)
+#library(adabag)
+#library(DMwR)
+#library(caret)
 
-######################################################################################################
+################################################################################
 
+# SETTINGS
+  # file can be used to train and test various algorithms OR to train the best 
+  # algorithm and use it to classify all accidents (MR/non-MR)
+
+purpose = "train.test" # trains and test various algorithms
+# purpose = "classify" # trains best algorithm and classifies accidents as MR/non-MR
+
+################################################################################
+
+# define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL) 
-clean.path = paste0(root, "/1_cleaned", collapse = NULL)
+originals.input.path = paste0(root, "/0_originals", collapse = NULL) 
+cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL)
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # MR training set - sent to us by NIOSH on 8/28/2015
-training.set.file.name = paste0(originals.path, "/training-sets/Training_Set_Maintenance_And_Repair_Accidents_August_2015_2.csv", collapse = NULL)
-  # additional maintenance and repair accidents (all fatalities) collected by Sarah L. following correspondence with John H. from NIOSH on 4/14/2016
-fatalities.data.file.name = paste0(originals.path, "/coded_MR_fatalities.csv", collapse = NULL)
-  # all accidents data, unclassified
-accidents.data.file.name = paste0(clean.path, "/clean_accidents.rds", collapse = NULL)
+  # master MR dataset
+    # coded by NIOSH representatives and sent to the Morantz team on 8/28/2015
+training.set.file.name = paste0(originals.input.path, "/training-sets/Training_Set_Maintenance_And_Repair_Accidents_August_2015_2.csv", collapse = NULL)
+  # extra MR accidents (all fatalities) 
+    # collected by Sarah Levine following correspondence with John H. from NIOSH on 4/14/2016
+fatalities.data.file.name = paste0(originals.input.path, "/coded_MR_fatalities.csv", collapse = NULL)
+  # accidents data from the MSHA open data portal , cleaned in 1_clean_accidents
+accidents.data.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
-  # all accidents, now classified by MR after algorithm (R datatset)
-classified.accidents.file.name = paste0(coded.output.path, "/MR_accidents_with_predictions.rds", collapse = NULL)
-  # all accidents, now classified by MR after algorithm (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/MR_accidents_with_predictions.csv", collapse = NULL)
+  # accidents data, classified as MR/non-MR (R dataset)
+classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR.rds", collapse = NULL)
+  # accidents data, classified as MR/non-MR (R dataset)
+classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR.csv", collapse = NULL)
 
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(coded.output.path, recursive = TRUE)
+# generate file paths
+dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)  
 
-######################################################################################################
+################################################################################
 
-# File preferences (these were used in algorithm testing but have now been hard-coded in, in accordance
-# with the algorithm that we determined to be most successful)
+# READ DATA
 
-# Data type - either "training data" for model selection and testing, or "real accidents data" for classification
-data.type = "real accidents data"
-
-######################################################################################################
-
-# LOAD IN DATA
-
-# Load in coded training set (1000 observations unique on document number, 111 variables, all coded as MR or not-MR)
+# read master MR dataset
+  # 1000 rows; 111 columns; unique on documentno
 mr.data = read.csv(training.set.file.name, header = TRUE, sep = ",", nrows = 1001, stringsAsFactors = FALSE)
 
-# Load in dataset of additional fatalities (from open data) to append to our training set - 23 observations unique on document number, 110 variables, all coded as MR
+# read extra MR injuries
+  # 23 rows; 110 columns; unique on documentno
 mr.fatalities = read.csv(fatalities.data.file.name, header = TRUE, sep = ",", nrows = 24, stringsAsFactors = FALSE)
 
-# Load in real accidents data for classification
-if (data.type == "real accidents data") {
-    # 75016 rows; 58 columns; unique on documentno
+# read unclassified accidents data 
+  # 75016 rows; 56 columns; unique on documentno
+if (purpose == "classify") {
   accidents.data = readRDS(accidents.data.file.name) 
 }
 
-######################################################################################################
+# bye
+rm(root, cleaned.input.path, coded.output.path, originals.input.path,
+   training.set.file.name, accidents.data.file.name, fatalities.data.file.name)
+
+################################################################################
 
 # MAKE SURE TRAINING SET AND FATALITIES DATASETS HAVE ALL THE SAME VARIABLES NAMES BEFORE APPENDING - IF USING TRAINING DATA
 
 mr.data$MR = as.factor(mr.data$M.R.)
-mr.data = mr.data[, c(-match("M.R.", names(mr.data)))]
-mr.data[, "death"] = ifelse(grepl("fatality", mr.data[,"degreeofinjury"]), 1, 0)
+mr.data$M.R. = NULL
+mr.data$death = ifelse(grepl("fatality", mr.data$degreeofinjury), 1, 0)
 
 # Clean up fatalities variables - drop variables not present in training set before appending
 mr.fatalities$MR = as.factor(mr.fatalities$MR_fatality)
@@ -113,17 +130,17 @@ mr.fatalities = mr.fatalities[!(mr.fatalities$documentno=="220030290001") &
 # Clean up narrative fields: drop redundant variables and keep the lowercase versions
 drops = c("narrativemodified", "degreeofinjury", "accidentclassification", "accidenttype", "natureofinjury", "mineractivity")
 mr.data = mr.data[, !(names(mr.data) %in% drops)]
-names(mr.data)[names(mr.data) == 'narrativemodified.1'] = 'narrative'
+names(mr.data)[names(mr.data) == "narrativemodified.1"] = "narrative"
 mr.data$narrative = tolower(mr.data$narrative)
-names(mr.data)[names(mr.data) == 'degreeofinjury.1'] = 'degreeofinjury'
+names(mr.data)[names(mr.data) == "degreeofinjury.1"] = "degreeofinjury"
 mr.data$degreeofinjury = tolower(mr.data$degreeofinjury)
-names(mr.data)[names(mr.data) == 'accidentclassification.1'] = 'accidentclassification'
+names(mr.data)[names(mr.data) == "accidentclassification.1"] = "accidentclassification"
 mr.data$accidentclassification = tolower(mr.data$accidentclassification)
-names(mr.data)[names(mr.data) == 'accidenttype.1'] = 'accidenttype'
+names(mr.data)[names(mr.data) == "accidenttype.1"] = "accidenttype"
 mr.data$accidenttype = tolower(mr.data$accidenttype)
-names(mr.data)[names(mr.data) == 'natureofinjury.1'] = 'natureofinjury'
+names(mr.data)[names(mr.data) == "natureofinjury.1"] = "natureofinjury"
 mr.data$natureofinjury = tolower(mr.data$natureofinjury)
-names(mr.data)[names(mr.data) == 'mineractivity.1'] = 'mineractivity'
+names(mr.data)[names(mr.data) == "mineractivity.1"] = "mineractivity"
 mr.data$mineractivity = tolower(mr.data$mineractivity)
 mr.data$occupation = tolower(mr.data$occupation)
 mr.data$typeofequipment = tolower(mr.data$typeofequipment)
@@ -153,7 +170,7 @@ if (data.type == "training data") {
   mr.data$type = "training"
 }
 
-######################################################################################################
+################################################################################
 
 # THIS CODE IS RUN IF USING THE REAL ACCIDENTS DATA (NOT THE TRAINING SET FOR ALGORITHM TESTING)
 
@@ -211,7 +228,7 @@ if (data.type == "real accidents data") {
   mr.data = rbind(mr.data, accidents.data) 
 }
 
-######################################################################################################
+################################################################################
 
 # CLEAN UP ALL REMAINING VARIABLES 
 
@@ -242,7 +259,7 @@ mr.data$MR[mr.data$MR == "YES" & mr.data$accident.only == 1] = 0
 mr.data[, "MR"] = factor(ifelse(mr.data[, "MR"] == 1, "YES", "NO"))
 names(mr.data)[names(mr.data) == "MR"] = "MR"
 
-######################################################################################################
+################################################################################
 
 # 60 NARRATIVE FIELDS ARE POLLUTED WITH OTHER COLUMNS - SPLIT AND REPLACE THESE 
 
@@ -270,7 +287,7 @@ for (i in indices_with_date) {
   mr.data[,i] = as.Date(mr.data[,i], "%m/%d/%Y")
 }
 
-######################################################################################################
+################################################################################
 
 # CREATE KEY WORD VARIABLES FROM NARRATIVE FIELD
 
@@ -397,7 +414,7 @@ mr.data[, "surgery"] = ifelse((grepl("surger[a-z]*", mr.data[,"narrative"]) |
                                 mr.data[, "pain"] == 0 & 
                                 mr.data[, "injured"] == 0, 1, 0)
 
-######################################################################################################
+################################################################################
 
 # GENERATE ADDITIONAL KEY WORDS ABOUT WHICH WE HAVE NO PRIORS TO FEED INTO RANDOM FOREST 
 
@@ -431,7 +448,7 @@ mr.data = mr.data[, c(-match("falling.class", names(mr.data)),
 mr.data$accident.only = ifelse((mr.data$degreeofinjury == "accident only" | 
                                   mr.data$accidenttype == "acc type, without injuries"), 1, 0)
 
-######################################################################################################
+################################################################################
 
 # CREATE/PREPARE VARIOUS TIME AND DATE VARIABLES
 
@@ -486,7 +503,7 @@ modus = function(x) {
   uniqv[which.max(tabulate(match(x, uniqv)))]
 }
 
-######################################################################################################
+################################################################################
 
 # CREATE SIMPLE DATA CONTAINING JUST THE VARIABLES USED FOR ANALYSIS
 
@@ -502,7 +519,7 @@ drops = c("bodypart", "contractor_accident","contractorid",
           "uglocation", "ugminingmethod", "year")
 simple.data = mr.data[, !(names(mr.data) %in% drops)] 
          
-######################################################################################################
+################################################################################
 
 # CREATE LIKELY/MAYBE/UNLIKELY GROUPS OF VALUES OF CATEGORICAL VARIABLES
 
@@ -586,7 +603,7 @@ drops = c("sourceofinjury",
           "occupation")
 simple.data = simple.data[, !(names(simple.data) %in% drops)]
 
-######################################################################################################
+################################################################################
 
 # BEGIN ALGORITHM - RANDOMLY SORT DATA 
 
@@ -605,7 +622,7 @@ which(colnames(simple)=="MR")
 # The code below this line was used in testing various algorithms, and is included for interest alone
 if (data.type == "training") {
   
-  ######################################################################################################
+  ################################################################################
   
   # CREATE CART FUNCTION WITH RPART AND EXECUTE ON 1ST 600 OBSERVATIONS
   cart = rpart(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno','narrative'))], method="class")
@@ -613,7 +630,7 @@ if (data.type == "training") {
   rpart.plot(cart, type=3, extra = 101, fallen.leaves=T)
   printcp(cart) 
   
-  ######################################################################################################
+  ################################################################################
   
   # DEFINE RANDOM FOREST (ON TRUE PROPORTION OF NO'S AND YES'S)
   rf = randomForest(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno','narrative'))], mtry = 15, importance=TRUE, type="class",
@@ -622,7 +639,7 @@ if (data.type == "training") {
   rf.oob.predictions = predict(rf, simple[1:700,!(names(simple) %in% c('documentno','narrative'))],type="class")
   table(simple[1:700,4], predicted = rf.oob.predictions)
   
-  ######################################################################################################
+  ################################################################################
   
   # DOWNSAMPLE NEGATIVE OUTCOMES (MR=NO) FOR RANDOM FOREST
   nmin = sum(simple$MR == "YES")
@@ -643,7 +660,7 @@ if (data.type == "training") {
   plot(base.ROC, col = rgb(0, 0, 1, .5), lwd = 2, add = TRUE)
   legend(.4, .4, c("Down-Sampled", "Normal"), lwd = rep(2, 1), col = c(rgb(1, 0, 0, .5), rgb(0, 0, 1, .5)))
   
-  ######################################################################################################
+  ################################################################################
   
   # OVERSAMPLE POSITIVE OUTCOMES (MR=YES) FOR RANDOM FOREST: GENERATE ARTIFICIALLY BALANCED DATA WITH ROSE PACKAGE
   simple.rosex = ROSE(MR ~ ., data=simple[1:700,!(names(simple) %in% c('documentno','narrative'))])$data
@@ -653,7 +670,7 @@ if (data.type == "training") {
   rf.rose = randomForest(MR ~ ., data = simple.rose, mtry = 15, ntree = 1000)
   rf.rose
   
-  ######################################################################################################
+  ################################################################################
   
   # OVERSAMPLE POSITIVE OUTCOMES (MR=YES) FOR RANDOM FOREST: GENERATE ARTIFICIALLY BALANCED DATA WITH SMOTE PACKAGE
   smote.trainx = simple[1:700, !(names(simple) %in% c('documentno','narrative'))]
@@ -661,13 +678,13 @@ if (data.type == "training") {
   smote = SMOTE(MR ~ ., smote.trainx, perc.over = 100, perc.under = 100)
   rf.smo = randomForest(MR ~ ., data = smote, mtry = 10, ntree = 800)
   
-  ######################################################################################################
+  ################################################################################
   
   # USE ADABOOST TO IMPLEMENT BOOSTING ALGORITHM 
   mr.adaboost = boosting(MR ~ . , data = simple[1:700,!(names(simple) %in% c('documentno','narrative'))], boos = T, mfinal = 300, coeflearn = 'Freund')
   adaboost.pred = predict.boosting(mr.adaboost, newdata = simple[701:1019,!(names(simple) %in% c('documentno','narrative'))])
   
-  ######################################################################################################
+  ################################################################################
   
   # PRINT ALL PREDICTIONS 
   
@@ -693,7 +710,7 @@ if (data.type == "training") {
   names(adaboost_test)[names(adaboost_test) == 'adaboost.pred$class'] = 'adaboost'
 }
 
-######################################################################################################
+################################################################################
 
 # NOW PERFORM THE FINAL ALGORITHM WITH REAL ACCIDENTS DATA FOR CLASSIFICATION
 
@@ -714,7 +731,7 @@ if (data.type == "real accidents data") {
   accidents.data = cbind(simple[simple$type=="unclassified",], adaboost.pred$class)
   names(accidents.data)[names(accidents.data) == 'adaboost.pred$class'] = 'adaboost'
   
-  ######################################################################################################
+  ################################################################################
   
   # POST-PROCESSING
   
@@ -851,4 +868,9 @@ if (data.type == "real accidents data") {
   saveRDS(accidents.data, file = classified.accidents.file.name)
 }
 
-######################################################################################################
+################################################################################
+
+rm(list = ls())
+
+################################################################################
+

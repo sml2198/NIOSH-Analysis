@@ -1,3 +1,5 @@
+# resume line 387
+
 # NIOSH Project 2014-N-15776
 # Designing a Statistical Algorithm for Strategic Identification and Development 
 # of New Mine Safety Technologies and Technological Applications
@@ -79,15 +81,19 @@ dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file
 
 # READ DATA
 
-# master PS dataset
+# read master PS dataset
   # 1002 rows; 104 columns; unique on documentno 
 ps.data = read.csv(training.set.file.name)
 
 # read unclassified accidents data 
-  # X rows; X columns; unique on documentno 
+  # 75016 rows; 56 columns; unique on documentno 
 if (purpose == "classify") {
   accidents.data = readRDS(accidents.data.file.name)
 }
+
+# bye 
+rm(root, cleaned.input.path, coded.output.path, originals.input.path,
+  training.set.file.name, accidents.data.file.name)
 
 ################################################################################
 
@@ -135,6 +141,9 @@ for (i in 1:length(messy.rows)) {
   ps.data[messy.rows[i], "returntoworkdate"] = unlist(narrative.split[i])[4]
 }
 ps.data$messy = NULL
+
+# bye
+rm (i, messy.rows, narrative.split)
 
 ################################################################################
 
@@ -185,39 +194,43 @@ ps.data[ps.data$documentno == "220020100051", "PS"] = "NO"
 
 if (purpose == "classify") {
   
-  # make training set and accidents data compatible to append
-  drops = c("closed_doc_no",
-            "fiscalyear", 
-            "fiscalquarter", 
-            "investigationbegindate")
-  accidents.data = accidents.data[, !(names(accidents.data) %in% drops)] 
-  accidents.data[, "PS"] = ""
+  # distinguish classified/unclassified accidents
+  ps.data$type = "classified" 
+  accidents.data$type = "unclassified"
   
-  # This is used for identifying training from testing observations, or training from real observations 
-  ps.data$type[, "type"] = "training" 
-  accidents.data[, "type"] = "unclassified" 
+  # make master dataset and accidents data compatible
+  accidents.data$closed_doc_no = 
+    accidents.data$fiscalyear = 
+    accidents.data$fiscalquarter = 
+    accidents.data$investigationbegindate = NULL
   
-  # drop any remaining variables not common to the real accidents data and mr.data (training set)
+  accidents.data$PS = ""
+  
   accident.names = names(accidents.data)
   ps.data = ps.data[, names(ps.data) %in% accident.names]
   
-  # create lists of document numbers from each dataset 
-  ps.docnos = ps.data$documentno
-  ps.docnos = as.character(ps.docnos)
-  accident.docnos = accidents.data$documentno
-  
-  # identify common document numbers
-  keep.docnos = setdiff(accident.docnos, ps.docnos) 
-  
-  # save a dataset of all accidents
+  # save accidents data for later
+    # 75016 rows; 54 columns; unique on documentno
   all.accidents = accidents.data 
   
-  # remove observations from accidents data present in the ps.data (training set)
-  accidents.data = accidents.data[which(accidents.data$documentno %in% keep.docnos),]
+  # deal with duplicated documentnos between datasets
+    # create lists of document numbers from each dataset 
+  ps.docnos = as.character(ps.data$documentno)
+  accident.docnos = as.character(accidents.data$documentno)
   
-  # append dataset of training observations and real accidents for classification - should be unique on document number
+    # identify common document numbers
+  keep.docnos = setdiff(accident.docnos, ps.docnos) 
+  
+    # remove observations from accidents data present in the ps.data (training set)
+  accidents.data = accidents.data[which(accidents.data$documentno %in% keep.docnos), ]
+  
+  # combine master PS dataset and accidents dataset
+    # 75743 rows; 54 columns; unique on documentno
   ps.data = rbind(ps.data, accidents.data)
-  rm(accidents.data)
+  
+  # bye
+  rm(accidents.data, accident.docnos, accident.names, keep.docnos, ps.docnos)
+  
 }
 
 ################################################################################
@@ -249,6 +262,9 @@ for (i in indices.with.date) {
 
 # format accident type codes
 ps.data$accidenttypecode = as.factor(ps.data$accidenttypecode)
+
+# bye
+rm(i, indices.with.date)
 
 ################################################################################
 
@@ -415,15 +431,21 @@ ps.data$narrative = gsub("rail( |-)*runner", "VEHICLE37", ps.data$narrative)
 ps.data$narrative = gsub("mobile", "VEHICLE38", ps.data$narrative)
 ps.data$narrative = gsub("porta(l)*( |-)*bus", "VEHICLE39", ps.data$narrative)
 ps.data$narrative = gsub("( |^|-)bus(es| |\\.|,|$)", " VEHICLE40 ", ps.data$narrative)
-ps.data[!grepl("troll(e)*y( )*pol(e|l)", ps.data[,"narrative"]),]$narrative = gsub("trol(l)*(e)*y", " VEHICLE41 ", ps.data[!grepl("troll(e)*y( )*pol(e|l)", ps.data[,"narrative"]),]$narrative)
-ps.data[!grepl("to trip", ps.data[,"narrative"]),]$narrative = gsub("( |^)trip( |$|,|\\.)", " VEHICLE42 ", ps.data[!grepl("to trip", ps.data[,"narrative"]),]$narrative)
-ps.data[!grepl("scoop(er|ing)", ps.data[,"narrative"]),]$narrative = gsub("scoop", " VEHICLE43 ", ps.data[!grepl("scoop(er|ing)", ps.data[,"narrative"]),]$narrative)
+ps.data[!grepl("troll(e)*y( )*pol(e|l)", ps.data$narrative), "narrative"] = 
+  gsub("trol(l)*(e)*y", " VEHICLE41 ", ps.data[!grepl("troll(e)*y( )*pol(e|l)", ps.data[,"narrative"]),]$narrative)
+ps.data[!grepl("to trip", ps.data[,"narrative"]),]$narrative = 
+  gsub("( |^)trip( |$|,|\\.)", " VEHICLE42 ", ps.data[!grepl("to trip", ps.data[,"narrative"]),]$narrative)
+ps.data[!grepl("scoop(er|ing)", ps.data[,"narrative"]),]$narrative = 
+  gsub("scoop", " VEHICLE43 ", ps.data[!grepl("scoop(er|ing)", ps.data[,"narrative"]),]$narrative)
 ps.data[!grepl("to tram", ps.data[,"narrative"]) & 
-          !grepl("tram.{1,5}(lever|sprocket|pedal|chain)", ps.data[,"narrative"]),]$narrative = gsub("tram( |$|\\.|,)", " VEHICLE44 ", ps.data[!grepl("to tram", ps.data[,"narrative"]) & 
+          !grepl("tram.{1,5}(lever|sprocket|pedal|chain)", ps.data[,"narrative"]),]$narrative = 
+  gsub("tram( |$|\\.|,)", " VEHICLE44 ", ps.data[!grepl("to tram", ps.data[,"narrative"]) & 
                                                                                                                                                  !grepl("tram.{1,5}(lever|sprocket|pedal|chain)", ps.data[,"narrative"]),]$narrative)
 ps.data$narrative = gsub("mucker", "VEHICLE45", ps.data$narrative)
 ps.data[, "shuttlecar_or_rbolter"] = ifelse((grepl("VEHICLE(8|10|36)", ps.data$narrative) | 
                                                grepl("(s(ch|h)uttle).{1,30}( |-|- |v)*(trip|car)( car)*", ps.data$old_narrative)), 1, 0)
+
+################################################################################
 
 # BODY PARTS
 ps.data$narrative = gsub("hand(s| |\\.|,|$)", "BODY ", ps.data$narrative)
@@ -482,6 +504,8 @@ ps.data[, "neg_wrench"] = ifelse(ps.data$wrench == 1 &
                                       ps.data$flew == 1 | 
                                       ps.data$caught == 1), 1, 0)
 
+################################################################################
+
 # PIN/STRIKE/TRAP
 ps.data$narrative = gsub("( |^)pin(n)*(ed|ing)", " PINNED/STRUCK", ps.data$narrative)
 ps.data$narrative = gsub("(s)*tr(u|i)(c)*k(e|ing)*", "PINNED/STRUCK", ps.data$narrative)
@@ -495,6 +519,8 @@ ps.data[ps.data$hole == 0,]$narrative = gsub("( |^)hit(t)*(ing)*( |$|\\.|,|s)", 
                                              ps.data[ps.data$hole == 0,]$narrative)
 ps.data[grepl("VEHICLE.{1,5}got on{1,5}BODY", ps.data[,"narrative"]),]$narrative = gsub("got on", "PINNED/STRUCK", 
                                                                                         ps.data[grepl("VEHICLE.{1,5}got on{1,5}BODY", ps.data[,"narrative"]),]$narrative)
+
+################################################################################
 
 # PERSON FLAGS
 ps.data$narrative = gsub("( |^)e(e|mp|mpl|mploye)(e)*( |$|,|\\.)", " PERSON ", ps.data$narrative)
@@ -516,8 +542,6 @@ ps.data$narrative = gsub("injured was", "PERSON", ps.data$narrative)
 ps.data$narrative = gsub("( |^)(s)*he(r|rs)*( |$|,|\\.)", " PERSON ", ps.data$narrative)
 ps.data$narrative = gsub("( |^)hi(s|m)( |$|,|\\.)", " PERSON ", ps.data$narrative)
 ps.data$narrative = gsub("(wo)*m(a|e)n( |$|,|\\.)", "PERSON ", ps.data$narrative)
-
-# These are less likely
 ps.data$narrative = gsub("operat(o|e)r", "PERSON", ps.data$narrative)
 ps.data$narrative = gsub("passenger", "PERSON", ps.data$narrative)
 ps.data$narrative = gsub("driver", "PERSON", ps.data$narrative)
