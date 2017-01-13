@@ -8,12 +8,12 @@
   # Merges cleaned mines and cleaned employment data and collapses
   # Then merges collapsed accidents data
 
+### NOTE ###
+  # Only run this file if you have access to BOTH the "EIA-data" and "NIOSH-data"
+  # data sub-folders, and intend to run the union/longwall specification test.
+
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/11/17
-
-################################################################################
-
-library(plyr)
+# Last edit 1/13/17
 
 ################################################################################
 
