@@ -604,7 +604,7 @@ ps.data$operating = ifelse((grepl("( |^|was|while|had)(tr(a)*m(m)*[^ ]{0,3}|op(e
 
 ################################################################################
 
-# GENERATE LIKELY POSITIVELY PREDICTIVE CIRCUMSTANCES FLAGS
+# GENERATE POSITIVELY PREDICTIVE CIRCUMSTANCE FLAGS
 
 # driver hitting head against vehicle roof
 ps.data$headroof = ifelse((grepl("(head|neck).{1,5}(on|str(ike|uck)|hit|against).{1,5}(roof|top)", ps.data$old_narrative) |
@@ -1025,6 +1025,7 @@ ps.data$likely_ps = ifelse((ps.data$keyword == 1 |
 
 # DROP UNNECESSARY VARIABLES
 
+# 75743 rows; 155 columns; unique on documentno
 all.vars = ps.data
 
 drop = c("accidenttime", "accidenttypecode", "bodypartcode", 
@@ -1034,49 +1035,47 @@ drop = c("accidenttime", "accidenttypecode", "bodypartcode",
          "narrative", "natureofinjurycode", "numbertypo", 
          "occupation", "old_narrative", "operatorid",
          "operatorname", "schedulechargedays", "shiftbeginningtime", 
-         "subunitcode", "transferredorterminated")
+         "subunitcode", "transferredorterminated", "mineid", 
+         "subunit", "calendaryear", "calendarquarter", 
+         "degreeofinjury", "fipsstatecode", "accidentclassification", 
+         "accidenttype", "numberofinjuries", "totalexperience", 
+         "jobexperience", "activitycode", "mineractivity", 
+         "sourceofinjury", "natureofinjury", "bodypart", 
+         "dayslost", "controllerid", "equiptypecode", 
+         "typeofequipment", "equipmanufacturer", "equipmentmodelno", 
+         "occupcode3digit", "controllername", "bolting", "holistic")
 
 ps.data = ps.data[, !(names(ps.data) %in% drop)] 
 
 ps.data = ps.data[, c(-grep("date", names(ps.data)), 
                       -grep("^ug(l|m)", names(ps.data)))]
 
-# PRODUCE DATASETS WITH ONLY VARIABLES OF INTEREST 
+# 75743 rows; 102 columns; unique on documentno (PURPOSE == CLASSIFY)
+simple.data = ps.data
 
-drops = c("mineid", "subunit", "calendaryear",
-          "calendarquarter", "degreeofinjury", "fipsstatecode", 
-          "accidentclassification", "accidenttype", "numberofinjuries", 
-          "totalexperience", "jobexperience", "activitycode", 
-          "mineractivity", "sourceofinjury", "natureofinjury", 
-          "bodypart", "dayslost", "controllerid", 
-          "equiptypecode", "typeofequipment", "equipmanufacturer", 
-          "equipmentmodelno", "occupcode3digit", "controllername",
-          "bolting", "holistic")
-simple.data = ps.data[, !(names(ps.data) %in% drops)] 
-
-# Enforce factor storage
+# enforce factor storage
 vars = names(simple.data)
 for (i in 1:length(vars)) {
  simple.data[, vars[i]] = factor(simple.data[, vars[i]])
 }
 
-################################################################################
-
-# Randomly sort data (in case it was ordered)
+# randomly sort data (in case it was ordered)
 set.seed(625)
 rand = runif(nrow(simple.data))
-simple.ps = simple.data[order(rand),]
+simple.ps = simple.data[order(rand), ]
 remove(rand)
 
-# Print out PS indicator column number
-which(colnames(simple.ps)=="PS") 
+# print PS indicator column number
+which(colnames(simple.ps) == "PS") 
+
+# bye 
+rm(drop, vars, i, rand, simple.data, ps.data)
 
 ################################################################################
 
 # TO TEST VARIOUS MODELS
 
-# The code below this line was used in testing various algorithms, and is included for interest alone
-if (data.type == "training data" ) {
+if (purpose == "train.test" ) {
   simple.ps = simple.ps[,c(-grep("type", names(simple.ps)))]
   
   # CART

@@ -82,7 +82,7 @@ assessments = assessments[assessments$coalcormetalm == "C", ]
   # 86362 rows; 3 columns; unique on mineid
 mine.types = readRDS(mine.types.in.file.name)
 
-# merge assessments with mine types & drop non-merged obs from mines data 
+# merge assessments with mine types & drop non-merged observations
   # 1160380 rows; 60 columns; unique on violationno
 assessments = merge(assessments, mine.types, by = c("mineid"), all = T)
 assessments = assessments[!is.na(assessments$eventno), ]

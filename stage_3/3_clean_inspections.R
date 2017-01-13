@@ -12,7 +12,7 @@
 
 ################################################################################
 
-library()
+library(stringr)
 
 ################################################################################
 
@@ -41,54 +41,21 @@ dir.create(clean.path, recursive = TRUE)
 ################################################################################
 
 # load data
-  # 2193591 rows; 61 columns; unique on violation_no
+  # 790234 rows; 45 columns; unique on event_no
 inspections = read.table(inspections.in.file.name, header = T, sep = "|", na.strings = c("", "NA"))
-
-# drop observations for environments not of interest
-inspections = inspections[inspections$COAL_METAL_IND == "C", ] # now we have 327,777 obs
 
 # rename variables
 names(inspections)[names(inspections) == "EVENT_NO"] = "eventno"
 names(inspections)[names(inspections) == "MINE_ID"] = "mineid"
 names(inspections)[names(inspections) == "INSPECTION_BEGIN_DT"] = "beginningdate"
 names(inspections)[names(inspections) == "INSPECTION_END_DT"] = "endingdate"
-names(inspections)[names(inspections) == "CAL_YR"] = "calendaryear"
-names(inspections)[names(inspections) == "CAL_QTR"] = "calendarquarter"
-names(inspections)[names(inspections) == "FISCAL_YR"] = "fiscalyear"
-names(inspections)[names(inspections) == "FISCAL_QTR"] = "fiscalquarter"
-names(inspections)[names(inspections) == "INSPECT_OFFICE_CD"] = "inspectingofficecode"
+names(inspections)[names(inspections) == "CAL_YR"] = "year"
+names(inspections)[names(inspections) == "CAL_QTR"] = "quarter"
 names(inspections)[names(inspections) == "ACTIVITY_CODE"] = "inspactycode"
 names(inspections)[names(inspections) == "ACTIVITY"] = "inspacty"
-names(inspections)[names(inspections) == "ACTIVE_SECTIONS"] = "activesectionsinspected"
-names(inspections)[names(inspections) == "IDLE_SECTIONS"] = "idlesectionsinspected"
-names(inspections)[names(inspections) == "SHAFT_SLOPE_SINK"] = "shaftslopesinkingconstinspected"
-names(inspections)[names(inspections) == "IMPOUND_CONSTR"] = "impoundconstinspected"
-names(inspections)[names(inspections) == "BLDG_CONSTR_SITES"] = "buildingconstinspected"
-names(inspections)[names(inspections) == "DRAGLINES"] = "draglineconstinspected"
-names(inspections)[names(inspections) == "UNCLASSIFIED_CONSTR"] = "otherconstsitesinspected"
-names(inspections)[names(inspections) == "CO_RECORDS"] = "companyrecords"
-names(inspections)[names(inspections) == "SURF_UG_MINE"] = "surfaceareasugmines"
-names(inspections)[names(inspections) == "SURF_FACILITY_MINE"] = "surfaceworkings"
-names(inspections)[names(inspections) == "REFUSE_PILES"] = "refusepiles"
-names(inspections)[names(inspections) == "EXPLOSIVE_STORAGE"] = "explosivestorage"
-names(inspections)[names(inspections) == "OUTBY_AREAS"] = "outbyareas"
-names(inspections)[names(inspections) == "MAJOR_CONSTR"] = "majorconstruction"
-names(inspections)[names(inspections) == "SHAFTS_SLOPES"] = "shafts"
-names(inspections)[names(inspections) == "MISC_AREA"] = "miscellaneous"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_AIR."] = "airsamples"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_DUSTSPOT."] = "spotdustsamples"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_DUSTSURVEY."] = "surveydustsamples"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_RESPDUST."] = "respdustsamples"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_NOISE."] = "noisesamples"
-names(inspections)[names(inspections) == "SUM.SAMPLE_CNT_OTHER."] = "othersamples"
-names(inspections)[names(inspections) == "SUM.TOTAL_INSP_HOURS."] = "sumtotal_insp_hours"
-names(inspections)[names(inspections) == "SUM.TOTAL_ON_SITE_HOURS."] = "sumtotal_on_site_hours"
-names(inspections)[names(inspections) == "SUM.TOTAL_INSP_HRS_SPVR_TRAINEE."] = "sumtotal_insp_hrs_spvr_trainee"
-names(inspections)[names(inspections) == "SUM.TOTAL_ON_SITE_HRS_SPVR_TRAINEE."] = "sumtotal_on_site_hrs_spvr_traine"
-names(inspections)[names(inspections) == "CONTROLLER_ID"] = "controllerid"
+names(inspections)[names(inspections) == "SUM.TOTAL_INSP_HOURS."] = "inspectionhours"
+names(inspections)[names(inspections) == "SUM.TOTAL_ON_SITE_HOURS."] = "onsitehours"
 names(inspections)[names(inspections) == "OPERATOR_ID"] = "operatorid"
-names(inspections)[names(inspections) == "CONTROLLER_NAME"] = "controllername"
-names(inspections)[names(inspections) == "OPERATOR_NAME"] = "operatorname"
 names(inspections) = tolower(names(inspections))
 
 # format variables
@@ -99,30 +66,46 @@ inspections$mineid = str_pad(inspections$mineid, 7, pad = "0")
 inspections$eventno = str_pad(inspections$eventno, 7, pad = "0")
 
 # one obs is not unique on eventno - remove these two rows (with the same eventno)
-#inspections[, "dup"] = duplicated(inspections$eventno)
-#inspections = inspections[,-grep("dup", names(inspections))]
+  # 790232 rows; 45 columns; unique on eventno
 inspections = inspections[inspections$eventno != 4165469,]
 
 ################################################################################
 
-# READ CLEAN MINE TYPE DATA, MERGE WITH INSPECTIONS DATA, THEN CLEAN RESULTING DATA
+# REMOVE DATA FROM ENVIRONMENTS NOT OF INTEREST
 
-# read clean mine type data (1_clean_mines) - 86,362 obs, 3 vars
-mine_types = readRDS(mine_types_file_name)
+# drop observations for environments not of interest
+  # 327775 rows; 45 columns; unique on eventno
+inspections = inspections[inspections$coal_metal_ind == "C", ]
 
-# merge open source inspections data with mine type data - 408,375 obs, 47 vars
-inspections = merge(inspections, mine_types, by = c("mineid"), all = T)
+# read mine types data (assessments data does NOT contain "minetype" field so we need
+# to merge on mine type information by mineid)
+  # 86362 rows; 3 columns; unique on eventno
+mine.types = readRDS(mine.types.in.file.name)
 
-# drop problematic merge observations
-inspections = inspections[!is.na(inspections$eventno), ] # back to 327775 obs
+# merge inspections with mine types & drop non-merged observations 
+  # 327775 rows; 48 columns; unique on eventno
+inspections = merge(inspections, mine.types, by = c("mineid"), all = T)
+inspections = inspections[!is.na(inspections$eventno), ]
+rm(mine.types)
 
 # drop observations from environments not of interest
-# facility means a mill/processing location, always above ground, according to April Ramirez @ DOL on 6/6/16
-inspections = inspections[inspections$minetype == "Underground", ] # now we have 195,719 obs
+  # 195732 rows; 48 columns; unique on eventno
+inspections = inspections[inspections$minetype == "Underground", ]
 
-inspections$too_new = ifelse(inspections$calendaryear == 2016 & inspections$calendarquarter > 1, 1, 0)
+# drop observations from time periods not of interest
+  # 192652 rows; 48 columns; unique on eventno
+inspections$too_new = ifelse(inspections$year == 2016 & inspections$quarter > 1, 1, 0)
 inspections = inspections[inspections$too_new == 0,]
-inspections = inspections[, c(-match("too_new", names(inspections)))] 
+
+################################################################################
+
+# keep only useful variables
+  # 192652 rows; 10 columns; unique on eventno
+keep = c("mineid", "eventno", "beginningdate",
+         "endingdate", "year", "quarter", 
+         "inspactycode", "inspectionhours", "onsitehours",
+         "operatorid")
+inspections = inspections[, (names(inspections) %in% keep)] 
 
 ################################################################################
 
