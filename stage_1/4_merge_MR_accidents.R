@@ -44,7 +44,7 @@ dir.create(merged.output.path, recursive = TRUE) # (recursive = TRUE creates fil
 # READ DATA
 
 # cleaned MR training set
-  # 1018 rows; 106 columns; unique on documentno
+  # 1018 rows; 107 columns; unique on documentno
 mr.data = readRDS(training.set.in.file.name)
 
 # cleaned accidents
@@ -55,8 +55,7 @@ accidents.data = readRDS(accidents.in.file.name)
 
 # COMBINE MASTER DATASET AND ACCIDENTS DATA
   
-# distinguish classified/unclassified accidents
-mr.data$type = "classified" 
+# distinguish classified/unclassified accidents (mr.data was marked in clean stage)
 accidents.data$type = "unclassified"
   
 # make master dataset and accidents data compatible

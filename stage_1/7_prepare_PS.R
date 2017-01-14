@@ -49,14 +49,14 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   
   if (purpose == "train.test") {
     # read cleaned PS training set data
-      # 1000 rows; 104 columns; unique on documentno 
+      # 1000 rows; 105 columns; unique on documentno 
     ps.data = readRDS(training.set.in.file.name)
     rm(training.set.in.file.name)
   }
   
   if (purpose == "classify") {
     # read merged PS accidents data 
-      # 75016 rows; 56 columns; unique on documentno 
+      # 75743 rows; 54 columns; unique on documentno 
     ps.data = readRDS(merged.PS.in.file.name)
     rm(merged.PS.in.file.name)
   }

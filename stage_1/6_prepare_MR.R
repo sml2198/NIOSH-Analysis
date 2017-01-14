@@ -12,6 +12,10 @@
 
 ################################################################################
 
+library(zoo)
+
+################################################################################
+
 # define root directory
 # root = "/NIOSH-Analysis/data"
 # root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
@@ -42,7 +46,7 @@ dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates fi
 
 # DEFINE LOOP THAT WILL ITERATE THROUGH PURPOSES
 
-for (purpose in c("train.test", "classify")) { # make datasets for both training/testing AND accident classification
+for (purpose in c("train.test")) { # make datasets for both training/testing AND accident classification
   
   ################################################################################
   
@@ -315,15 +319,6 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   mr.data = mr.data[, c(-grep("calendar", names(mr.data)), 
                         -grep("accidentdate", names(mr.data)))]
   
-  drop = c("roof.bolt", "rib.hole", "transferredorterminated",
-           "accidenttime", "accidenttypecode", "activitycode", 
-           "bodypartcode", "controllerid", "classificationcode",
-           "degreeofinjurycode", "equiptypecode", "equipmanufacturercode",
-           "fipsstatecode", "injurysourcecode", "natureofinjurycode",
-           "immediatenotificationcode", "occupcode3digit", "operatorid",
-           "subunitcode", "uglocationcode", "ugminingmethodcode")
-  simple.data = mr.data[, !(names(mr.data) %in% drops)] 
-  
   # create lists storing the types of variables
   var_classes = sapply(mr.data[,names(mr.data)], class)
   charac_vars = names(var_classes[c(grep("character", var_classes), grep("factor", var_classes))])
@@ -339,97 +334,87 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   
   ################################################################################
   
-  # CREATE SIMPLE DATA CONTAINING JUST THE VARIABLES USED FOR ANALYSIS
-  
-  # drop remaining unnecessary vars
-  drop = c("bodypart", "contractor_accident","contractorid", 
-           "controllername", "dayslost", "daysrestrictedduty",
-           "equipmanufacturer", "equipmentmodelno", "immediatenotificationclass",
-           "injured", "investigationbegindate", "jobexperience", 
-           "mineexperience", "natureofinjury", "numberofinjuries", 
-           "numbertypo", "operatorname", "quarter", 
-           "returntoworkdate", "schedulechargedays", "shiftbeginningtime",       
-           "subunit", "totalexperience", "typeofequipment",
-           "uglocation", "ugminingmethod", "year")
-  simple.data = mr.data[, !(names(mr.data) %in% drop)] 
-  
-  ################################################################################
-  
   # CREATE LIKELY/MAYBE/UNLIKELY GROUPS OF VALUES OF CATEGORICAL VARIABLES
   
-  simple.data$likely.occup = ifelse(grepl("maintenance", simple.data$occupation) & 
-                                      simple.data$accident.only == 0, 1, 0)
+  mr.data$likely.occup = ifelse(grepl("maintenance", mr.data$occupation) & 
+                                      mr.data$accident.only == 0, 1, 0)
   
-  simple.data$maybe.occup = ifelse(grepl("electrician", simple.data$occupation) & 
-                                     simple.data$accident.only == 0, 1, 0)
+  mr.data$maybe.occup = ifelse(grepl("electrician", mr.data$occupation) & 
+                                     mr.data$accident.only == 0, 1, 0)
   
-  simple.data$likely.activy = ifelse(grepl("maintenance", simple.data$mineractivity) | 
-                                       grepl("wet down working place", simple.data$mineractivity) & 
-                                       simple.data$accident.only == 0, 1, 0)
+  mr.data$likely.activy = ifelse(grepl("maintenance", mr.data$mineractivity) | 
+                                       grepl("wet down working place", mr.data$mineractivity) & 
+                                       mr.data$accident.only == 0, 1, 0)
   
-  simple.data$maybe.activy = ifelse(match("handling supplies/materials", simple.data$mineractivity) |
-                                      match("hand tools (not powered)", simple.data$mineractivity) |
-                                      match("no value found", simple.data$mineractivity) |
-                                      match("unknown", simple.data$mineractivity) | 
-                                      match("clean up", simple.data$mineractivity) | 
-                                      match("inspect equipment", simple.data$mineractivity) & 
-                                      simple.data$accident.only == 0, 1, 0)
+  mr.data$maybe.activy = ifelse(match("handling supplies/materials", mr.data$mineractivity) |
+                                      match("hand tools (not powered)", mr.data$mineractivity) |
+                                      match("no value found", mr.data$mineractivity) |
+                                      match("unknown", mr.data$mineractivity) | 
+                                      match("clean up", mr.data$mineractivity) | 
+                                      match("inspect equipment", mr.data$mineractivity) & 
+                                      mr.data$accident.only == 0, 1, 0)
   
-  simple.data$likely.class = ifelse(match("handtools (nonpowered)", simple.data$accidentclassification) |
-                                      match("machinery", simple.data$accidentclassification) |
-                                      match("electrical", simple.data$accidentclassification) & 
-                                      simple.data$accident.only == 0, 1, 0)
+  mr.data$likely.class = ifelse(match("handtools (nonpowered)", mr.data$accidentclassification) |
+                                      match("machinery", mr.data$accidentclassification) |
+                                      match("electrical", mr.data$accidentclassification) & 
+                                      mr.data$accident.only == 0, 1, 0)
   
-  simple.data$likely.source = ifelse((simple.data$sourceofinjury == "wrench" | 
-                                        simple.data$sourceofinjury == "knife" |
-                                        simple.data$sourceofinjury == "power saw" | 
-                                        simple.data$sourceofinjury == "hand tools,nonpowered,nec" |
-                                        simple.data$sourceofinjury == "crowbar,pry bar" | 
-                                        simple.data$sourceofinjury == "axe,hammer,sledge") & 
-                                       simple.data$accident.only == 0, 1, 0)
+  mr.data$likely.source = ifelse((mr.data$sourceofinjury == "wrench" | 
+                                        mr.data$sourceofinjury == "knife" |
+                                        mr.data$sourceofinjury == "power saw" | 
+                                        mr.data$sourceofinjury == "hand tools,nonpowered,nec" |
+                                        mr.data$sourceofinjury == "crowbar,pry bar" | 
+                                        mr.data$sourceofinjury == "axe,hammer,sledge") & 
+                                       mr.data$accident.only == 0, 1, 0)
   
   # all "surgeries" are false keywords, but only "hoist/elevator" in combo with words that refer to elevator service are false keywords
-  simple.data$false.keyword = ifelse((simple.data$repair & simple.data$surgery == 1 ) |
-                                       (simple.data$fix & simple.data$surgery == 1 ) |
-                                       (simple.data$rplace & simple.data$surgery == 1 ) |
-                                       (simple.data$repair & simple.data$hoist == 1 ) |
-                                       (simple.data$maintain & simple.data$hoist == 1 ) |
-                                       (simple.data$service & simple.data$hoist == 1 ) |
-                                       (simple.data$fix & simple.data$hoist == 1 ), 1, 0)
+  mr.data$false.keyword = ifelse((mr.data$repair & mr.data$surgery == 1 ) |
+                                       (mr.data$fix & mr.data$surgery == 1 ) |
+                                       (mr.data$rplace & mr.data$surgery == 1 ) |
+                                       (mr.data$repair & mr.data$hoist == 1 ) |
+                                       (mr.data$maintain & mr.data$hoist == 1 ) |
+                                       (mr.data$service & mr.data$hoist == 1 ) |
+                                       (mr.data$fix & mr.data$hoist == 1 ), 1, 0)
   
-  simple.data$likely.keyword = ifelse((simple.data$repair == 1 | simple.data$fix == 1 | 
-                                         simple.data$maintain == 1 | simple.data$rplace == 1 |
-                                         simple.data$install == 1 | simple.data$service == 1 |
-                                         simple.data$cleaning == 1 | simple.data$changing == 1 |
-                                         simple.data$retrack == 1 | simple.data$inspect == 1 |
-                                         simple.data$shovel == 1 | simple.data$reposition == 1 | 
-                                         simple.data$pullbelt == 1 | simple.data$grease == 1 |
-                                         simple.data$washingdown == 1 | simple.data$check == 1 |
-                                         simple.data$oil == 1 | simple.data$mrworker == 1 |                                      
-                                         simple.data$cover == 1 | simple.data$tests == 1 |
-                                         simple.data$toolbox == 1 ) & simple.data$accident.only == 0 &
-                                        simple.data$false.keyword == 0, 1, 0)
+  mr.data$likely.keyword = ifelse((mr.data$repair == 1 | mr.data$fix == 1 | 
+                                         mr.data$maintain == 1 | mr.data$rplace == 1 |
+                                         mr.data$install == 1 | mr.data$service == 1 |
+                                         mr.data$cleaning == 1 | mr.data$changing == 1 |
+                                         mr.data$retrack == 1 | mr.data$inspect == 1 |
+                                         mr.data$shovel == 1 | mr.data$reposition == 1 | 
+                                         mr.data$pullbelt == 1 | mr.data$grease == 1 |
+                                         mr.data$washingdown == 1 | mr.data$check == 1 |
+                                         mr.data$oil == 1 | mr.data$mrworker == 1 |                                      
+                                         mr.data$cover == 1 | mr.data$tests == 1 |
+                                         mr.data$toolbox == 1 ) & mr.data$accident.only == 0 &
+                                        mr.data$false.keyword == 0, 1, 0)
   
-  simple.data$maybe.keyword = ifelse( (simple.data$remove == 1 | simple.data$dismantl == 1 | 
-                                         simple.data$rethread == 1 | simple.data$welding == 1 | 
-                                         simple.data$bits == 1 | simple.data$helping == 1 |
-                                         simple.data$conveyor == 1 | simple.data$belt == 1 |
-                                         simple.data$tighten == 1 | simple.data$battery == 1 ) & simple.data$accident.only == 0 &
-                                        simple.data$false.keyword == 0, 1, 0)
+  mr.data$maybe.keyword = ifelse( (mr.data$remove == 1 | mr.data$dismantl == 1 | 
+                                         mr.data$rethread == 1 | mr.data$welding == 1 | 
+                                         mr.data$bits == 1 | mr.data$helping == 1 |
+                                         mr.data$conveyor == 1 | mr.data$belt == 1 |
+                                         mr.data$tighten == 1 | mr.data$battery == 1 ) & mr.data$accident.only == 0 &
+                                        mr.data$false.keyword == 0, 1, 0)
   
-  # remove all categorical variables - keep narratives and document number for model training
-  simple.data = simple.data[, c(-grep("accidentclassification", names(simple.data)),
-                                -grep("accidenttype", names(simple.data)), 
-                                -grep("degreeofinjury", names(simple.data)), 
-                                -grep("mineractivity", names(simple.data)),
-                                -grep("occupation", names(simple.data)), 
-                                -grep("sourceofinjury", names(simple.data)))]
-  
-  # now drop categorical variables from data
-  drop = c("sourceofinjury", "equipmentmodelno", "fipscountyname", 
-           "controllername", "mineractivity", "minename", 
-           "operatorname", "quarter", "occupation")
-  simple.data = simple.data[, !(names(simple.data) %in% drop)]
+  # keep only necessary variables
+  keep = c("accident.only", "battery", "belt", "bits", "changing", "check", 
+           "cleaning", "conveyor", "cover", "dismantl", "documentno", 
+           "falling.accident", "false.keyword", "fix", "grease", "helping", 
+           "hoist", "inspect", "install", "likely.activy", "likely.class", 
+           "likely.keyword", "likely.occup", "likely.source", "loosen", "lug", 
+           "maintain", "maybe.activy", "maybe.keyword", "maybe.occup", "moretools", 
+           "MR", "mrworker", "oil", "pain", "power", "pullbelt", "remove", "repair", 
+           "reposition", "rethread", "retrack", "rib.hole", "roller", "roof.bolt", 
+           "rplace", "service", "shovel", "splice", "surgery", "tests", "tighten", 
+           "tire", "toolbox", "trash", "type", "washingdown", "welding", "wrench")
+  mr.data = mr.data[, (names(mr.data) %in% keep)]
+
+  # variables are nontrivial (worth keeping) if their standard deviation is greater than zero 
+  varstats = describe(simple[, c(-match("MR", names(mr.data)))])
+  keep = rownames(varstats[varstats$sd > 0,])
+  drop = setdiff(names(mr.data[,c(-match("MR", names(mr.data)))]), keep)
+  mr.data = mr.data[, !(names(mr.data) %in% drop)]
+  rm(varstats, keep, drop)
   
   ################################################################################
   
@@ -438,16 +423,13 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   # set seed so the randomizations are conducted equally each time this file is run
   set.seed(626)
   rand = runif(nrow(mr.data))
-  train = mr.data[order(rand),]
-  rand2 = runif(nrow(simple.data))
-  simple = simple.data[order(rand2),]
+  mr.data = mr.data[order(rand),]
 
   # this code in just to find out which column number the MR indicator is, so we can report accuracy
-  which(colnames(train)=="MR")
-  which(colnames(simple)=="MR")
+  which(colnames(mr.data)=="MR")
   
   # bye 
-  rm(rand, rand2)
+  rm(rand)
   
   ################################################################################
   
@@ -455,13 +437,13 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   
   if (purpose == "train.test") {
     # output prepped MR training set
-      # 1018 rows; 101 columns; unique on documentno 
+      # 1018 rows; 59 columns; unique on documentno 
     saveRDS(mr.data, file = prepped.train.out.file.name)
   }
   
   if (purpose == "classify") {
     # output prepped and merged MR accidents data 
-      # 75743 rows; 101 columns; unique on documentno 
+      # 75700 rows; 59 columns; unique on documentno 
     saveRDS(mr.data, file = prepped.classify.out.file.name)
   }
   

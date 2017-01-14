@@ -143,6 +143,9 @@ mr.data = mr.data[!duplicated(mr.data$documentno), ]
 # format variable
 mr.data$MR = factor(ifelse(mr.data$MR == 1, "YES", "NO"))
 
+# mark data as training data
+mr.data$type = "classified" 
+
 # bye
 rm(mr.fatalities)
 
@@ -158,7 +161,7 @@ mr.data[mr.data$documentno == "219932950056", "MR"] = "NO"
 ################################################################################
 
 # output clean training set
-  # 1018 rows; 106 columns; unique on documentno
+  # 1018 rows; 107 columns; unique on documentno
 saveRDS(mr.data, file = training.set.out.file.name)
 
 ################################################################################
