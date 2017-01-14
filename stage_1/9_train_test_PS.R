@@ -18,10 +18,9 @@ library(DMwR)
 library(ROSE)
 library(caret)
 library(ggplot2)
+library(adabag)
 #library(tree)
-#library(randomForest)
 #library(reshape2)
-#library(adabag)
 
 ################################################################################
 
@@ -127,6 +126,7 @@ rf.downsampled = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c(
                        strata = simple.ps$PS, sampsize = rep(nmin, 2))
 down.prob = predict(rf.downsampled, 
                     simple.ps[701:1000,!(names(simple.ps) %in% c("documentno", "narrative"))], type = "prob")[,1]
+table(simple.ps[701:1000, 2], predicted = down.prob)
 
 ################################################################################
 
@@ -140,14 +140,9 @@ simple.adaboost.pred$confusion
 
 # generate variable with boosting predictions
 simple.adaboost.pred$class = as.factor(simple.adaboost.pred$class)
-predictions = simple.ps[601:1000,]
+predictions = simple.ps[601:1000, ]
 predictions = cbind(predictions, simple.adaboost.pred$class)
 names(predictions)[names(predictions) == "simple.adaboost.pred$class"] = "prediction"
-
-# print variable importance
-pdf("plots.pdf", width = 40, height = 30)
-importanceplot(ps.adaboost)
-dev.off()
 
 # retrieve narratives of misclassified observations
 predictions = merge(predictions, all_vars[, c("narrative", "old_narrative", "documentno", "mineid")], by = "documentno")

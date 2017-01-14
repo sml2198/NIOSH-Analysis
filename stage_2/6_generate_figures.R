@@ -93,13 +93,13 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   for (dv in c("dv.exp", "dv.rel")) {
     
     for (method in c("avg", "med")) {
-      
-      if (method == "avg") {
-        fig.ab = "a"
-      }
-      if (method == "med") {
-        fig.ab = "b"
-      }
+      print(fig.ab)
+      #if (method == "avg") {
+       # fig.ab = "a"
+      #}
+      #if (method == "med") {
+      #  fig.ab = "b"
+      #}
       
       # set labels
       if (dv == "dv.exp") {
@@ -132,17 +132,14 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
       # update naming scheme
       if (fig.ab == "a") {
         fig.ab = "b"
-        print("here")
       }
-      if (fig.ab == "b") {
+      else if (fig.ab == "b") {
         fig.num = fig.num + 1
         fig.ab = "a"
-        print("there")
       }
       
     }
     
-    fig.num = fig.num + 1
   }
   
   # bye

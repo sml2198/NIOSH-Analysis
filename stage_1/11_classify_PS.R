@@ -36,7 +36,7 @@ classified.accidents.file.name = paste0(coded.output.path, "/classified_accident
 classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_PS.csv", collapse = NULL)
 
 # generate file paths
-dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
+dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
 
 ################################################################################
 
@@ -45,15 +45,70 @@ dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates fi
 # set seed to enable reproducible results
 set.seed(625)
 
-# read cleaned PS training set data and remive "type" field (it's all the same)
-# 1000 rows; 100 columns; unique on documentno 
-simple.ps = readRDS(prepped.train.set.in.file.name)
-simple.ps = simple.ps[, -c(match("type", names(simple.ps)))]
+# prepped PS data for classification
+  # 75743 rows; 101 columns; unique on documentno 
+simple.ps = readRDS(prepped.classify.in.file.name)
 
 # print PS indicator column number
 which(colnames(simple.ps) == "PS") 
 
 # bye
-rm(root, prepped.input.path, prepped.train.set.in.file.name)
+rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
+
+################################################################################
+
+# run boosting on master dataset
+ps.adaboost = boosting(PS ~ ., 
+                       data = simple.ps[simple.ps$type == "classified", !(names(simple.ps) %in% c("documentno", "type"))], 
+                       boos = T, mfinal = 300, coeflearn = "Freund")
+
+# predict PS for unclassified accidetns
+adaboost.pred = predict.boosting(ps.adaboost, 
+                                 newdata = simple.ps[simple.ps$type == "unclassified", !(names(simple.ps) %in% c("documentno", "type"))])
+
+# generate variable with predictions
+adaboost.pred$class = as.factor(adaboost.pred$class)
+accidents = cbind(simple.ps[simple.ps$type == "unclassified", ], adaboost.pred$class)
+names(accidents)[names(accidents) == "adaboost.pred$class"] = "prediction"
+accidents$PS = NULL
+
+# re-code common false positives
+accidents$prediction = ifelse(accidents$entrapment == 1, 1, accidents$prediction) 
+accidents$prediction = ifelse(accidents$brokensteel == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$headroof == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$headcanopy == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$hole == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$jarring == 1 |
+                                accidents$rock == 1 |
+                                accidents$bodyseat == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$accident.only == 1, 1, accidents$prediction)
+accidents$prediction = ifelse(accidents$falling.accident == 1, 1, accidents$prediction)
+accidents$prediction = as.factor(accidents$prediction)
+
+# merge algorithm-classified accidents onto data
+accidents = accidents[, c("prediction", "documentno")]
+accidents = merge(all.accidents, accidents, by = "documentno", all = T)
+accidents$PS = ifelse(!is.na(accidents$prediction), accidents$prediction, accidents$PS)
+accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
+
+# merge NIOSH-classified accidents onto data
+accidents = merge(accidents, simple.ps, by = "documentno", all = F)
+accidents$PS.y = ifelse(accidents$PS.y == "YES", "2", "1")
+accidents$PS = ifelse(accidents$PS.x == "", accidents$PS.y, accidents$PS.x)
+accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
+
+################################################################################
+
+# OUTPUT CLASSIFIED DATA
+
+# output CSV
+write.csv(accidents, file = classified.accidents.file.name.csv)
+
+# output R dataset
+saveRDS(accidents, file = classified.accidents.file.name)
+
+################################################################################
+
+rm(list = ls())
 
 ################################################################################
