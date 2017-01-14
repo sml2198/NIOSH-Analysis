@@ -17,24 +17,23 @@ library(plyr)
 ################################################################################
 
 # define root directory
+# root = "/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-input.path = paste0(root, "/data/2_merged", collapse = NULL)
+input.path = paste0(root, "/data/5_prepped", collapse = NULL)
 output.path = paste0(root, "/figures", collapse = NULL)
 
 # inputs
-  # MR mine-year-level dataset created in file X
-MR.data.file.name = paste0(input.path, "/mr_data.rds", collapse = NULL) ############## CHECK ME
-  # PS mine-year-level dataset created in file X
-PS.data.file.name = paste0(input.path, "/ps_data.rds", collapse = NULL) ############## CHECK ME
+  # mine-year-level dataset created in file X
+data.file.name = paste0(input.path, "/prepped_mine_years.rds", collapse = NULL)
 
 # outputs
   # figures in paper
 out.path = paste0(output.path, "/Figure_", collapse = NULL)
   # figures in appendix
 out.path.appendix = paste0(output.path, "/Appendix_Figure_", collapse = NULL)
-
 
 # generate file paths 
 dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
@@ -45,27 +44,26 @@ fig.num = 1
 fig.ab = "a"
 
 for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
-  
-  if (injury == "MR") {
-    data.file.name = MR.data.file.name
-  }
-  
-  if (injury == "PS") {
-    data.file.name = PS.data.file.name
-  }
-  
-  ##############################################################################
-  
+
   # READ DATA
   
   # input data
   data = readRDS(data.file.name)
   
+  if (injury == "MR") {
+    data$PS = NULL
+    names(data)[names(data) == "MR"] = "dv"
+  }
+  
+  if (injury == "PS") {
+    data$MR = NULL
+    names(data)[names(data) == "PS"] = "dv"
+    }
+  
   # keep variables of interest
-  data = data[, c("mineid", "year", 
-                  "dv", "total_injuries",
-                  "hours", "coal_prod", "employment",
-                  "district", "apalachia")]
+  data$numquarters = 
+    data$operatortime = 
+    data$safetycommittee = NULL
   
   # generate outcome variables
   data$dv.exp = data$dv / data$hours
@@ -73,8 +71,8 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   data[is.na(data)] = NA
   
   # bye
-  data$dv = NULL
-  rm(data.file.name)
+  data$dv = data$total_injuries = NULL
+  rm(input.path, data.file.name)
   
   ##############################################################################
   
@@ -95,6 +93,13 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   for (dv in c("dv.exp", "dv.rel")) {
     
     for (method in c("avg", "med")) {
+      
+      if (method == "avg") {
+        fig.ab = "a"
+      }
+      if (method == "med") {
+        fig.ab = "b"
+      }
       
       # set labels
       if (dv == "dv.exp") {
@@ -127,13 +132,17 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
       # update naming scheme
       if (fig.ab == "a") {
         fig.ab = "b"
+        print("here")
       }
       if (fig.ab == "b") {
         fig.num = fig.num + 1
         fig.ab = "a"
+        print("there")
       }
       
     }
+    
+    fig.num = fig.num + 1
   }
   
   # bye

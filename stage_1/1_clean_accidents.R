@@ -31,7 +31,7 @@ output.path = paste0(root, "/1_cleaned", collapse = NULL)
 accidents.in.file.name = paste0(input.path, "/Accidents.txt", collapse = NULL)
 
 # outputs
-  # clean accidents data
+  # cleaned accidents data
 accidents.out.file.name = paste0(output.path, "/clean_accidents.rds", collapse = NULL)
 
 # generate file paths
@@ -39,14 +39,20 @@ dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file struc
 
 ################################################################################
 
-# READ AND CLEAN ACCIDENTS DATA 
+# READ DATA 
 
 # read accidents data
   # 212611 rows; 57 columns; unique on documentno
-accidents = read.table(accidents.in.file.name, header = TRUE, sep = "|", na.strings = c("","NA"))
+accidents = read.table(accidents.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
+
+# bye
+rm(root, input.path, output.path, accidents.in.file.name)
+
+################################################################################
+
+# CLEAN DATA 
 
 # rename variables
-names(accidents)[names(accidents) == "MINE_ID"] = "mineid"
 names(accidents)[names(accidents) == "ACCIDENT_DT"] = "accidentdate"
 names(accidents)[names(accidents) == "ACCIDENT_TIME"] = "accidenttime"
 names(accidents)[names(accidents) == "ACCIDENT_TYPE"] = "accidenttype"
@@ -57,6 +63,8 @@ names(accidents)[names(accidents) == "CAL_QTR"] = "calendarquarter"
 names(accidents)[names(accidents) == "CAL_YR"] = "calendaryear"
 names(accidents)[names(accidents) == "CLASSIFICATION"] = "accidentclassification"
 names(accidents)[names(accidents) == "CLASSIFICATION_CD"] = "classificationcode"
+names(accidents)[names(accidents) == "CLOSED_DOC_NO"] = "closeddocno"
+names(accidents)[names(accidents) == "COAL_METAL_IND"] = "coalmetalind"
 names(accidents)[names(accidents) == "CONTRACTOR_ID"] = "contractorid"
 names(accidents)[names(accidents) == "CONTROLLER_ID"] = "controllerid"
 names(accidents)[names(accidents) == "CONTROLLER_NAME"] = "controllername"
@@ -68,9 +76,9 @@ names(accidents)[names(accidents) == "DOCUMENT_NO"] = "documentno"
 names(accidents)[names(accidents) == "EQUIP_MFR_CD"] = "equipmanufacturercode"
 names(accidents)[names(accidents) == "EQUIP_MFR_NAME"] = "equipmanufacturer"
 names(accidents)[names(accidents) == "EQUIP_MODEL_NO"] = "equipmentmodelno"
+names(accidents)[names(accidents) == "FIPS_STATE_CD"] = "fipsstatecode"
 names(accidents)[names(accidents) == "FISCAL_QTR"] = "fiscalquarter"
 names(accidents)[names(accidents) == "FISCAL_YR"] = "fiscalyear"
-names(accidents)[names(accidents) == "FIPS_STATE_CD"] = "fipsstatecode"
 names(accidents)[names(accidents) == "IMMED_NOTIFY"] = "immediatenotificationclass"
 names(accidents)[names(accidents) == "IMMED_NOTIFY_CD"] = "immediatenotificationcode"
 names(accidents)[names(accidents) == "INJ_BODY_PART"] = "bodypart"
@@ -80,6 +88,7 @@ names(accidents)[names(accidents) == "INJURY_SOURCE_CD"] = "injurysourcecode"
 names(accidents)[names(accidents) == "INVEST_BEGIN_DT"] = "investigationbegindate"
 names(accidents)[names(accidents) == "JOB_EXPER"] = "jobexperience"
 names(accidents)[names(accidents) == "MINE_EXPER"] = "mineexperience"
+names(accidents)[names(accidents) == "MINE_ID"] = "mineid"
 names(accidents)[names(accidents) == "MINING_EQUIP"] = "typeofequipment"
 names(accidents)[names(accidents) == "MINING_EQUIP_CD"] = "equiptypecode"
 names(accidents)[names(accidents) == "NARRATIVE"] = "narrative"
@@ -106,9 +115,6 @@ names(accidents)[names(accidents) == "UG_MINING_METHOD_CD"] = "ugminingmethodcod
   # must remove encoded characters (otherwise tolower won't work)
 accidents$narrative = iconv(accidents$narrative,"WINDOWS-1252","UTF-8")
 
-# format variables
-names(accidents) = tolower(names(accidents))
-
 # format mineid
 accidents$mineid = as.character(as.numeric(accidents$mineid))
 accidents$mineid = str_pad(accidents$mineid, 7, pad = "0")
@@ -119,29 +125,27 @@ accidents$documentno = str_pad(accidents$documentno, 12, pad = "0")
 
 # drop data from environments not of interest 
   # 75672 rows; 57 columns; unique on documentno
-accidents = accidents[accidents$coal_metal_ind == "C", ]
-accidents = accidents[accidents$subunit == "UNDERGROUND", ]
+accidents = accidents[accidents$coalmetalind == "C" & accidents$subunit == "UNDERGROUND", ]
 
 # drop data after 2016 Q1
   # 75016 rows; 58 columns; unique on documentno
 accidents$drop = ifelse((accidents$calendaryear == 2016 & accidents$calendarquarter > 1), 1, 0)
-accidents = accidents[accidents$drop == 0,] 
+accidents = accidents[accidents$drop == 0, ] 
 
 # drop unnecessary variables
   # 75016 rows; 56 columns; unique on documentno
-accidents$coal_metal_ind = NULL
-accidents$drop = NULL
+accidents$coalmetalind = 
+  accidents$drop = NULL
 
 ################################################################################
 
 # OUPUT CLEAN ACCIDENTS DATA
 
-# output clean accidents data
+# output cleaned accidents data
   # 75016 rows; 56 columns; unique on documentno
 saveRDS(accidents, file = accidents.out.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################

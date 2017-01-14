@@ -97,6 +97,9 @@ for (i in 1:length(messy.rows)) {
 }
 ps.data$messy = NULL
 
+# mark data as training data
+ps.data$type = "classified" 
+
 # bye
 rm (i, messy.rows, narrative.split)
 
@@ -147,7 +150,7 @@ ps.data[ps.data$documentno == "220020100051", "PS"] = "NO"
 ################################################################################
 
 # output clean training set
-  # 1000 rows; 104 columns; unique on documentno
+  # 1000 rows; 105 columns; unique on documentno
 saveRDS(ps.data, file = training.set.out.file.name)
 
 ################################################################################
