@@ -19,8 +19,6 @@ library(ROSE)
 library(caret)
 library(ggplot2)
 library(adabag)
-#library(tree)
-#library(reshape2)
 
 ################################################################################
 
@@ -36,7 +34,7 @@ prepped.input.path = paste0(root, "/5_prepped", collapse = NULL)
   # prepped PS training/testing data
 prepped.train.set.in.file.name = paste0(prepped.input.path, "/prepped_PS_train_test.rds", collapse = NULL)
 
-# no outputs!
+# no outputs - all results print to console ()
 
 # generate file paths
 dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -62,6 +60,7 @@ rm(root, prepped.input.path, prepped.train.set.in.file.name)
 ################################################################################
 
 # CART
+  # See Table D.2a: Confusion Matrix for CaRT Algorithm
 
 cart = rpart(PS ~ ., data = simple.ps[1:700, !(names(simple.ps) %in% c("documentno"))], method = "class")
 cart.predictions = predict(cart, simple.ps[701:1000,], type = "class")
@@ -74,6 +73,7 @@ table(simple.ps[701:1000,2], predicted = cart.predictions)
 ################################################################################
 
 # RANDOM FOREST
+  # See Table D.2b: Confusion Matrix for Random Forest (Unbalanced) Algorithm
 
 rf = randomForest(PS ~ . -documentno, data = simple.ps[1:700,], mtry = 3, importance = TRUE, type = "class", ntree = 800)
 rf.predictions = predict(rf, simple.ps[701:1000,], type = "class")
@@ -86,6 +86,7 @@ table(simple.ps[701:1000, 2], predicted = rf.predictions)
 ################################################################################
 
 # RANDOM FOREST WITH ROSE
+  # See Table D.2c: Confusion Matrix for Random Forest (ROSE Oversampled) Algorithm
 
 simple.rosex = ROSE(PS ~ ., data = simple.ps[1:700, ])$data
 rand3 = runif(nrow(simple.rosex))
@@ -101,6 +102,7 @@ table(simple.ps[701:1000, 2], predicted = rf.rose.pred)
 ################################################################################
 
 # RANDOM FOREST WITH SMOTE
+  # See Table D.2d: Confusion Matrix for Random Forest (SMOTE Oversampled) Algorithm
 
 smote.trainx = simple.ps[1:700, ]
 smote.test = simple.ps[701:1000, ]
@@ -116,6 +118,7 @@ table(simple.ps[701:1000, 2], predicted = rf.smo.pred)
 ################################################################################
 
 # DOWNSAMPLE NEGATIVE OUTCOMES FOR RANDOM FOREST
+  # See Table D.2e: Confusion Matrix for Random Forest (Under-sampled) Algorithm
 
 nmin = sum(simple.ps$PS == "YES")
 nmin
@@ -130,7 +133,8 @@ table(simple.ps[701:1000, 2], predicted = down.prob)
 
 ################################################################################
 
-# BOOSTING
+# ADAPTIVE BOOSTING
+  # See Table D.2f: Confusion Matrix for Adaptive Boosting Algorithm
 
 ps.adaboost = boosting(PS ~ ., 
                        data = simple.ps[1:700, !(names(simple.ps) %in% c("documentno"))], 
@@ -138,14 +142,15 @@ ps.adaboost = boosting(PS ~ .,
 simple.adaboost.pred = predict.boosting(ps.adaboost, newdata = simple.ps[701:1000,])
 simple.adaboost.pred$confusion
 
+#      NO YES
+# NO  212  15
+# YES  16  57
+
 # generate variable with boosting predictions
 simple.adaboost.pred$class = as.factor(simple.adaboost.pred$class)
-predictions = simple.ps[601:1000, ]
+predictions = simple.ps[701:1000, ]
 predictions = cbind(predictions, simple.adaboost.pred$class)
 names(predictions)[names(predictions) == "simple.adaboost.pred$class"] = "prediction"
-
-# retrieve narratives of misclassified observations
-predictions = merge(predictions, all_vars[, c("narrative", "old_narrative", "documentno", "mineid")], by = "documentno")
 
 # re-code common false positives
 predictions$accidents = ifelse(predictions$entrapment == 1, 1, predictions$prediction) 
@@ -162,7 +167,11 @@ predictions$prediction = ifelse(predictions$falling.accident == 1, 1, prediction
 predictions$prediction = as.factor(predictions$prediction)
 
 # now report final predictive accuracy
-table = table(predictions$prediction, predictions$PS)
+table(predictions$prediction, predictions$PS)
+
+#      NO YES
+# NO  213  15
+# YES  15  57
 
 ################################################################################
 

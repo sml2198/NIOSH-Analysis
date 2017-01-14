@@ -890,7 +890,7 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   # OUTPUT DATA
   
   if (purpose == "train.test") {
-    # output prepped SP training set
+    # output prepped PS training set
       # 1000 rows; 101 columns; unique on documentno 
     saveRDS(ps.data, file = prepped.train.out.file.name)
   }

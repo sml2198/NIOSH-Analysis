@@ -527,12 +527,6 @@ for (i in 1:length(charac_vars)) {
   mr.data[, charac_vars[i]] = factor(mr.data[, charac_vars[i]])
 }
 
-# Define a function that calculates the mode of a variable (for imputation)
-modus = function(x) {
-  uniqv = unique(x)
-  uniqv[which.max(tabulate(match(x, uniqv)))]
-}
-
 ################################################################################
 
 # CREATE SIMPLE DATA CONTAINING JUST THE VARIABLES USED FOR ANALYSIS

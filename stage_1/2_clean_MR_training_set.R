@@ -23,7 +23,8 @@ library(stringr)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -31,13 +32,16 @@ originals.input.path = paste0(root, "/0_originals", collapse = NULL)
 cleaned.output.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # master PS dataset
+  # master MR dataset
     # coded by NIOSH representatives and sent to the Morantz team on 1/29/2016
 training.set.in.file.name = paste0(originals.input.path, "/training-sets/Training_Set_Maintenance_And_Repair_Accidents_August_2015_2.csv", collapse = NULL)
+  # extra MR accidents (all fatalities) 
+    # collected by Sarah Levine following correspondence with John H. from NIOSH on 4/14/2016
+fatalities.in.file.name = paste0(originals.input.path, "/coded_MR_fatalities.csv", collapse = NULL)
 
 # outputs
   # clean MR training set
-training.set.out.file.name = paste0(cleaned.output.path, "/clean_PS_training_set.rds", collapse = NULL)
+training.set.out.file.name = paste0(cleaned.output.path, "/clean_MR_training_set.rds", collapse = NULL)
 
 # generate file paths
 dir.create(cleaned.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -46,109 +50,116 @@ dir.create(cleaned.output.path, recursive = TRUE) # (recursive = TRUE creates fi
 
 # READ DATA
 
-# read master PS dataset
-# 1002 rows; 104 columns; unique on documentno 
-ps.data = read.csv(training.set.in.file.name)
+# read master MR dataset
+  # 1000 rows; 111 columns; unique on documentno
+mr.data = read.csv(training.set.in.file.name, header = TRUE, sep = ",", nrows = 1001, stringsAsFactors = FALSE)
 
-rm(root, originals.input.path, cleaned.output.path, training.set.in.file.name)
-
-################################################################################
-
-# CLEAN MASTER DATASET
-
-# drop data without mineid 
-# 1000 rows; 104 columns; unique on documentno
-ps.data = ps.data[!is.na(ps.data$mineid), ]
-
-# rename variables
-names(ps.data)[names(ps.data) == "narrativemodified"] = "narrative"
-
-# format variables
-ps.data$narrative = as.character(ps.data$narrative)
-ps.data$occupcode3digit = as.character(ps.data$occupcode3digit)
-ps.data$occupation = as.character(ps.data$occupation)
-ps.data$returntoworkdate = as.character(ps.data$returntoworkdate)
-
-# make variables lowercase
-ps.data$narrative = tolower(ps.data$narrative)
-ps.data$mineractivity = tolower(ps.data$mineractivity)
-ps.data$natureofinjury = tolower(ps.data$natureofinjury)
-ps.data$degreeofinjury = tolower(ps.data$degreeofinjury)
-ps.data$sourceofinjury = tolower(ps.data$sourceofinjury)
-ps.data$accidenttype = tolower(ps.data$accidenttype)
-ps.data$accidentclassification = tolower(ps.data$accidentclassification)
-ps.data$bodypart = tolower(ps.data$bodypart)
-ps.data$typeofequipment = tolower(ps.data$typeofequipment)
-ps.data$occupation = tolower(ps.data$occupation)
-
-# format PS indicator
-ps.data$X = factor(ifelse(ps.data$X == 1, "YES", "NO"))
-names(ps.data)[names(ps.data) == "X"] = "PS"
-
-# some narrative fields are polluted with other columns; split and replace these  
-ps.data$messy = ifelse(grepl("\\|[0-9]*[0-9]*[0-9]*\\|", ps.data$narrative), 1, 0)
-narrative.split = strsplit(ps.data[ps.data$messy == 1, "narrative"], "|", fixed = T) # 23
-messy.rows = row.names(ps.data[ps.data$messy == 1, ])
-for (i in 1:length(messy.rows)) {
-  ps.data[messy.rows[i], "narrative"] = unlist(narrative.split[i])[1]
-  ps.data[messy.rows[i], "occupcode3digit"] = unlist(narrative.split[i])[2]
-  ps.data[messy.rows[i], "occupation"] = unlist(narrative.split[i])[3]
-  ps.data[messy.rows[i], "returntoworkdate"] = unlist(narrative.split[i])[4]
-}
-ps.data$messy = NULL
+# read extra MR injuries
+  # 23 rows; 110 columns; unique on documentno
+mr.fatalities = read.csv(fatalities.in.file.name, header = TRUE, sep = ",", nrows = 24, stringsAsFactors = FALSE)
 
 # bye
-rm (i, messy.rows, narrative.split)
+rm(root, originals.input.path, cleaned.output.path, training.set.in.file.name, fatalities.in.file.name)
 
 ################################################################################
 
+# CLEAN DATASET
 
-# RECODE MISCLASSIFIED ACCIDENTS
+# drop unnecessary variables
+drop = c("narrativemodified", "degreeofinjury", "accidentclassification", 
+         "accidenttype", "natureofinjury", "mineractivity")
+mr.data = mr.data[, !(names(mr.data) %in% drop)]
 
-# recoded in light of Miguel's 5/27/2016 response to our questions
-ps.data[ps.data$documentno == "219891280164", "PS"] = "YES"
-ps.data[ps.data$documentno == "219852170075", "PS"] = "YES"
-ps.data[ps.data$documentno == "219901620109", "PS"] = "YES"
-ps.data[ps.data$documentno == "220011070020", "PS"] = "NO"
-ps.data[ps.data$documentno == "219892570061", "PS"] = "NO"
-ps.data[ps.data$documentno == "219893100251", "PS"] = "NO"
-ps.data[ps.data$documentno == "219872990054", "PS"] = "NO"
-ps.data[ps.data$documentno == "219983280016", "PS"] = "NO"
-ps.data[ps.data$documentno == "220082800043", "PS"] = "NO"
-ps.data[ps.data$documentno == "219830320021", "PS"] = "NO"
-ps.data[ps.data$documentno == "219912970040", "PS"] = "NO"
-ps.data[ps.data$documentno == "219942900032", "PS"] = "NO"
-ps.data[ps.data$documentno == "219982380025", "PS"] = "NO"
+# rename variables
+names(mr.data)[names(mr.data) == "narrativemodified.1"] = "narrative"
+names(mr.data)[names(mr.data) == "degreeofinjury.1"] = "degreeofinjury"
+names(mr.data)[names(mr.data) == "accidentclassification.1"] = "accidentclassification"
+names(mr.data)[names(mr.data) == "accidenttype.1"] = "accidenttype"
+names(mr.data)[names(mr.data) == "natureofinjury.1"] = "natureofinjury"
+names(mr.data)[names(mr.data) == "mineractivity.1"] = "mineractivity"
 
-# recoded in light of Miguel's 6/7/2016 response to our questions
-ps.data[ps.data$documentno == "219912970040", "PS"] = "YES"
-ps.data[ps.data$documentno == "219871460076", "PS"] = "NO"
-ps.data[ps.data$documentno == "219861280065", "PS"] = "NO"
-ps.data[ps.data$documentno == "220000310115", "PS"] = "NO"
-ps.data[ps.data$documentno == "220001180052", "PS"] = "NO"
-ps.data[ps.data$documentno == "219831430047", "PS"] = "NO"
-ps.data[ps.data$documentno == "219943180016", "PS"] = "NO"
-ps.data[ps.data$documentno == "220112090013", "PS"] = "NO"
+# format narrative field
+  # must remove encoded characters (otherwise tolower won't work)
+mr.data$narrative = iconv(mr.data$narrative,"WINDOWS-1252","UTF-8")
 
-# recoded on 9/13/2016 in light of Miguel's lack of response to our questions
-ps.data[ps.data$documentno == "220090630033", "PS"] = "YES"
-ps.data[ps.data$documentno == "220050800006", "PS"] = "YES"
-ps.data[ps.data$documentno == "219892210062", "PS"] = "YES"
-ps.data[ps.data$documentno == "219950870035", "PS"] = "YES"
-ps.data[ps.data$documentno == "219972890025", "PS"] = "YES"
-ps.data[ps.data$documentno == "219930390025", "PS"] = "NO"
-ps.data[ps.data$documentno == "219992320012", "PS"] = "NO"
-ps.data[ps.data$documentno == "219853190080", "PS"] = "NO"
-ps.data[ps.data$documentno == "219973490121", "PS"] = "NO"
-ps.data[ps.data$documentno == "219852050003", "PS"] = "NO"
-ps.data[ps.data$documentno == "219891140147", "PS"] = "NO"
-ps.data[ps.data$documentno == "220020100051", "PS"] = "NO"
+# format variables
+mr.data$MR = as.factor(mr.data$M.R.)
+mr.data$M.R. = NULL
+mr.data$narrative = tolower(mr.data$narrative)
+mr.data$degreeofinjury = tolower(mr.data$degreeofinjury)
+mr.data$accidentclassification = tolower(mr.data$accidentclassification)
+mr.data$accidenttype = tolower(mr.data$accidenttype)
+mr.data$natureofinjury = tolower(mr.data$natureofinjury)
+mr.data$mineractivity = tolower(mr.data$mineractivity)
+mr.data$occupation = tolower(mr.data$occupation)
+mr.data$typeofequipment = tolower(mr.data$typeofequipment)
+mr.data$sourceofinjury = tolower(mr.data$sourceofinjury)
+mr.data$bodypart = tolower(mr.data$bodypart)
+mr.data$equipmanufacturer = tolower(mr.data$equipmanufacturer)
+mr.data$immediatenotificationclass = tolower(mr.data$immediatenotificationclass)
+mr.data$uglocation = tolower(mr.data$uglocation)
+
+# generate death variable
+mr.data$death = ifelse(grepl("fatality", mr.data$degreeofinjury), 1, 0)
+
+# bye
+rm(drop)
+
+################################################################################
+
+# CLEAN EXTRA FATAL MR ACCIDENTS
+
+# rename variable
+mr.fatalities$MR = as.factor(mr.fatalities$MR_fatality)
+
+# drop unnecessary variables
+drop = c("MR_fatality", "v56", "v57", "v58", "v59")
+mr.fatalities = mr.fatalities[, !(names(mr.fatalities) %in% drop)]
+
+# these four fatalgrams are considered MR and were included in a study by John H. from NIOSH as MR
+# however, it's only evident from the fatalgrams that these were sustained during larger group MR activities
+# nothing from the narrative field/occupation indicates that MR was the activity at the time
+# training on these observations will not help; drop them
+mr.fatalities = mr.fatalities[!(mr.fatalities$documentno == "220030290001") & 
+                                !(mr.fatalities$documentno == "220030290002") &
+                                !(mr.fatalities$documentno == "220030290003") & 
+                                !(mr.fatalities$documentno == "220030130149"), ]
+
+# bye
+rm(drop)
+
+################################################################################
+
+# COMBINE MR MASTER DATASET AND EXTRA FATAL MR ACCIDENTS
+
+# merge datasts
+  # 1019 rows; 106 columns; unique on documentno
+mr.data = rbind(mr.data, mr.fatalities) 
+
+# drop redundant observations (in terms of documentno)
+  # 1018 rows; 106 columns; unique on documentno
+mr.data = mr.data[!duplicated(mr.data$documentno), ]
+
+# format variable
+mr.data$MR = factor(ifelse(mr.data$MR == 1, "YES", "NO"))
+
+# bye
+rm(mr.fatalities)
+
+################################################################################
+
+# RECODE ACCIDENTS
+
+# Based on J. Heberger's email 5/2/2016
+# "even though mine worker activity is MR, installing roof bolts is not considered MR"
+
+mr.data[mr.data$documentno == "219932950056", "MR"] = "NO"
 
 ################################################################################
 
 # output clean training set
-# 1000 rows; 104 columns; unique on documentno
-saveRDS(ps.data, file = training.set.out.file.name)
+  # 1018 rows; 106 columns; unique on documentno
+saveRDS(mr.data, file = training.set.out.file.name)
 
 ################################################################################
 

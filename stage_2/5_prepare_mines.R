@@ -139,6 +139,9 @@ mine.quarters$appalachia = ifelse((mine.quarters$stateabbreviation == "VA" |
 # clean up safetycommittee
 mine.quarters$safetycommittee = ifelse(mine.quarters$safetycommittee  == "Y", 1, 0)
 
+# encode the district variable
+mine.quarters$district = as.numeric(mine.quarters$district)
+
 ################################################################################
 
 # MERGE IN OPERATOR HISTORY DATA
@@ -270,6 +273,10 @@ rm(time)
 names(mine.years)[names(mine.years) == "hours_qtr"] = "hours"
 names(mine.years)[names(mine.years) == "employment_qtr"] = "employment"
 names(mine.years)[names(mine.years) == "prod_qtr"] = "prod"
+
+# final formatting to make generating figures easy
+mine.years$district = as.numeric(mine.years$district)
+mine.years$appalachia = as.numeric(mine.years$appalachia)
 
 ################################################################################
 
