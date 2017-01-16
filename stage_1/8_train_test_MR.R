@@ -153,8 +153,8 @@ adaboost.pred = predict.boosting(mr.adaboost, newdata = simple[701:1019,!(names(
 adaboost.pred$confusion
 
 #      NO YES
-# NO  169  12
-# YES   4 133
+# NO  169  11
+# YES   4 134
 
 ################################################################################
 
