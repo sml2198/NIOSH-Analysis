@@ -15,6 +15,7 @@
 # set root directory
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -64,9 +65,13 @@ rm(root, clean.path, merged.path, violations.in.file.name,
 
 # MERGE DATASETS TOGETHER
 
+violations$violationno = factor(violations$violationno)
+assessments$violationno = factor(assessments$violationno)
+
 # merge assessments data with violations data
-  # 868722 rows; 14 columns; unique on violationnomine-id
-violations = merge(violations, assessments, by = c("mineid","violationno"))
+  # 868722 rows; 14 columns; unique on violationno-mineid
+violations1 = merge(violations, assessments, by = c("mineid","violationno"), all = FALSE)
+violations2 = merge(violations, assessments, by = c("violationno"), all = FALSE)
 
 # drop duplicate variables from merge 
 common_varstbs = sub(".x", "", names(violations)[grep(".x", names(violations), fixed = T)], fixed = T)

@@ -33,10 +33,10 @@ collapsed.path = paste0(root, "/4_collapsed", collapse = NULL)
 # inputs 
   # cleaned mine-types key produced in produced in 1_clean_mines.R
 mine.types.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
-  # coded MR accidents data produced in 5_analyze_MR.R
-MR.accidents.coded.in.file.name = paste0(coded.path, "/MR_accidents_with_predictions.rds", collapse = NULL)
-  # coded PS accidents data produced in 4_analyze_PS.R
-PS.accidents.coded.in.file.name = paste0(coded.path, "/PS_accidents_with_predictions.rds", collapse = NULL)
+  # classified MR accidents data produced in 5_analyze_MR.R
+MR.accidents.coded.in.file.name = paste0(coded.path, "/classified_accidents_MR.rds", collapse = NULL)
+  # classified PS accidents data produced in 4_analyze_PS.R
+PS.accidents.coded.in.file.name = paste0(coded.path, "/classified_accidents_PS.rds", collapse = NULL)
 
 # outputs
   # collapsed coded accidents data 
