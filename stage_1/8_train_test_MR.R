@@ -59,6 +59,18 @@ which(colnames(simple) == "MR")
 # bye
 rm(root, prepped.input.path, prepped.train.set.in.file.name)
 
+# enforce factor storage
+vars = names(simple)
+for (i in 1:length(vars)) {
+  simple[, vars[i]] = factor(simple[, vars[i]])
+}
+
+# 10 missing likely source - WHY IS THIS HAPPENING?
+simple$likely.source = ifelse(is.na(simple$likely.source), 0, simple$likely.source)
+
+# also, why do some of these only have 1 factor level?
+# likely.class maybe.activy lug 
+
 ################################################################################
 
 # CART
@@ -80,6 +92,10 @@ rf = randomForest(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno
                   importance = TRUE, type = "class", ntree = 1000)
 rf.predictions = predict(rf, simple[701:1019,!(names(simple) %in% c('documentno'))], type = "class")
 table(simple[701:1019,2], predicted = rf.predictions)
+
+#     NO YES
+# NO  169   4
+# YES  12 133
 
 ################################################################################
 
@@ -109,6 +125,10 @@ smote = SMOTE(MR ~ ., smote.trainx, perc.over = 100, perc.under = 100)
 rf.smo = randomForest(MR ~ ., data = smote, mtry = 10, ntree = 800)
 rf.smo.pred = predict(rf.smo, smote.test, type = "class")
 table(simple[701:1019,2], predicted = rf.smo.pred)
+
+#      NO YES
+# NO  159  14
+# YES   6 139
 
 ################################################################################
 
