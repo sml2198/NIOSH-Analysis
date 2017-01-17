@@ -47,10 +47,9 @@ dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates fi
 # set seed to enable reproducible results
 set.seed(625)
 
-# read cleaned PS training set data and remive "type" field (it's all the same)
+# read cleaned PS training set data
   # 1000 rows; 100 columns; unique on documentno 
 simple.ps = readRDS(prepped.train.set.in.file.name)
-simple.ps = simple.ps[, -c(match("type", names(simple.ps)))]
 
 # print PS indicator column number
 which(colnames(simple.ps) == "PS") 
@@ -67,9 +66,7 @@ cart = rpart(PS ~ ., data = simple.ps[1:700, !(names(simple.ps) %in% c("document
 cart.predictions = predict(cart, simple.ps[701:1000,], type = "class")
 table(simple.ps[701:1000,2], predicted = cart.predictions)
 
-#      NO YES
-# NO  213  15
-# YES  22  50
+rm(cart, cart.predictions)
 
 ################################################################################
 
@@ -80,9 +77,7 @@ rf = randomForest(PS ~ . -documentno, data = simple.ps[1:700,], mtry = 3, import
 rf.predictions = predict(rf, simple.ps[701:1000,], type = "class")
 table(simple.ps[701:1000, 2], predicted = rf.predictions)
 
-#      NO YES
-# NO  216  12
-# YES  27  45
+rm(rf, rf.predictions)
 
 ################################################################################
 
@@ -96,9 +91,7 @@ rf.rose = randomForest(PS ~ . -documentno, data = simple.rose, mtry = 15, ntree 
 rf.rose.pred = predict(rf.rose, simple.ps[701:1000, ], type = "class")
 table(simple.ps[701:1000, 2], predicted = rf.rose.pred)
 
-#      NO YES
-# NO  201  27
-# YES   9  63
+remove(simple.rosex, rand, simple.rose, rf.rose, rf.rose.pred)
 
 ################################################################################
 
@@ -112,9 +105,7 @@ rf.smo = randomForest(PS ~ . -documentno, data = smote, mtry = 10, ntree = 800)
 rf.smo.pred = predict(rf.smo, smote.test, type = "class")
 table(simple.ps[701:1000, 2], predicted = rf.smo.pred)
 
-#      NO YES
-# NO  187  41
-# YES   9  63
+rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred)
 
 ################################################################################
 
@@ -130,7 +121,10 @@ rf.downsampled = train(PS ~ ., data = simple.ps[1:700,!(names(simple.ps) %in% c(
                        strata = simple.ps$PS, sampsize = rep(nmin, 2))
 down.prob = predict(rf.downsampled, 
                     simple.ps[701:1000,!(names(simple.ps) %in% c("documentno", "narrative"))], type = "prob")[,1]
-table(simple.ps[701:1000, 2], predicted = down.prob)
+down.prob = ifelse(down.prob$YES > 0.50, 1, 0)
+table(simple[701:1018,2], predicted = down.prob)
+
+rm(nmin, ctrl, down.prob, rf.downsampled)
 
 ################################################################################
 
@@ -142,10 +136,6 @@ ps.adaboost = boosting(PS ~ .,
                        boos = T, mfinal = 800, coeflearn = "Freund")
 simple.adaboost.pred = predict.boosting(ps.adaboost, newdata = simple.ps[701:1000,])
 simple.adaboost.pred$confusion
-
-#      NO YES
-# NO  212  15
-# YES  16  57
 
 # generate variable with boosting predictions
 simple.adaboost.pred$class = as.factor(simple.adaboost.pred$class)
@@ -170,9 +160,7 @@ predictions$prediction = as.factor(predictions$prediction)
 # now report final predictive accuracy
 table(predictions$prediction, predictions$PS)
 
-#      NO YES
-# NO  213  15
-# YES  15  57
+rm(ps.adaboost, simple.adaboost.pred, predictions)
 
 ################################################################################
 

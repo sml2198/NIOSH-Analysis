@@ -18,8 +18,7 @@ library(zoo)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -46,7 +45,7 @@ dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates fi
 
 # DEFINE LOOP THAT WILL ITERATE THROUGH PURPOSES
 
-for (purpose in c("train.test")) { # make datasets for both training/testing AND accident classification
+for (purpose in c("train.test", "classify")) { # make datasets for both training/testing AND accident classification
   
   ################################################################################
   
@@ -54,7 +53,7 @@ for (purpose in c("train.test")) { # make datasets for both training/testing AND
   
   if (purpose == "train.test") {
     # read cleaned MR training set data
-      # 1018 rows; 106 columns; unique on documentno 
+      # 1018 rows; 107 columns; unique on documentno 
     mr.data = readRDS(training.set.in.file.name)
     rm(training.set.in.file.name, root, cleaned.input.path, 
        merged.input.path, prepped.output.path)
@@ -111,14 +110,8 @@ for (purpose in c("train.test")) { # make datasets for both training/testing AND
     mr.data[mr.data$numbertypo == 1, "narrative"] = gsub(i, "", mr.data[mr.data$numbertypo == 1, "narrative"])
   }
   
-  # convert date variables
-  indices.with.date = grep("date", names(mr.data))
-  for (i in indices.with.date) {
-    mr.data[,i] = as.Date(mr.data[,i], "%m/%d/%Y")
-  }
-  
   # bye
-  rm(i, indices.with.date, messy.rows, narrative.split)
+  rm(i, messy.rows, narrative.split)
   
   ################################################################################
   
@@ -310,30 +303,6 @@ for (purpose in c("train.test")) { # make datasets for both training/testing AND
   
   ################################################################################
   
-  # PREPARE TIME AND DATE VARIABLES
-
-  date = strptime(mr.data$calendaryear, "%Y")
-  format(date, "%Y")
-  mr.data$year = format(date, "%Y")
-  mr.data$quarter = as.yearqtr(mr.data$accidentdate,"%Y-%m-%d")
-  mr.data = mr.data[, c(-grep("calendar", names(mr.data)), 
-                        -grep("accidentdate", names(mr.data)))]
-  
-  # create lists storing the types of variables
-  var_classes = sapply(mr.data[,names(mr.data)], class)
-  charac_vars = names(var_classes[c(grep("character", var_classes), grep("factor", var_classes))])
-  num_vars = names(var_classes[c(grep("numeric", var_classes), grep("integer", var_classes))])
-  
-  for (i in 1:length(charac_vars)) {
-    mr.data[, charac_vars[i]] = ifelse((mr.data[,charac_vars[i]] == "no value found" | 
-                                          mr.data[,charac_vars[i]] == "unknown" | 
-                                          mr.data[,charac_vars[i]] == "?" | 
-                                          mr.data[,charac_vars[i]] == ""), NA_character_, as.character(mr.data[,charac_vars[i]]))
-    mr.data[, charac_vars[i]] = factor(mr.data[, charac_vars[i]])
-  }
-  
-  ################################################################################
-  
   # CREATE LIKELY/MAYBE/UNLIKELY GROUPS OF VALUES OF CATEGORICAL VARIABLES
   
   mr.data$likely.occup = ifelse(grepl("maintenance", mr.data$occupation) & 
@@ -366,6 +335,7 @@ for (purpose in c("train.test")) { # make datasets for both training/testing AND
                                         mr.data$sourceofinjury == "crowbar,pry bar" | 
                                         mr.data$sourceofinjury == "axe,hammer,sledge") & 
                                        mr.data$accident.only == 0, 1, 0)
+  mr.data$likely.source = ifelse(is.na(mr.data$likely.source), 0, mr.data$likely.source)
   
   # all "surgeries" are false keywords, but only "hoist/elevator" in combo with words that refer to elevator service are false keywords
   mr.data$false.keyword = ifelse((mr.data$repair & mr.data$surgery == 1 ) |
@@ -396,54 +366,135 @@ for (purpose in c("train.test")) { # make datasets for both training/testing AND
                                          mr.data$tighten == 1 | mr.data$battery == 1 ) & mr.data$accident.only == 0 &
                                         mr.data$false.keyword == 0, 1, 0)
   
-  # keep only necessary variables
-  keep = c("accident.only", "battery", "belt", "bits", "changing", "check", 
-           "cleaning", "conveyor", "cover", "dismantl", "documentno", 
-           "falling.accident", "false.keyword", "fix", "grease", "helping", 
-           "hoist", "inspect", "install", "likely.activy", "likely.class", 
-           "likely.keyword", "likely.occup", "likely.source", "loosen", "lug", 
-           "maintain", "maybe.activy", "maybe.keyword", "maybe.occup", "moretools", 
-           "MR", "mrworker", "oil", "pain", "power", "pullbelt", "remove", "repair", 
-           "reposition", "rethread", "retrack", "rib.hole", "roller", "roof.bolt", 
-           "rplace", "service", "shovel", "splice", "surgery", "tests", "tighten", 
-           "tire", "toolbox", "trash", "type", "washingdown", "welding", "wrench")
-  mr.data = mr.data[, (names(mr.data) %in% keep)]
-
-  # variables are nontrivial (worth keeping) if their standard deviation is greater than zero 
-  varstats = describe(simple[, c(-match("MR", names(mr.data)))])
-  keep = rownames(varstats[varstats$sd > 0,])
-  drop = setdiff(names(mr.data[,c(-match("MR", names(mr.data)))]), keep)
-  mr.data = mr.data[, !(names(mr.data) %in% drop)]
-  rm(varstats, keep, drop)
+  ################################################################################
+  
+  # PRODUCE VARIABLES THAT WILL ONLY BE USED AFTER CLASSIFICATION
+  
+  # same process for false negatives 
+  mr.data$flashburn = ifelse(grepl("weld.{1,40}flash( |-)*burn", mr.data$narrative) | 
+                               grepl("flash( |-)*burn.{1,40}weld", mr.data$narrative), 1, 0)
+  
+  # same process for false positives   
+  mr.data$carpal.tunnel = ifelse((grepl("carp(a|u|e)l( |-)*tun(n)*(e|l)(e|l)", mr.data$narrative) | 
+                                           grepl("bursitis", mr.data$narrative)) &
+                                          !grepl("fracture", mr.data$narrative), 1, 0)
+  mr.data$cumulative = ifelse(grepl("rep(e|i)t(e|a|i)ti(v|n)e", mr.data$narrative) | 
+                                       grepl("(cumulative|degenerativ)", mr.data$narrative) |
+                                       grepl("repeated(ed)*.{1,10}(mo(tion|vement)|trauma|irritation)", mr.data$narrative) |
+                                       grepl("long( |-)*term", mr.data$narrative) | 
+                                       grepl("slow( |-)*on( |-)*set", mr.data$narrative), 1, 0)
+  mr.data$hearingloss = ifelse(grepl("hearing.los", mr.data$narrative) | 
+                                 grepl("los.{1,10}hearing", mr.data$narrative) |
+                                 grepl("n(o|i)(o|i)se exposur", mr.data$narrative) |
+                                 grepl("dimini.{1,10}hearing", mr.data$narrative) |
+                                 grepl("thr(e|i)s(h)*( |-)*hold( |-)*shift", mr.data$narrative) |
+                                 grepl("shift.{1,4}change.{1,30}hear", mr.data$narrative) |
+                                 grepl("exposur(e)*.{1,20}noise", mr.data$narrative), 1, 0)
+  mr.data$exposure = ifelse(grepl("((prolon|occupation|long( |-)*term).{1,8}exposur)|(exposur.{1,20}(noise|we(a)*ther))|p(n|h)e(n)*umo(n)*co(nio)*sis", mr.data$narrative) | 
+                              mr.data$natureofinjury == "pneumoconiosis,black lung", 1, 0)
+  mr.data$heartattack = ifelse(grepl("heart( |-)*at(t)*ac(k|h)", mr.data$narrative) | 
+                                 mr.data$natureofinjury == "heart attack", 1, 0)
+  mr.data$unrelated = ifelse(grepl("not work relat", mr.data$narrative) | 
+                               grepl("no.{1,20}(specific|single).{1,5}(accident|injury|indicent|exposure)", mr.data$narrative) |  
+                               (grepl("no (accident|incident|injury)", mr.data$narrative) & 
+                                  !grepl("no (accident|incident|injury).{1,5}report", mr.data$narrative)), 1, 0)
+  
+  # last ditch attempt to find likely verbs and nouns before dropping false positives 
+  mr.data$working.on = ifelse(grepl("(to work|workin(g)*)( |-)*(on|in|under|out|at)", mr.data$narrative), 1, 0)
+  mr.data$barring = ifelse(grepl("barr(ed|ing).{1,10}(rock|motor)", mr.data$narrative), 1, 0)
+  mr.data$otherverb = ifelse(grepl("( |^)patch", mr.data$narrative) | 
+                               grepl("re(-)*(build|pack|fuel|assembl|lin)", mr.data$narrative) | 
+                               grepl("(re)*adjust", mr.data$narrative) | 
+                               grepl("(secure|unplug)", mr.data$narrative) | 
+                               grepl("trouble( |-)*shoot", mr.data$narrative) | 
+                               grepl("to drain", mr.data$narrative) | 
+                               grepl("mod(i|y)f(y|ication)", mr.data$narrative) | 
+                               grepl("(mount|splic|bolt|adjust|digg|drill|cutt|unload|dislodg|pump|lift|jack|lay|haul|spread|position|tap(p)*|air|oil|fuel|drain|hook)(ing|ign|ed)", mr.data$narrative) |
+                               grepl("(mov|hang|chan|putt|load|pry|assembl|push|pul(l)*(l)*|swing|trim(m)*|carry|strip(p)*|torqu(e)*|shovel(l)*|plac|pick|dispos)(ing|ign|ed)", mr.data$narrative) |
+                               grepl("(grind|tension|clip(p)*|notch|straighten|band|guid(e)*|throw|rotat|saw|apply|align|tear|(un)*screw|attach|latch|goug|clear|restor)(ing|ign|ed)", mr.data$narrative) |
+                               grepl("(set(t)*|put(t)*|pump|tak|prim)(ing).{1,10}(tire|wheel|pump|oil|links|fuel)", mr.data$narrative) | 
+                               grepl("tr(ied|ying|yign).{1,3}to.{1,3}(free|take( |-)*out|shut( |-)*down|position|start|lift|pry|press|rotate|roll|sep(e|a)rat|releas)", mr.data$narrative) | 
+                               grepl("attempt(ed|ing)*.{1,3}to.{1,3}(free|take( |-)*out|position|shut( |-)*down|pry|lift|put|get|unplug|unstop|lay|clear|start|press|rotate|roll|sep(e|a)rat)", mr.data$narrative), 1, 0)
+  mr.data$othernoun = ifelse(grepl("anti( |-)*freeze", mr.data$narrative) | 
+                               grepl("sweeper", mr.data$narrative), 1, 0)
+  
+  mr.data$other.keyword = ifelse((mr.data$otherverb == 1 | 
+                                    mr.data$othernoun == 1 |
+                                    mr.data$trash == 1 | 
+                                    mr.data$wrench == 1 |
+                                    mr.data$moretools == 1 | 
+                                    mr.data$loosen == 1 |
+                                    mr.data$tire == 1 |
+                                    mr.data$splice == 1 |
+                                    mr.data$working.on == 1 | 
+                                    mr.data$barring == 1) &
+                                   mr.data$accident.only == 0, 1, 0)
+  
+  post.algorithm = c("flashburn", "carpal.tunnel", "cumulative", 
+                     "hearingloss", "exposure", "heartattack", 
+                     "unrelated", "working.on", "barring",
+                     "otherverb", "othernoun", "other.keyword")
   
   ################################################################################
   
-  # BEGIN ALGORITHM - RANDOMLY SORT DATA 
+  # DROP UNNECESSARY VARIABLES & FINAL FORMAT
+  
+  # create list of only necessary variables (used by final algorithm)
+  keep = c("accidentdate", "accident.only", "battery", "belt", "bits", 
+           "changing", "check", "cleaning", "conveyor", "cover", 
+           "dismantl", "documentno", "falling.accident", "false.keyword", "fix", 
+           "grease", "helping", "hoist", "inspect", "install", 
+           "likely.activy", "likely.class", "likely.keyword", "likely.occup", 
+           "likely.source", "loosen", "lug", "maintain", "maybe.activy", 
+           "maybe.keyword", "maybe.occup", "mineid", "moretools", "MR", 
+           "mrworker", "oil", "pain", "power", "pullbelt", 
+           "remove", "repair", "reposition", "rethread", "retrack", 
+           "rib.hole", "roller", "roof.bolt", "rplace", "service", 
+           "shovel", "splice", "surgery", "tests", "tighten", 
+           "tire", "toolbox", "trash", "type", "washingdown", 
+           "welding", "wrench")
+  
+  if (purpose == "train.test") {
+    # only use "keep" variables
+    mr.data = mr.data[, (names(mr.data) %in% keep)]
+    mr.data = mr.data[, c(-match("accidentdate", names(mr.data)),
+                          -match("mineid", names(mr.data)),
+                          -match("type", names(mr.data)))]
+  }
+  
+  if (purpose == "classify") {
+    # also preserve "post.algorithm" vars, which are used after boosting to eliminate false positives
+    keep = c(keep, post.algorithm)
+    mr.data = mr.data[, (names(mr.data) %in% keep)]
+  }
+  
+  # bye
+  rm(keep, post.algorithm)
+  
+  # enforce factor storage
+  vars = names(mr.data)
+  for (i in 1:length(vars)) {
+    mr.data[, vars[i]] = factor(mr.data[, vars[i]])
+  }
+  
+  ################################################################################
+  
+  # OUTPUT DATA
   
   # set seed so the randomizations are conducted equally each time this file is run
   set.seed(626)
   rand = runif(nrow(mr.data))
   mr.data = mr.data[order(rand),]
 
-  # this code in just to find out which column number the MR indicator is, so we can report accuracy
-  which(colnames(mr.data)=="MR")
-  
-  # bye 
-  rm(rand)
-  
-  ################################################################################
-  
-  # OUTPUT DATA
-  
   if (purpose == "train.test") {
     # output prepped MR training set
-      # 1018 rows; 59 columns; unique on documentno 
+      # 1018 rows; 58 columns; unique on documentno 
     saveRDS(mr.data, file = prepped.train.out.file.name)
   }
   
   if (purpose == "classify") {
     # output prepped and merged MR accidents data 
-      # 75700 rows; 59 columns; unique on documentno 
+      # 75700 rows; 73 columns; unique on documentno 
     saveRDS(mr.data, file = prepped.classify.out.file.name)
   }
   

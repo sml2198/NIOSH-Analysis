@@ -76,23 +76,11 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   ps.data$narrative = gsub("ag(a)*( )*(in)*st", "against", ps.data$narrative)
   
   # standardize "not-found" values within variables (e.g., "Unknown" or "Other" are changed to "NO VALUE FOUND")
-  ps.data$uglocation = ifelse(ps.data$uglocation == "NOT MARKED", "NO VALUE FOUND", ps.data$uglocation)
   ps.data$accidenttype = ifelse(ps.data$accidenttype == "not elsewhereclassified", "NO VALUE FOUND", ps.data$accidenttype)
-  ps.data$immediatenotificationclass = ifelse(ps.data$immediatenotificationclass == "NOT MARKED", "NO VALUE FOUND", ps.data$immediatenotificationclass)
   ps.data$natureofinjury = ifelse(ps.data$natureofinjury == "unclassified,not determed", "NO VALUE FOUND", ps.data$natureofinjury)
-  ps.data$equipmanufacturer = ifelse(ps.data$equipmanufacturer == "Not Reported", "NO VALUE FOUND", ps.data$equipmanufacturer)
-  
-  # convert date variables
-  indices.with.date = grep("date", names(ps.data))
-  for (i in indices.with.date) {
-    ps.data[, i] = as.Date(ps.data[, i], "%m/%d/%Y")
-  }
   
   # format accident type codes
   ps.data$accidenttypecode = as.factor(ps.data$accidenttypecode)
-  
-  # bye
-  rm(i, indices.with.date)
 
   ################################################################################
   
@@ -853,16 +841,16 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   
   ################################################################################
   
-  # DROP UNNECESSARY VARIABLES
+  # DROP UNNECESSARY VARIABLES & FINAL FORMAT
   
-  # 75743 rows; 155 columns; unique on documentno
-  keep = c("accident.only", "atrs", "bent", "between", "bodyseat", "bounced", "broke", "brokensteel", 
+  # 75743 rows; 156 columns; unique on documentno
+  keep = c("accidentdate", "accident.only", "atrs", "bent", "between", "bodyseat", "bounced", "broke", "brokensteel", 
            "bumped", "by", "cable", "canopy", "caught", "collided", "controls", "derail", 
            "dif_vehicle", "digit", "documentno", "drill_action", "drillsteel", "dropped", "entrapment", "falling.accident", 
            "false_keyword", "flew", "headcanopy", "headroof", "hit", "hole", "in_vehicle", "int_obj_strike", 
            "jarring", "keyword", "keyword_pts", "likely_actvty", "likely_class", "likely_equip", "likely_nature", "likely_occup", 
            "likely_ps", "likely_source", "likely_type", "loose", "loose_rbolting", "maybe_false_keyword", "maybe_likely_actvty", "maybe_type", 
-           "moving_vehcl", "mult_vehcl", "neg_keyword_pts", "neg_pts", "neg_roofbolt", "neg_wrench", "no_vehcl", "num.body", 
+           "mineid", "moving_vehcl", "mult_vehcl", "neg_keyword_pts", "neg_pts", "neg_roofbolt", "neg_wrench", "no_vehcl", "num.body", 
            "num.person", "num.pinstrike", "num.vehicles", "num_unique_vehcl", "operating", "outsidevehicle", "pin", "pos_pts", 
            "pos_roofbolt", "potential_ps", "PS", "psobject_test", "ranover", "resin", "rock", "rolled", 
            "roofbolt", "shuttlecar_or_rbolter", "steering", "strap", "strike", "strikerib", "tool_break", "trap", 
@@ -892,12 +880,15 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   if (purpose == "train.test") {
     # output prepped PS training set
       # 1000 rows; 101 columns; unique on documentno 
+    ps.data = ps.data[, c(-match("accidentdate", names(ps.data)),
+                          -match("mineid", names(ps.data)),
+                          -match("type", names(ps.data)))]
     saveRDS(ps.data, file = prepped.train.out.file.name)
   }
   
   if (purpose == "classify") {
     # output prepped and merged PS accidents data 
-      # 75743 rows; 101 columns; unique on documentno 
+      # 75743 rows; 102 columns; unique on documentno 
     saveRDS(ps.data, file = prepped.classify.out.file.name)
   }
   

@@ -5,9 +5,9 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 3 - Clean Operator History
-  # Cleans controller/operator history data
+  # Cleans controller/operator history data from the MSHA open data portal
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/11/17
 
 ################################################################################
@@ -18,42 +18,56 @@ library(stringr)
 
 # set root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL) 
-clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+input.path = paste0(root, "/0_originals", collapse = NULL) 
+output.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # original controller and operator history 
-history.in.file.name = paste0(originals.path, "/ControllerOperatorHistory.txt", collapse = NULL)
+  # controller/operator history data from the MSHA open data portal
+    # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
+history.in.file.name = paste0(input.path, "/ControllerOperatorHistory.txt", collapse = NULL)
 
 # outputs
-  # clean operator history
-history.out.file.name = paste0(clean.path, "/clean_operator_history.rds", collapse = NULL)
+  # clean controller/operator history data
+history.out.file.name = paste0(output.path, "/clean_operator_history.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(clean.path, recursive = TRUE)
+dir.create(output.path, recursive = TRUE)
+
+# bye
+rm(root, input.path, output.path)
 
 ################################################################################
 
-# MERGE MINES AND EMPLOYMENT/PRODUCTION DATA, THEN FORMAT VARIABLES
+# READ DATA
 
 # read controller/operator history data 
-  # 144065 rows; 13 columns; unique on operatorid-operatorstartdt
+  # 144065 rows; 13 columns; unique on minied-operatorid-operatorstartdt
 history = read.table(history.in.file.name, header = T, sep = "|")
 
+# bye
+rm(history.in.file.name)
+
+################################################################################
+
+# CLEAN DATA
+
 # drop data from environments not of interest
-  # 63143 rows; 13 columns; unique on operatorid-operatorstartdt
-history = history[(history$COAL_METAL_IND == "C"), ]
+  # 63143 rows; 13 columns; unique on minied-operatorid-operatorstartdt
+history = history[which(history$COAL_METAL_IND == "C"), ]
+
+# drop unnecessary variables
+  # 63143 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+history = history[, c("MINE_ID", "OPERATOR_END_DT", "OPERATOR_ID", "OPERATOR_START_DT")]
 
 # rename variables
 names(history)[names(history) == "MINE_ID"] = "mineid"
+names(history)[names(history) == "OPERATOR_END_DT"] = "operatorenddt"
 names(history)[names(history) == "OPERATOR_ID"] = "operatorid"
 names(history)[names(history) == "OPERATOR_START_DT"] = "operatorstartdt"
-names(history)[names(history) == "OPERATOR_END_DT"] = "operatorenddt"
-history = history[, c("operatorid", "mineid", "operatorstartdt", "operatorenddt")]
 
 # format mineid
 history$mineid = as.character(history$mineid)
@@ -74,11 +88,11 @@ for (i in 1:length(datevars)) {
 
 ################################################################################
 
+# OUTPUT DATA
+
 # output data 
   # 63143 rows; 13 columns; unique on operatorid-operatorstartdt
 saveRDS(history, file = history.out.file.name)
-
-################################################################################
 
 rm(list = ls())
 

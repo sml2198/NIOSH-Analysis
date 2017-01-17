@@ -46,7 +46,7 @@ dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file
 set.seed(625)
 
 # prepped PS data for classification
-  # 75743 rows; 101 columns; unique on documentno 
+  # 75743 rows; 102 columns; unique on documentno 
 simple.ps = readRDS(prepped.classify.in.file.name)
 
 # print PS indicator column number
@@ -85,17 +85,16 @@ accidents$prediction = ifelse(accidents$accident.only == 1, 1, accidents$predict
 accidents$prediction = ifelse(accidents$falling.accident == 1, 1, accidents$prediction)
 accidents$prediction = as.factor(accidents$prediction)
 
-# merge algorithm-classified accidents onto data
-accidents = accidents[, c("prediction", "documentno")]
-accidents = merge(all.accidents, accidents, by = "documentno", all = T)
-accidents$PS = ifelse(!is.na(accidents$prediction), accidents$prediction, accidents$PS)
-accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
-
 # merge NIOSH-classified accidents onto data
-accidents = merge(accidents, simple.ps, by = "documentno", all = F)
-accidents$PS.y = ifelse(accidents$PS.y == "YES", "2", "1")
-accidents$PS = ifelse(accidents$PS.x == "", accidents$PS.y, accidents$PS.x)
-accidents = accidents[, c("PS", "mineid", "accidentdate", "documentno")]
+accidents = accidents[, c("prediction", "documentno")]
+accidents = merge(simple.ps, accidents, by = "documentno", all = T)
+accidents$PS = ifelse(accidents$PS == "YES", 2, accidents$prediction)
+accidents$PS = ifelse(is.na(accidents$PS), 1, accidents$PS)
+accidents = accidents[, c("PS", "accidentdate", "documentno")]
+
+# format PS
+accidents$PS = ifelse(accidents$PS == 2, 1, 0)
+accidents$PS = factor(accidents$PS)
 
 ################################################################################
 

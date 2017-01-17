@@ -7,7 +7,7 @@
 # 2 - Clean Employment Data
   # Cleans employment data from the MSHA open data portal
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/4/17
 
 ################################################################################
@@ -18,15 +18,16 @@ library(stringr)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 input.path = paste0(root, "/0_originals", collapse = NULL)
 output.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # quarterly employment/production data from the MSHA open data portal 
+  # quarterly employment/production data from the MSHA open data portal
+    # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 employment.in.file.name = paste0(input.path, "/MinesProdQuarterly.txt", collapse = NULL)
 
 # outputs
@@ -36,50 +37,53 @@ employment.out.file.name = paste0(output.path, "/clean_employment.rds", collapse
 # generate file paths 
 dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
 
+# bye
+rm(root, input.path, output.path)
+
 ################################################################################
 
-# READ AND CLEAN QUARTERLY EMPLOYMENT/PRODUCTION DATA
+# READ DATA
 
-# read quarterly employment/production data
-  # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
+# read employment data
   # 1803837 rows; 13 columns; unique on mine-year-quarter
 employment = read.table(employment.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
 
-# remove observations from environments not of interest
+# bye
+rm(employment.in.file.name)
+
+################################################################################
+
+# CLEAN DATA
+
+# drop data from environments not of interest
   # 42019 rows; 13 columns; unique on mine-year-quarter
-employment = employment[which(employment$COAL_METAL_IND == "C"), ]
-employment = employment[which(employment$SUBUNIT == "UNDERGROUND"), ]
+employment = employment[which(employment$COAL_METAL_IND == "C" & employment$SUBUNIT == "UNDERGROUND"), ]
 
 # drop unnecessary variables
-employment$COAL_METAL_IND = 
-  employment$STATE = 
-  employment$CURR_MINE_NM = 
-  employment$FISCAL_YR = 
-  employment$FISCAL_QTR = 
-  employment$SUBUNIT = 
-  employment$SUBUNIT_CD = NULL
+  # 42019 rows; 6 columns; unique on mine-year-quarter
+employment = employment[, c("AVG_EMPLOYEE_CNT", "CAL_QTR", "CAL_YR",
+                            "COAL_PRODUCTION", "HOURS_WORKED", "MINE_ID")]
 
 # rename variables
-names(employment)[names(employment) == "CAL_YR"] = "year"
-names(employment)[names(employment) == "CAL_QTR"] = "quarter"
-names(employment)[names(employment) == "MINE_ID"] = "mineid"
-names(employment)[names(employment) == "HOURS_WORKED"] = "hours_qtr"
 names(employment)[names(employment) == "AVG_EMPLOYEE_CNT"] = "employment_qtr"
+names(employment)[names(employment) == "CAL_QTR"] = "quarter"
+names(employment)[names(employment) == "CAL_YR"] = "year"
 names(employment)[names(employment) == "COAL_PRODUCTION"] = "prod_qtr"
+names(employment)[names(employment) == "HOURS_WORKED"] = "hours_qtr"
+names(employment)[names(employment) == "MINE_ID"] = "mineid"
 
 # format mineid
 employment$mineid = str_pad(employment$mineid, 7, pad = "0")
 
 ################################################################################
 
-# OUPUT CLEAN QUARTERLY EMPLOYMENT/PRODUCTION DATA
+# OUPUT CLEAN DATA
 
 # output clean employment data
   # 42019 rows; 6 variables; unique on mine-year-quarter
 saveRDS(employment, file = employment.out.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################

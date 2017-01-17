@@ -48,10 +48,9 @@ dir.create(prepped.input.path, recursive = TRUE) # (recursive = TRUE creates fil
 # set seed to enable reproducible results
 set.seed(625)
 
-# read cleaned MR training set data and remive "type" field (it's all the same)
-  # 1018 rows; 59 columns; unique on documentno 
+# read cleaned MR training set data
+  # 1018 rows; 55 columns; unique on documentno 
 simple = readRDS(prepped.train.set.in.file.name)
-simple = simple[, -c(match("type", names(simple)))]
 
 # print PS indicator column number - 2
 which(colnames(simple) == "MR") 
@@ -59,29 +58,15 @@ which(colnames(simple) == "MR")
 # bye
 rm(root, prepped.input.path, prepped.train.set.in.file.name)
 
-# enforce factor storage
-vars = names(simple)
-for (i in 1:length(vars)) {
-  simple[, vars[i]] = factor(simple[, vars[i]])
-}
-
-# 10 missing likely source - WHY IS THIS HAPPENING?
-simple$likely.source = ifelse(is.na(simple$likely.source), 0, simple$likely.source)
-
-# also, why do some of these only have 1 factor level?
-# likely.class maybe.activy lug 
-
 ################################################################################
 
 # CART
   # See Table D.1a: Confusion Matrix for CaRT Algorithm
 cart = rpart(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno'))], method = "class")
-cart.predictions = predict(cart, simple[701:1019,!(names(simple) %in% c('documentno'))], type = "class")
-table(simple[701:1019,2], predicted = cart.predictions)
+cart.predictions = predict(cart, simple[701:1018,!(names(simple) %in% c('documentno'))], type = "class")
+table(simple[701:1018,2], predicted = cart.predictions)
 
-#     NO YES
-# NO 170   3
-# YES 18 127
+rm(cart, cart.predictions)
 
 ################################################################################
 
@@ -90,12 +75,10 @@ table(simple[701:1019,2], predicted = cart.predictions)
 
 rf = randomForest(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno'))], mtry = 15, 
                   importance = TRUE, type = "class", ntree = 1000)
-rf.predictions = predict(rf, simple[701:1019,!(names(simple) %in% c('documentno'))], type = "class")
-table(simple[701:1019,2], predicted = rf.predictions)
+rf.predictions = predict(rf, simple[701:1018,!(names(simple) %in% c('documentno'))], type = "class")
+table(simple[701:1018,2], predicted = rf.predictions)
 
-#     NO YES
-# NO  169   4
-# YES  12 133
+rm(rf, rf.predictions)
 
 ################################################################################
 
@@ -105,14 +88,11 @@ table(simple[701:1019,2], predicted = rf.predictions)
 simple.rosex = ROSE(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno'))])$data
 rand = runif(nrow(simple.rosex))
 simple.rose = simple.rosex[order(rand),]
-remove(simple.rosex, rand)
 rf.rose = randomForest(MR ~ ., data = simple.rose, mtry = 15, ntree = 1000)
-rf.rose.pred = predict(rf.rose, simple[701:1019,!(names(simple) %in% c('documentno'))], type = "class")
-table(simple[701:1019,2], predicted = rf.rose.pred)
+rf.rose.pred = predict(rf.rose, simple[701:1018,!(names(simple) %in% c('documentno'))], type = "class")
+table(simple[701:1018,2], predicted = rf.rose.pred)
 
-#      NO YES
-# NO  161  10
-# YES   8 134
+remove(simple.rosex, rand, simple.rose, rf.rose, rf.rose.pred)
 
 ################################################################################
 
@@ -120,15 +100,13 @@ table(simple[701:1019,2], predicted = rf.rose.pred)
   # See Table D.1d: Confusion Matrix for Random Forest (SMOTE Oversampled) Algorithm
 
 smote.trainx = simple[1:700, !(names(simple) %in% c('documentno'))]
-smote.test = simple[701:1019, !(names(simple) %in% c('documentno'))]
+smote.test = simple[701:1018, !(names(simple) %in% c('documentno'))]
 smote = SMOTE(MR ~ ., smote.trainx, perc.over = 100, perc.under = 100)
 rf.smo = randomForest(MR ~ ., data = smote, mtry = 10, ntree = 800)
 rf.smo.pred = predict(rf.smo, smote.test, type = "class")
-table(simple[701:1019,2], predicted = rf.smo.pred)
+table(simple[701:1018,2], predicted = rf.smo.pred)
 
-#      NO YES
-# NO  159  14
-# YES   6 139
+rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred)
 
 ################################################################################
 
@@ -141,7 +119,11 @@ ctrl = trainControl(method = "cv", classProbs = TRUE, summaryFunction = twoClass
 rf.downsampled = train(MR ~ ., data = simple[1:700,!(names(simple) %in% c('documentno', 'lug'))], method = "rf", ntree = 800,
                        tuneLength = 10, metric = "ROC", trControl = ctrl, 
                        strata = simple$MR, sampsize = rep(nmin, 2))
-down.prob = predict(rf.downsampled, simple[701:1019,!(names(simple) %in% c('documentno'))], type = "prob")[,1]
+down.prob = predict(rf.downsampled, simple[701:1018,!(names(simple) %in% c('documentno'))], type = "prob")
+down.prob = ifelse(down.prob$YES > 0.50, 1, 0)
+table(simple[701:1018,2], predicted = down.prob)
+
+rm(nmin, ctrl, down.prob, rf.downsampled)
 
 ################################################################################
 
@@ -152,9 +134,7 @@ mr.adaboost = boosting(MR ~ . , data = simple[1:700,!(names(simple) %in% c('docu
 adaboost.pred = predict.boosting(mr.adaboost, newdata = simple[701:1019,!(names(simple) %in% c('documentno','narrative'))])
 adaboost.pred$confusion
 
-#      NO YES
-# NO  169  11
-# YES   4 134
+rm(adaboost.pred, mr.adaboost)
 
 ################################################################################
 

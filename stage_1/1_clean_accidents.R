@@ -139,9 +139,9 @@ accidents$coalmetalind =
 
 ################################################################################
 
-# OUPUT CLEAN ACCIDENTS DATA
+# OUPUT CLEAN DATA
 
-# output cleaned accidents data
+# output clean accidents data
   # 75016 rows; 56 columns; unique on documentno
 saveRDS(accidents, file = accidents.out.file.name)
 

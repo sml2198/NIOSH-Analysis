@@ -130,17 +130,7 @@ mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$
   # 30289 rows; 67 columns; unique on mine-year-quarter
 mine.quarters = mine.quarters[( mine.quarters$hours_qtr != 0), ]
 
-# generate central appalachia indicator
-mine.quarters$appalachia = ifelse((mine.quarters$stateabbreviation == "VA" |
-                                   mine.quarters$stateabbreviation == "WV" |
-                                   mine.quarters$stateabbreviation == "KY" |
-                                   mine.quarters$stateabbreviation == "PA"), 1, 0)
 
-# clean up safetycommittee
-mine.quarters$safetycommittee = ifelse(mine.quarters$safetycommittee  == "Y", 1, 0)
-
-# encode the district variable
-mine.quarters$district = as.numeric(mine.quarters$district)
 
 ################################################################################
 
