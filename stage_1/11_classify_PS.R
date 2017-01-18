@@ -22,12 +22,15 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/dat
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
+cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
 prepped.input.path = paste0(root, "/5_prepped", collapse = NULL) 
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
   # prepped PS data for classification
 prepped.classify.in.file.name = paste0(prepped.input.path, "/prepped_PS_classify.rds", collapse = NULL)
+  # clean accidents data
+accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
   # accidents data, classified as PS/non-PS (R dataset)
@@ -46,7 +49,7 @@ dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file
 set.seed(625)
 
 # prepped PS data for classification
-  # 75743 rows; 102 columns; unique on documentno 
+  # 75743 rows; 103 columns; unique on documentno 
 simple.ps = readRDS(prepped.classify.in.file.name)
 
 # print PS indicator column number
@@ -90,7 +93,20 @@ accidents = accidents[, c("prediction", "documentno")]
 accidents = merge(simple.ps, accidents, by = "documentno", all = T)
 accidents$PS = ifelse(accidents$PS == "YES", 2, accidents$prediction)
 accidents$PS = ifelse(is.na(accidents$PS), 1, accidents$PS)
-accidents = accidents[, c("PS", "accidentdate", "documentno")]
+accidents = accidents[, c("PS", "documentno")]
+
+################################################################################
+
+# MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
+
+# load cleaned accidents
+  # 75016 rows; 56 columns; unique on documentno
+clean.accidents = readRDS(accidents.in.file.name)
+
+# merge
+  # 75016 rows; 4 columns; unique on documentno
+accidents = merge(clean.accidents[, c("documentno", "accidentdate", "mineid")], 
+                       accidents, by = "documentno", all = F)
 
 # format PS
 accidents$PS = ifelse(accidents$PS == 2, 1, 0)
@@ -101,6 +117,7 @@ accidents$PS = factor(accidents$PS)
 # OUTPUT CLASSIFIED DATA
 
 # output CSV
+  # 75016 rows; 4 columns; unique on documentno 
 write.csv(accidents, file = classified.accidents.file.name.csv)
 
 # output R dataset

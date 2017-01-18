@@ -888,7 +888,7 @@ for (purpose in c("train.test", "classify")) { # make datasets for both training
   
   if (purpose == "classify") {
     # output prepped and merged PS accidents data 
-      # 75743 rows; 102 columns; unique on documentno 
+      # 75743 rows; 103 columns; unique on documentno 
     saveRDS(ps.data, file = prepped.classify.out.file.name)
   }
   

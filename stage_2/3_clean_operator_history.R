@@ -13,6 +13,7 @@
 ################################################################################
 
 library(stringr)
+library(zoo)
 
 ################################################################################
 
@@ -70,30 +71,32 @@ names(history)[names(history) == "OPERATOR_ID"] = "operatorid"
 names(history)[names(history) == "OPERATOR_START_DT"] = "operatorstartdt"
 
 # format mineid
-history$mineid = as.character(history$mineid)
 history$mineid = str_pad(history$mineid, 7, pad = "0")
 
-# convert start/end dates into quarters & replace end quarter with 2016 if missing
-enddtvars = "operatorenddt"
-for (i in 1:length(enddtvars)) {
-  history[, enddtvars[i]] = as.character(history[, enddtvars[i]])
-  history[, enddtvars[i]] = ifelse(history[, enddtvars[i]] == "", NA, history[, enddtvars[i]])
-  history[, enddtvars[i]] = ifelse(is.na(history[, enddtvars[i]]), "01/01/2016", history[, enddtvars[i]])
-}
+# replace end date with 2016 Q1 if missing
+history[, "operatorenddt"] = as.character(history[, "operatorenddt"])
+history[, "operatorenddt"] = ifelse(history[, "operatorenddt"] == "", NA, history[, "operatorenddt"])
+history[, "operatorenddt"] = ifelse(is.na(history[, "operatorenddt"]), "01/01/2016", history[, "operatorenddt"]) 
+
+# format start/end date  
 datevars = c("operatorstartdt", "operatorenddt")
 for (i in 1:length(datevars)) {
   history[, datevars[i]] = as.Date(as.character(history[, datevars[i]]), "%m/%d/%Y")
   history[, datevars[i]] = as.yearqtr(history[, datevars[i]])
 }
 
+# bye
+rm(i, datevars)
+
 ################################################################################
 
-# OUTPUT DATA
+# OUTPUT CLEAN DATA
 
 # output data 
-  # 63143 rows; 13 columns; unique on operatorid-operatorstartdt
+  # 63143 rows; 4 columns; unique on minied-operatorid-operatorstartdt
 saveRDS(history, file = history.out.file.name)
 
+# bye
 rm(list = ls())
 
 ################################################################################

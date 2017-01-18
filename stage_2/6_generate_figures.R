@@ -7,7 +7,7 @@
 # 6 - Generate Figures
   # Generates Stage 2 figures
 
-# Coded by Julia Bodson, juliabodson@gmail.com
+# Coded by: Julia Bodson, juliabodson@gmail.com
 # Last edit 1/6/17
 
 ################################################################################
@@ -37,6 +37,9 @@ out.path.appendix = paste0(output.path, "/Appendix_Figure_", collapse = NULL)
 
 # generate file paths 
 dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
+
+# bye
+rm(root, input.path, output.path)
 
 ################################################################################
 

@@ -22,12 +22,15 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/dat
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
+cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
 prepped.input.path = paste0(root, "/5_prepped", collapse = NULL) 
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
   # prepped MR data for classification
 prepped.classify.in.file.name = paste0(prepped.input.path, "/prepped_MR_classify.rds", collapse = NULL)
+  # clean accidents data
+accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
   # accidents data, classified as MR/non-MR (R dataset)
@@ -66,12 +69,12 @@ post.algorithm = c("flashburn", "carpal.tunnel", "cumulative",
 
 # implement Adaptive Boosting
 mr.adaboost = boosting(MR ~ . , data = simple[simple$type!="unclassified", 
-                                              !(names(simple) %in% c('documentno','type', 'accidentdate', post.algorithm))], 
+                                              !(names(simple) %in% c('documentno','type', 'mineid', 'accidentdate', post.algorithm))], 
                        boos = T, mfinal = 300, coeflearn = 'Freund')
 
 # generate predictions
 adaboost.pred = predict.boosting(mr.adaboost, newdata = simple[simple$type == "unclassified", 
-                                                               !(names(simple) %in% c('documentno','type', 'accidentdate', post.algorithm))])
+                                                               !(names(simple) %in% c('documentno','type', 'mineid', 'accidentdate', post.algorithm))])
 
 # apply predictions to unclassified injuries
 accidents.data = cbind(simple[simple$type == "unclassified",], adaboost.pred$class)
@@ -127,26 +130,42 @@ accidents.data$MR  = ifelse((accidents.data$adaboost == "YES" &
                               accidents.data$false.neg == 1, 1, 0)
 
 # remove unessential variables
-accidents.data = accidents.data[, c(match("MR", names(accidents.data)),
-                                    match("accidentdate", names(accidents.data)),
+accidents.data = accidents.data[, c(match("adaboost", names(accidents.data)),
                                     match("documentno", names(accidents.data)))]
 
 # merge on predictions from training obs
-accidents.data = merge(accidents.data, simple[, c("documentno", "MR")], by = "documentno", all = TRUE)
-accidents.data$MR.y = ifelse(accidents.data$MR.y == "YES", "1", "0")
-accidents.data$MR = ifelse(!is.na(accidents.data$MR.x), accidents.data$MR.x, accidents.data$MR.y)
+accidents.data = merge(simple[, c("documentno", "MR")], accidents.data, by = "documentno", all = TRUE)
+accidents.data$MR = ifelse(accidents.data$MR == "YES", "1", "0")
+accidents.data$MR = ifelse(!is.na(accidents.data$adaboost) & accidents.data$adaboost == "YES", 1, accidents.data$MR)
 
 # remove unessential variables
-accidents.data = accidents.data[, c(-grep("MR\\.[x|y]", names(accidents.data)))]
+accidents.data = accidents.data[, c(-grep("adaboost", names(accidents.data)))]
+
+################################################################################
+
+# MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
+
+# load cleaned accidents
+  # 75016 rows; 56 columns; unique on documentno
+accidents = readRDS(accidents.in.file.name)
+
+# merge
+  # 75016 rows; 4 columns; unique on documentno
+accidents.data = merge(accidents[, c("documentno", "accidentdate", "mineid")], 
+                       accidents.data, by = "documentno", all = F)
 
 # format MR
 accidents.data$MR = factor(accidents.data$MR)
+
+# bye
+rm(simple, accidents)
 
 ################################################################################
 
 # OUTPUT CLASSIFIED DATA
 
 # save a CSV file
+  # 75016 rows; 4 columns; unique on documentno 
 write.csv(accidents.data, file = classified.accidents.file.name.csv)
 
 # save R dataset
