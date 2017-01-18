@@ -85,6 +85,12 @@ for (i in 1:length(datevars)) {
   history[, datevars[i]] = as.yearqtr(history[, datevars[i]])
 }
 
+# drop duplicates
+  # 55776 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+history = history[order(history$mineid),]
+history$operatorid = as.character(history$operatorid)
+history = history[!duplicated(history), ]
+
 # bye
 rm(i, datevars)
 

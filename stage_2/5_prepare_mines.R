@@ -146,17 +146,23 @@ mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$
 
 ################################################################################
 
-# MERGE IN OPERATOR HISTORY DATA
+# READ OPERATOR HISTORY DATA
 
-# load in operator history data
-  # 63143 rows; 4 columns; unique on operatorid-operatorstartdt
+# read operator history data
+  # 63143 rows; 4 columns; unique on minied-operatorid-operatorstartdt
 history = readRDS(history.in.file.name)
 
-# remove duplicates and order history
-  # 55776 rows; 4 columns; unique on operatorid-operatorstartdt
-history = history[order(history$mineid),]
-history$operatorid = as.character(history$operatorid)
-history = history[!duplicated(history), ]
+################################################################################
+
+
+
+
+################################################################################
+
+# MERGE IN OPERATOR HISTORY DATA
+
+
+
 
 # create empty operatorid and oeprator time variables in mines data
 mine.quarters$operatorid = NA
