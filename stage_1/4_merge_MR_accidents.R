@@ -18,8 +18,7 @@ library(stringr)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -34,7 +33,7 @@ accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", coll
 
 # outputs
   # merged PS accidents 
-merged.out.file.name = paste0(merged.output.path, "/merged_mR_accidents.rds", collapse = NULL)
+merged.out.file.name = paste0(merged.output.path, "/merged_MR_accidents.rds", collapse = NULL)
 
 # generate file paths
 dir.create(merged.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 

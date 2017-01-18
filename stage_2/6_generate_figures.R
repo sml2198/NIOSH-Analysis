@@ -26,7 +26,7 @@ input.path = paste0(root, "/data/5_prepped", collapse = NULL)
 output.path = paste0(root, "/figures", collapse = NULL)
 
 # inputs
-  # mine-year-level dataset created in file X
+  # mine-year-level dataset created in 5_prepare_mines
 data.file.name = paste0(input.path, "/prepped_mine_years.rds", collapse = NULL)
 
 # outputs
@@ -43,6 +43,7 @@ rm(root, input.path, output.path)
 
 ################################################################################
 
+# start counters for file naming (these will be over-written in the loop below)
 fig.num = 1
 fig.ab = "a"
 
@@ -71,7 +72,6 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   # generate outcome variables
   data$dv.exp = data$dv / data$hours
   data$dv.rel = data$dv / data$total_injuries
-  data[is.na(data)] = NA
   
   # bye
   data$dv = data$total_injuries = NULL
@@ -144,13 +144,14 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   
   # GROUP MINES BY COVARIATES OF INTEREST
   
-  # calculate percentile cutoffs for variables of interest
+  # creat data frame with empty variables for percentiles by year
   year.info = data.frame(unique(data$year))
   names(year.info) = "year"
   for (var in c("hours", "employment", "prod")) {
     year.info[, c(paste(var, seq(5, 100, 5), sep = "."))] = NA
   }
   
+  # calculate and fill in percentile cutoffs for variables of interest
   for (var in c("hours", "employment", "prod")) {
     for (p in seq(5, 100, 5)) {
       x = paste(var, p, sep = ".")
@@ -273,11 +274,11 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
         else if (fig.num == 5) {
           fig.num.modified = 4
         }
-        else if (fig.num == 14) {
-          fig.num.modified = 15
+        else if (fig.num == 16) {
+          fig.num.modified = 17
         }
-        else if (fig.num == 15) {
-          fig.num.modified = 14
+        else if (fig.num == 17) {
+          fig.num.modified = 16
         }
         else {
           fig.num.modified = fig.num
@@ -475,6 +476,18 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
         }
         else if (appendix.fig.num == 7) {
           appendix.fig.num.modified = 6
+        }
+        else if (appendix.fig.num == 10) {
+          appendix.fig.num.modified = 11
+        }
+        else if (appendix.fig.num == 11) {
+          appendix.fig.num.modified = 10
+        }
+        else if (appendix.fig.num == 14) {
+          appendix.fig.num.modified = 15
+        }
+        else if (appendix.fig.num == 15) {
+          appendix.fig.num.modified = 14
         }
         else {
           appendix.fig.num.modified = appendix.fig.num

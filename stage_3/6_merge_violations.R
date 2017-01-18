@@ -15,7 +15,6 @@
 # set root directory
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "/Users/Sarah/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
@@ -50,7 +49,7 @@ violations = readRDS(violations.in.file.name)
 inspections = readRDS(inspections.in.file.name)
 
 # load assessments
-  # 843818 rows; 13 columns; unique on violationno
+  # 843818 rows; 11 columns; unique on violationno
 assessments = readRDS(assessments.in.file.name)
 
 # load cfr key
@@ -63,35 +62,19 @@ rm(root, clean.path, merged.path, violations.in.file.name,
 
 ################################################################################
 
-# MERGE DATASETS TOGETHER
+# MERGE ASSESSMENTS ON VIOLATIONS
 
+# format violationnos
 violations$violationno = factor(violations$violationno)
 assessments$violationno = factor(assessments$violationno)
+violations$violationno = as.character(violations$violationno)
+assessments$violationno = as.character(assessments$violationno)
+violations$violationno = str_pad(violations$violationno, 7, pad = "0")
+assessments$violationno = str_pad(assessments$violationno, 7, pad = "0")
 
 # merge assessments data with violations data
-  # 868722 rows; 14 columns; unique on violationno-mineid
-violations1 = merge(violations, assessments, by = c("mineid","violationno"), all = FALSE)
-violations2 = merge(violations, assessments, by = c("violationno"), all = FALSE)
-
-# drop duplicate variables from merge 
-common_varstbs = sub(".x", "", names(violations)[grep(".x", names(violations), fixed = T)], fixed = T)
-violations = violations[, -grep(".y", names(violations), fixed = T)]
-names(violations)[grep(".x", names(violations), fixed = T)] = common_varstbs
-
-# clean occurrencedate field
-assessments_violations$occurrencedate = as.character(assessments_violations$occurrencedate)
-assessments_violations$violation_occur_dt = as.character(assessments_violations$violation_occur_dt)
-sum((assessments_violations$occurrencedate != assessments_violations$violation_occur_dt), na.rm = TRUE) 
-
-# remove these cases - wind up with 843,672 obs
-assessments_violations = assessments_violations[((assessments_violations$occurrencedate == assessments_violations$violation_occur_dt) | 
-                                                   is.na(assessments_violations$occurrencedate) | 
-                                                   is.na(assessments_violations$violation_occur_dt)), ]
-
-# if missing occurrencedate, fill in violation_occur_dt, then drop so we have just one var
-assessments_violations[is.na(assessments_violations$occurrencedate) & !is.na(assessments_violations$violation_occur_dt), ]$occurrencedate = 
-  assessments_violations[is.na(assessments_violations$occurrencedate) & !is.na(assessments_violations$violation_occur_dt), ]$violation_occur_dt
-assessments_violations$violation_occur_dt = NULL
+  # 843787 rows; 24 columns; unique on violationno-mineid
+violations = merge(violations, assessments, by = c("mineid","violationno"), all = FALSE)
 
 ######################################################################################################
 

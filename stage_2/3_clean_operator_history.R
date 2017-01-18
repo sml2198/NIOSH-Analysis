@@ -83,6 +83,7 @@ datevars = c("operatorstartdt", "operatorenddt")
 for (i in 1:length(datevars)) {
   history[, datevars[i]] = as.Date(as.character(history[, datevars[i]]), "%m/%d/%Y")
   history[, datevars[i]] = as.yearqtr(history[, datevars[i]])
+  history[, datevars[i]] = as.numeric(format(history[, datevars[i]], "%Y"))
 }
 
 # drop duplicates

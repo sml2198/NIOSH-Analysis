@@ -46,8 +46,8 @@ assessments = read.table(assessments.in.file.name, header = T, sep = "|", na.str
 
 # rename variables
 names(assessments)[names(assessments) == "VIOLATION_NO"] = "violationno"
-names(assessments)[names(assessments) == "EVENT_NO"] = "eventno"
 names(assessments)[names(assessments) == "MINE_ID"] = "mineid"
+names(assessments)[names(assessments) == "EVENT_NO"] = "eventno"
 names(assessments)[names(assessments) == "ASSESS_CASE_NO"] = "assesscaseno"
 names(assessments)[names(assessments) == "SIG_SUB_IND"] = "sigandsubindicator"
 names(assessments)[names(assessments) == "MINE_ACT_SECTION_CD"] = "mineactsectioncode"
@@ -64,8 +64,6 @@ names(assessments) = tolower(names(assessments))
 # format variables
 assessments$violationno = as.character(assessments$violationno)
 assessments$violationno = str_pad(assessments$violationno, 7, pad = "0")
-assessments$eventno = as.character(assessments$eventno)
-assessments$eventno = str_pad(assessments$eventno, 7, pad = "0")
 assessments$mineid = as.character(assessments$mineid)
 assessments$mineid = str_pad(assessments$mineid, 7, pad = "0")
 
@@ -95,18 +93,17 @@ assessments = assessments[assessments$minetype == "Underground", ]
 ################################################################################
 
 # keep only useful variables
-  # 843818 rows; 13 columns; unique on violationno
-keep = c("violationno", "mineid", "eventno", 
-         "assesscaseno", "sigandsubindicator", "mineactsectioncode",
-         "cfrstandardcode", "violationtypecode", "violatortypecode",
-         "proposedpenaltyamount", "currentassessmentamount", "penaltypoints", 
-         "issuedate")
+  # 843818 rows; 11 columns; unique on violationno
+keep = c("violationno", "mineid", "assesscaseno", 
+         "sigandsubindicator", "mineactsectioncode", "cfrstandardcode", 
+         "violationtypecode", "proposedpenaltyamount", "currentassessmentamount", 
+         "penaltypoints", "issuedate")
 assessments = assessments[, (names(assessments) %in% keep)] 
 
 ################################################################################
 
 # output assessment-level data
-  # 843818 rows; 13 columns; unique on violationno
+  # 843818 rows; 11 columns; unique on violationno
 saveRDS(assessments, file = assessments.out.file.name)
 
 ################################################################################
