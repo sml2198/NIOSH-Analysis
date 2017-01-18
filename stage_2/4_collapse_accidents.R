@@ -1,3 +1,5 @@
+# CHECK LINES: 11, 40, 43, 116, 120, 124
+
 # NIOSH Project 2014-N-15776
 # Designing a Statistical Algorithm for Strategic Identification and Development 
 # of New Mine Safety Technologies and Technological Applications
@@ -5,25 +7,25 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 4 - Collapse Accidents Data
-  # Loads in coded accidents data from classify MR/PS and formats variables for merge
-  # Loads and merges minetype data and drops observations not relevant to the study environment
-  # Collapses to the mine-quarter level, the outputs
+  # Merges mine type data (produced in 1_clean_mined) and classified accidents 
+    # data (produced in X_X_X and X_X_X) to produce mine-quarter-level data
+  # Collapses data to mine-year level
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/11/17
 
 ################################################################################
 
-#library(plyr)
-#library(stringr)
-#library(zoo)
+library(plyr)
+library(stringr)
+library(zoo)
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 cleaned.path = paste0(root, "/1_cleaned", collapse = NULL)
@@ -31,11 +33,14 @@ coded.path = paste0(root, "/3_coded", collapse = NULL)
 collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
 
 # inputs 
-  # cleaned mine types data produced in 1_clean_mines
+  # cleaned mine types data
+    # produced in 1_clean_mines
 mine.types.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
-  # classified MR accidents data produced in 5_analyze_MR
+  # classified MR accidents data 
+    # produced in X_X_X
 MR.accidents.coded.in.file.name = paste0(coded.path, "/classified_accidents_MR.rds", collapse = NULL)
-  # classified PS accidents data produced in 4_analyze_PS
+  # classified PS accidents data 
+    # produced in X_X_X
 PS.accidents.coded.in.file.name = paste0(coded.path, "/classified_accidents_PS.rds", collapse = NULL)
 
 # outputs
@@ -69,19 +74,18 @@ for (injury in c("MR", "PS")) { # collapse data for MR and PS injuries
   
   # READ DATA
   
-  if (injury == "PS") {
-    file.name = PS.accidents.coded.in.file.name
-  }
   if (injury == "MR") {
-    file.name = MR.accidents.coded.in.file.name
+    in.file.name = MR.accidents.coded.in.file.name
+    out.file.name = MR.accidents.coded.out.file.name
+  }
+  if (injury == "PS") {
+    in.file.name = PS.accidents.coded.in.file.name
+    out.file.name = PS.accidents.coded.out.file.name
   }
   
   # read classified accidents data
-    # 75016 rows; 4 columns; unique on documentno
-  mines.accidents.coded = readRDS(file.name)
-  
-  # bye
-  rm(file.name)
+    # MR: 75016 rows; 4 columns; unique on documentno
+  mines.accidents.coded = readRDS(in.file.name)
   
   ##############################################################################
   
@@ -90,73 +94,59 @@ for (injury in c("MR", "PS")) { # collapse data for MR and PS injuries
   # format MR/PS (0 = no, 1 = yes)
   mines.accidents.coded[, injury] = as.numeric(mines.accidents.coded[, injury])
   
-  # remove documentno
-  mines.accidents.coded = mines.accidents.coded[, c(-match("documentno", names(mines.accidents.coded)))]
-  
+  # drop unnecessary variable
+  mines.accidents.coded$documentno = NULL
+
   # format mineid
   mines.accidents.coded$mineid = str_pad(mines.accidents.coded$mineid, 7, pad = "0")
-  mines.accidents.coded$mineid = withr::with_options(c(scipen = 999), str_pad(mines.accidents.coded$mineid, 7, pad = "0"))
-  
-  # format date vars
+
+  # format date variables
   mines.accidents.coded$accidentdate = as.Date(as.character(mines.accidents.coded$accidentdate), "%m/%d/%Y")
   mines.accidents.coded$quarter = as.yearqtr(mines.accidents.coded$accidentdate)
   mines.accidents.coded$year = format(as.Date(mines.accidents.coded$accidentdate, format = "%d/%m/%Y"),"%Y")
   
-  ################################################################################
-  
-  # COLLAPSE TO THE MINE-YEAR LEVEL, THEN OUTPUT
-  
-  # create injury indicator so that we can collapse & sum total injuries per mine quarter
+  # generate total injuries variable
   mines.accidents.coded$total_injuries = 1
   
-  # merge on minetypes to drop non-coal and non-underground observations before saving
-  mines.accidents.coded = merge(mines.accidents.coded, mine.types, by = c("mineid"), all = T)
-  
-  # drop non-merging observations (not accidents)
-    # 75016 rows; 8 columns; unique on documentno
-  if (injury == "PS"){
-    mines.accidents.coded = mines.accidents.coded[!is.na(mines.accidents.coded$PS),]
-  }
-  if (injury == "MR"){
-    mines.accidents.coded = mines.accidents.coded[!is.na(mines.accidents.coded$MR),]
-  }
-  
-  # only keep observations from environment we care about (we already did this based on the accidents 
-  # data in 1_clean.accidents.R but doing it based on mines data is more thorough, so we do that now here)
-    # 64989 rows; 8 columns; unique on documentno
-  mines.accidents.coded = mines.accidents.coded[mines.accidents.coded$minetype == "Underground",]
-  mines.accidents.coded = mines.accidents.coded[mines.accidents.coded$coalcormetalmmine == "C",]
-  
   ################################################################################
   
-  # collapse accidents data here to the year level, and then save
-  if (injury == "PS"){
+  # MERGE DATA
+  
+  # merge mine type data and classified accidents data
+    # 159909 rows; 8 columns; unique on XXX
+  mines.accidents.coded = merge(mines.accidents.coded, mine.types, by = c("mineid"), all = TRUE)
+  
+  # drop non-merging observations
+    # 75016 rows; 8 columns; unique on XXX
+  mines.accidents.coded = mines.accidents.coded[!is.na(mines.accidents.coded[, injury]), ]
+  
+  # drop data from environments not of interest
+    # 64989 rows; 8 columns; unique on XXX
+  mines.accidents.coded = mines.accidents.coded[which(mines.accidents.coded$minetype == "Underground" & 
+                                                        mines.accidents.coded$coalcormetalmmine == "C"), ]
+
+  ################################################################################
+  
+  # COLLAPSE AND OUTPUT DATA
+  
+  # collapse data to mine-year level
     # 6597 rows; 4 columns; unique on mineid-year
-    summed.accidents = ddply(mines.accidents.coded[, c(match("total_injuries", names(mines.accidents.coded)), 
-                                                       match("PS", names(mines.accidents.coded)),
-                                                       match("mineid", names(mines.accidents.coded)), 
-                                                       match("year", names(mines.accidents.coded)))], c("mineid", "year"), 
-                                   function(x) colSums(x[, c(grep("total_injuries", names(x)), grep("PS", names(x)))], na.rm = T))
-    
-    saveRDS(summed.accidents, PS.accidents.coded.out.file.name)
-  }
-  if (injury == "MR"){
-      # 6597 rows; 4 columns; unique on mineid-year
-    summed.accidents = ddply(mines.accidents.coded[, c(grep("total_injuries", names(mines.accidents.coded)), 
-                                                       grep("MR", names(mines.accidents.coded)),
-                                                       match("mineid", names(mines.accidents.coded)), 
-                                                       match("year", names(mines.accidents.coded)))], c("mineid", "year"), 
-                                   function(x) colSums(x[, c(grep("total_injuries", names(x)), grep("MR", names(x)))], na.rm = T))
-    
-    saveRDS(summed.accidents, MR.accidents.coded.out.file.name)
-  }
+  collapsed.accidents = ddply(mines.accidents.coded[, c("mineid", "year", "total_injuries", injury)], 
+                              c("mineid", "year"), 
+                              function(x) colSums(x[, c("total_injuries", injury)], na.rm = TRUE))
   
-  ################################################################################
+  # output mine-year-level dataset
+    # 6597 rows; 4 columns; unique on mineid-year
+  saveRDS(collapsed.accidents, out.file.name)
+  
+  # bye
+  rm(in.file.name, out.file.name, mines.accidents.coded, collapsed.accidents)
 
 }
 
 ################################################################################
   
+# bye
 rm(list = ls())
 
 ################################################################################

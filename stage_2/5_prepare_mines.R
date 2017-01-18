@@ -5,132 +5,144 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 5 - Prepare Mines Data
+  # merges mine and employment to make mine-quarter dataset
   # Merges cleaned mines and cleaned employment data and collapses
   # Then merges collapsed accidents data
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
 # Last edit 1/11/17
 
 ################################################################################
 
-library(plyr)
-library(stringr)
+library(zoo)
+#library(plyr)
+#library(stringr)
 
 ################################################################################
 
 # set root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
 collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
 prepped.path = paste0(root, "/5_prepped", collapse = NULL) 
 
 # inputs
-  # cleaned employment data
-employment.in.file.name = paste0(clean.path, "/clean_employment.rds", collapse = NULL)
-  # cleaned operator history data
-history.in.file.name = paste0(clean.path, "/clean_operator_history.rds", collapse = NULL)
   # cleaned mines data
-mines.in.file.name = paste0(clean.path, "/clean_mines.rds", collapse = NULL)
+    # produced in 1_clean_mines
+mines.in.file.name = paste0(cleaned.path, "/clean_mines.rds", collapse = NULL)
+  # cleaned employment data
+    # produced in 2_clean_employment
+employment.in.file.name = paste0(cleaned.path, "/clean_employment.rds", collapse = NULL)
+  # cleaned operator history data
+    # produced in 3_clean_operator_history
+history.in.file.name = paste0(cleaned.path, "/clean_operator_history.rds", collapse = NULL)
   # cleaned MR data
+    # produced in 4_collapse_accidents
 MR.in.file.name = paste0(collapsed.path, "/collapsed_MR_accidents.rds", collapse = NULL)
   # cleaned PS data
+    # produced in 4_collapse_accidents
 PS.in.file.name = paste0(collapsed.path, "/collapsed_PS_accidents.rds", collapse = NULL)
 
 # outputs
-  # merged and prepped mine-years data
+  # mine-year-level data
 mine.years.out.file.name = paste0(prepped.path, "/prepped_mine_years.rds", collapse = NULL)
 
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(prepped.path, recursive = TRUE)
+# create file paths 
+dir.create(prepped.path, recursive = TRUE) # (recursive = TRUE will create this file structure if it does not exist)
+
+# bye
+rm(root, cleaned.path, collapsed.path, prepped.path)
 
 ################################################################################
 
-# MERGE MINES AND EMPLOYMENT/PRODUCTION DATA, THEN FORMAT VARIABLES
+# READ MINES AND EMPLOYMENT DATA
 
-# load in datasets
-  # 42019 rows; 6 columns; unique on mineid-year-quarter
-employment = readRDS(employment.in.file.name)
-  # 86362 rows; 59 columns; unique on mineid
+# read mines data
+  # 86362 rows; 9 columns; unique on mineid
 mines = readRDS(mines.in.file.name)
 
-# merge mines and employment/production data by mineid to produce mine-quarter data
-  # 126313 rows; 64 columns; unique on mine-year-quarter
-mine.quarters = merge(employment, mines, by = c("mineid"), all = T)
-rm(employment, mines)
+# read employment data
+  # 42019 rows; 6 columns; unique on mineid-year-quarter
+employment = readRDS(employment.in.file.name)
 
-# format mine status
-mine.quarters$minestatus = as.character(mine.quarters$minestatus)
-
-# format date issued so that we can drop mines that were abandoned before our study period
-datevars = names(mine.quarters)[grep("date", names(mine.quarters))]
-for (i in 1:length(datevars)) {
-  mine.quarters[, datevars[i]] = as.Date(as.character(mine.quarters[, datevars[i]]), "%m/%d/%Y")
-}
-mine.quarters$statusyear = as.yearqtr(mine.quarters$minestatusdate)
-mine.quarters$statusyear = as.numeric(format(mine.quarters$statusyear, "%Y"))
-mine.quarters$statusquarter = as.yearqtr(mine.quarters$minestatusdate)
+# bye
+rm(mines.in.file.name, employment.in.file.name)
 
 ################################################################################
 
-# SELECT SAMPLE
+# MERGE MINES AND EMPLOYMENT DATA
 
-# drop data from environments not of interest
-# (facility means a mill/processing location, always above ground, according to April Ramirez @ DOL on 6/6/16)
-  # 50993 rows; 64 columns; unique on mine-year-quarter
-mine.quarters = subset(mine.quarters, minetype == "Underground")
-mine.quarters = subset(mine.quarters, coalcormetalmmine == "C")
-mine.quarters = mine.quarters[order(mine.quarters$mineid, mine.quarters$year, mine.quarters$quarter),]
+# merge mines and employment data by mineid (produces mine-quarter data)
+  # 126313 rows; 14 columns; unique on mineid-year-quarter
+mine.quarters = merge(employment, mines, by = c("mineid"), all = TRUE)
+mine.quarters = mine.quarters[order(mine.quarters$mineid, mine.quarters$year, mine.quarters$quarter), ]
 
-# drop mines that were abandoned before our study period 
-  # 38653 rows; 66 columns; unique on mine-year-quarter
-mine.quarters$too_early = ifelse((mine.quarters$minestatus == "Abandoned" | 
-                                  mine.quarters$minestatus == "Abandoned and Sealed" |
-                                  mine.quarters$minestatus == "NonProducing") & 
-                                  mine.quarters$statusyear < 2000, 1, 0)
-mine.quarters = mine.quarters[mine.quarters$too_early == 0, ]
-mine.quarters$too_early = NULL
+# bye
+rm(mines, employment)
 
-# There are some mines that didn't merge on any hours/employment data. We confirmed using the Mine Data 
-# retrieval System that there is really no employment information on these mines. This is usually because
-# they were abandoned and sealed during the first or second quarter of our study period, so no hours
-# data was ever recorded.
-  # 38295 rows; 66 columns; unique on mine-year-quarter
-mine.quarters = mine.quarters[!is.na(mine.quarters$hours_qtr),]
+################################################################################
 
-# format date variables so quarter contains date-formatted year and quarter info (now observations will be unique on mineid-quarter)
-mine.quarters$quarter = paste(mine.quarters$year, mine.quarters$quarter, sep = "-")
-mine.quarters$quarter = as.yearqtr(mine.quarters$quarter)
+# CLEAN MERGED DATA
 
-# drop observations from after 2016 Q2
-  # 37925 rows; 66 columns; unique on mine-year-quarter
-mine.quarters = mine.quarters[which(mine.quarters$quarter <= "2016 Q1"),]
+# some mines did not merge on any employment data
+  # Mine Data Retrieval System confirmed that there is no employment data on these mines
+    # usually, this is because the mines were abandoned and sealed during the first or 
+    # second quarter of the study period
+  # 42019 rows; 14 columns; unique on mineid-year-quarter
+mine.quarters = mine.quarters[!is.na(mine.quarters$hours_qtr), ]
 
-# drop observations for mines that are abandoned or sealed when their status date comes before the current quarter
-  # 36940 rows; 67 columns; unique on mine-year-quarter
-mine.quarters$drop = ifelse((mine.quarters$minestatus == "Abandoned" | 
-                             mine.quarters$minestatus == "Abandoned and Sealed") &
-                            (mine.quarters$statusquarter <= mine.quarters$quarter), 1, 0)
-mine.quarters = mine.quarters[mine.quarters$drop == 0, ]
-
-# edit minestatus based on minestatusdate and quarter. for a given mine-quarter:
-  # if the minestatus date is LESS than the current quarter then the observation should take on that minestatus
-  # the minestatus date is GREATER than the current quarter AND the minestatus is abandoned, 
-  # then the observation should take on some other minestatus
-mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$quarter) 
-                                & (mine.quarters$minestatus == "Abandoned" | 
-                                   mine.quarters$minestatus == "Abandoned and Sealed" | 
-                                   mine.quarters$minestatus == "Temporarily Idled" | 
-                                   mine.quarters$minestatus == "NonProducing" ), "Unknown", mine.quarters$minestatus)
-
-# remove mine-quarters with zero hours
-  # 30289 rows; 67 columns; unique on mine-year-quarter
+# drop data for mine-year-quarters with no hours
+  # 33262 rows; 14 columns; unique on mineid-year-quarter
 mine.quarters = mine.quarters[( mine.quarters$hours_qtr != 0), ]
 
+# drop data from environments not of interest
+  # facility means a mill/processing location, always above ground, according to April Ramirez @ DOL on 6/6/16
+  # 30847 rows; 14 columns; unique on mineid-year-quarter
+mine.quarters = mine.quarters[which(mine.quarters$minetype == "Underground" &
+                                      mine.quarters$coalcormetalmmine == "C"), ]
 
+# format and generate date variables
+mine.quarters$minestatus = as.character(mine.quarters$minestatus)
+mine.quarters$minestatusdate = as.Date(as.character(mine.quarters$minestatusdate), "%m/%d/%Y")
+mine.quarters$statusquarter = as.yearqtr(mine.quarters$minestatusdate)
+mine.quarters$statusyear = as.numeric(format(mine.quarters$statusquarter, "%Y"))
+mine.quarters$quarter = paste(mine.quarters$year, mine.quarters$quarter, sep = "-")
+mine.quarters$quarter = as.yearqtr(mine.quarters$quarter) # now data is unique on mineid-quarter
+
+# drop data from mines that are abandoned or sealed before study period
+  # 30779 rows; 16 columns; unique on mineid-quarter
+mine.quarters$drop = ifelse((mine.quarters$minestatus == "Abandoned" | 
+                               mine.quarters$minestatus == "Abandoned and Sealed" |
+                               mine.quarters$minestatus == "NonProducing") & 
+                              mine.quarters$statusyear < 2000, 1, 0)
+mine.quarters = mine.quarters[which(mine.quarters$drop == 0), ]
+mine.quarters$drop = NULL
+
+# drop data for mines that are abandoned or sealed when status date < current quarter
+  # 30551 rows; 16 columns; unique on mineid-quarter
+mine.quarters$drop = ifelse((mine.quarters$minestatus == "Abandoned" | 
+                               mine.quarters$minestatus == "Abandoned and Sealed") &
+                              (mine.quarters$statusquarter <= mine.quarters$quarter), 1, 0)
+mine.quarters = mine.quarters[which(mine.quarters$drop == 0), ]
+mine.quarters$drop = NULL
+
+# drop observations from after 2016 Q2
+  # 30289 rows; 16 columns; unique on mineid-quarter
+mine.quarters = mine.quarters[which(mine.quarters$quarter <= "2016 Q1"), ]
+
+# edit minestatus based on minestatusdate and quarter
+  # for a given mine-quarter:
+    # if minestatus date < current quarter, then mine-quarter takes on that minestatus
+    # if minestatus date > current quarter AND the minestatus is abandoned, then mine-quarter takes on other minestatus
+mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$quarter) 
+                                  & (mine.quarters$minestatus == "Abandoned" | 
+                                       mine.quarters$minestatus == "Abandoned and Sealed" | 
+                                       mine.quarters$minestatus == "Temporarily Idled" | 
+                                       mine.quarters$minestatus == "NonProducing"), "Unknown", mine.quarters$minestatus)
 
 ################################################################################
 

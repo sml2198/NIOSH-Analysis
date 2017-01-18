@@ -47,7 +47,7 @@ rm(root, input.path, output.path)
 
 # read controller/operator history data 
   # 144065 rows; 13 columns; unique on minied-operatorid-operatorstartdt
-history = read.table(history.in.file.name, header = T, sep = "|")
+history = read.table(history.in.file.name, header = TRUE, sep = "|")
 
 # bye
 rm(history.in.file.name)
