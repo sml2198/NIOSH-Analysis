@@ -7,7 +7,7 @@ of New Mine Safety Technologies and Technological Applications
 
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-X - Fit Models
+8 - Fit Models
  # 
 
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
