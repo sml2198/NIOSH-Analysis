@@ -5,9 +5,13 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 5 - Prepare Mines Data
-  # merges mine and employment to make mine-quarter dataset
-  # Merges cleaned mines and cleaned employment data and collapses
-  # Then merges collapsed accidents data
+  # Merges mines data (produced in 1_clean_mines) and employment data (produced in 
+    # 2_clean_employment) to produce mine-quarter-level data
+  # Collapses data to mine-year level
+  # Uses operator history data (produced in 3_clean_operator_history) to create
+    # operator time variable
+  # Merges mine-year-level data and MR and PS accidents data (produced in 
+    # 4_collapse_accidents)
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
@@ -17,7 +21,6 @@
 
 library(zoo)
 library(plyr)
-#library(stringr)
 
 ################################################################################
 
@@ -147,7 +150,7 @@ mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$
 
 ################################################################################
 
-# COLLAPSE DATA TO THE MINE-YEAR LEVEL
+# COLLAPSE DATA TO THE MINE-YEAR-LEVEL
 
 # preserve variables that don't need to be summed in the collapse
   # 1582 rows; 4 columns; unique on mineid
@@ -163,53 +166,54 @@ temp = unique(temp)
 # generate a marker for each quarter to count number of quarters for which we have data in each mine-year
 mine.quarters$numquarters = 1
 
-# collapse data to mine-year level
-  # 9023 rows; 9 columns; unique on mine-year-quarter
-mine.years = ddply(mine.quarters[, c("hours_qtr", "employment_qtr", "numquarters", 
-                                     "prod_qtr", "mineid", "year")], c("mineid", "year"), 
-                       function(x) colSums(x[, c(match("hours_qtr", names(x)), 
-                                                 match("numquarters", names(x)), 
-                                                 match("employment_qtr", names(x)), 
-                                                 match("prod_qtr", names(x)))], na.rm = TRUE))
+# collapse data to mine-year-level
+  # 9023 rows; 9 columns; unique on mine-year
+mine.years = ddply(mine.quarters[, c("employment_qtr", "hours_qtr", "mineid", 
+                                     "numquarters", "prod_qtr", "year")], c("mineid", "year"), 
+                   function(x) colSums(x[, c("employment_qtr", "hours_qtr", "numquarters", "prod_qtr")], na.rm = TRUE))
 mine.years = merge(mine.years, temp, by = c("mineid"), all = TRUE)
 rm(temp)
 
-# remove mine-years that are missing any quarters worth of data
-  # 6253 rows; 9 columns; unique on mine-year
-mine.years = mine.years[which(mine.years$numquarters == 4),]
+# drop mine-years that missing any quarters of data
+  # 6253 rows; 8 columns; unique on mine-year
+mine.years = mine.years[which(mine.years$numquarters == 4), ]
+mine.years$numquarters = NULL
 
 # merge operator time back on to the now mine-year data
   # 6253 rows; 10 columns; unique on mine-year
-mine.years = merge(mine.years, time[,c("mineid", "year", "operatortime")], by = c("mineid", "year"))
-rm(time)
+#mine.years = merge(mine.years, time[,c("mineid", "year", "operatortime")], by = c("mineid", "year"))
+#rm(time)
 
-# rename vars that are no longer quarterly
+# rename variables
 names(mine.years)[names(mine.years) == "hours_qtr"] = "hours"
 names(mine.years)[names(mine.years) == "employment_qtr"] = "employment"
 names(mine.years)[names(mine.years) == "prod_qtr"] = "prod"
 
-# final formatting to make generating figures easy
+# format variables
 mine.years$district = as.numeric(mine.years$district)
 mine.years$appalachia = as.numeric(mine.years$appalachia)
 
+# bye
+rm(mine.quarters)
+
 ################################################################################
-
-
-
 
 # READ OPERATOR HISTORY DATA
 
 # read operator history data
-# 55776 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+  # 55776 rows; 4 columns; unique on minied-operatorid-operatorstartdt
 history = readRDS(history.in.file.name)
+
+# bye
+rm(history.in.file.name)
 
 ################################################################################
 
 # CALCULATE OPERATOR TIME
 
-# create empty operatorid and oeprator time variables in mines data
-mine.quarters$operatorid = NA
-mine.quarters$operatortime = NA
+# create operatorid and operatortime variables
+mine.years$operatorid = NA
+mine.years$operatortime = NA
 
 # fill in operator id for all mine-quarters based on operator start/end dates from history
 fill.in.operator = function(mine.data) {
@@ -223,125 +227,137 @@ fill.in.operator = function(mine.data) {
       for (j in 1:nrow(t.history)) {
         
         mine.data$operatorid[i] = 
-          ifelse(mine.data$quarter[i] >= t.history$operatorstartdt[j] 
-                 & mine.data$quarter[i] <= t.history$operatorenddt[j], 
+          ifelse(mine.data$year[i] >= t.history$operatorstartdt[j] 
+                 & mine.data$year[i] <= t.history$operatorenddt[j], 
                  t.history$operatorid[j], mine.data$operatorid[i])
       }
     }
   }
+  
   return(mine.data)
 }
-mine.quarters = ddply(mine.quarters, "mineid", fill.in.operator)
+mine.years = ddply(mine.years, "mineid", fill.in.operator)
 
 # fill in missing mine-quarters 
 fill.in.ts = function(mine.data) {
-  times = data.frame(quarter = seq(min(mine.data$quarter), max(mine.data$quarter), by = 0.25))
-  full.ts = merge(times, mine.data, by = c("quarter"), all.x = TRUE)
+  times = data.frame(year = seq(min(mine.data$year), max(mine.data$year), by = 1))
+  full.ts = merge(times, mine.data, by = c("year"), all.x = TRUE)
   full.ts$mineid[is.na(full.ts$mineid)] = unique(full.ts$mineid)[1]
   return(full.ts)
 }
-
-# 33025 rows; 18 columns; unique on mineid-quarter
-mine.quarters = ddply(mine.quarters, "mineid", fill.in.ts)
+  # 6705 rows; 10 columns; unique on mineid-year
+mine.years = ddply(mine.years, "mineid", fill.in.ts)
 
 # calculate operator time
 make.op.time = function(mine.data) {
   
+  mine = unique(mine.data$mineid)[1]
+  t.history = history[history$mineid == mine, ]
+  
   for (i in 1:nrow(mine.data)) {
     
-    if (is.na(mine.data$operatorid[i])) { #operatorid missing
+    # operatorid missing
+    if (is.na(mine.data$operatorid[i])) {
       mine.data$operatortime[i] = NA
     }
     
-    else { # operatorid not missing
+    # operatorid not missing
+    else { 
       
+      start.date = t.history[which(t.history$operatorid == mine.data$operatorid[i] &
+                                     t.history$operatorstartdt <= mine.data$year[i] &
+                                     t.history$operatorenddt >= mine.data$year[i]), "operatorstartdt"]
+      
+      # first year of history
       if (i == 1) {
-        
+        mine.data$operatortime[i] = mine.data$year[i] - start.date
       }
       
+      # second+ year of history
       if (i > 1) {
         
-      }
-      
-      
-      
-      
-      if (i <= 4) { # first year of mine history
-        temp = mine.data[1:(i - 1), "operatortime"] # get history of operatortime up to this point
-        
-        if (length(temp[!is.na(temp)]) == 0) { # history of operatortime up to this point missing
-          mine.data$operatortime[i] = 1
+        # missing data previous year
+        if (is.na(mine.data$operatortime[i - 1])) {
+          mine.data$operatortime[i] = mine.data$year[i] - start.date
         }
         
-        else { # history of operatortime up to this point not missing
-          mine.data$operatortime[i] = temp[!is.na(temp)][length(temp[!is.na(temp)])] + 1
-        }
-      }
-      
-      else { # second + year of mine history
-        
-        if (sum(is.na(mine.data[(i - 4):(i - 1), "operatorid"])) == 4) { # missing one year of data
-          mine.data$operatortime[i] = NA
-        }
-        
-        else { # not missing one year of data
-          temp = mine.data[(i - 4):(i - 1), "operatortime"] # get last year of operatortime
+        # open and producing previous year
+        else {
           
-          if (length(temp[!is.na(temp)]) == 0) { # last year of operatortime missing
-            mine.data$operatortime[i] = 1
+          # same operator
+          if (mine.data$operatorid[i] == mine.data$operatorid[i - 1]) {
+            mine.data$operatortime[i] = mine.data$operatortime[i - 1] + 1
           }
           
-          else { # last year of operatortime not missing
-            mine.data$operatortime[i] = temp[!is.na(temp)][length(temp[!is.na(temp)])] + 1
+          # different operator
+          else {
+            mine.data$operatortime[i] = mine.data$year[i] - start.date
           }
         }
       }
     }
   }
+  
   return(mine.data)
 }
-mine.quarters = ddply(mine.quarters, "mineid", make.op.time)
 
-# there is one mine-quarter for which we don't have information on the operator (we've spot
-# checked this mine - 4406239 - in the history file). Here we force operatimetime to be 0.
-mine.quarters$operatortime = ifelse(is.na(mine.quarters$operatortime), 0, mine.quarters$operatortime)
+mine.years = ddply(mine.years, "mineid", make.op.time)
 
+# drop "orphan" observations
+  # 6253 rows; 10 columns; unique on mineid-year
+mine.years = mine.years[!is.na(mine.years$operatorid), ]
+
+# bye
+rm(history, fill.in.operator, fill.in.ts, make.op.time)
 
 ################################################################################
 
+# READ ACCIDENTS DATA
 
-
-
-# MERGE IN PS AND MR DATA
-
-# load in datasets
-  # 6597 rows (each); 4 columns (each); unique on mineid-year
+# readMR accidents data
+  # 6597 rows; 4 columns; unique on mineid-year
 MR = readRDS(MR.in.file.name)
+
+# read PS accidents data
+  # 6597 rows; 4 columns; unique on mineid-year
 PS = readRDS(PS.in.file.name)
 
-# merge in MR
+# bye
+rm(MR.in.file.name, PS.in.file.name)
+
+################################################################################
+
+# MERGE MINE-YEAR DATA WITH MR AND PS ACCIDENTS DATA
+
+# merge mine-year-level data with MR accidents data
+  # 7645 rows; 12 columns; unique on mineid-year
 mine.years = merge(mine.years, MR, by = c("mineid", "year"), all = TRUE)
 
-# merge in PS (we don't need total_injuries again)
+# merge mine-year-level data with PS accidents data
+  # 7645 rows; 13 columns; unique on mineid-year
 mine.years = merge(mine.years, PS[, c("mineid", "year", "PS")], by = c("mineid", "year"), all = TRUE)
 
-# this just drops all non-merging observations
+# drop non-merging observations
   # 6253 rows; 13 columns; unique on mineid-year
 mine.years = mine.years[!is.na(mine.years$appalachia), ]
 
-# replace all NA's in PS, MR, and total_injuries with 0's
+# replace NAs in PS, MR, and total_injuries with 0
 mine.years$MR = ifelse(is.na(mine.years$MR), 0, mine.years$MR)
 mine.years$PS = ifelse(is.na(mine.years$PS), 0, mine.years$PS)
 mine.years$total_injuries = ifelse(is.na(mine.years$total_injuries), 0, mine.years$total_injuries)
 
+# bye 
+rm(MR, PS)
+
 ################################################################################
 
-# output mine-year data
+# OUTPUT DATA
+
+# output mine-year-level data
   # 6253 rows; 13 columns; unique on mineid-year
 saveRDS(mine.years, file = mine.years.out.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################

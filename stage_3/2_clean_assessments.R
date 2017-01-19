@@ -51,7 +51,7 @@ names(assessments)[names(assessments) == "EVENT_NO"] = "eventno"
 names(assessments)[names(assessments) == "ASSESS_CASE_NO"] = "assesscaseno"
 names(assessments)[names(assessments) == "SIG_SUB_IND"] = "sigandsubindicator"
 names(assessments)[names(assessments) == "MINE_ACT_SECTION_CD"] = "mineactsectioncode"
-names(assessments)[names(assessments) == "CFR_STANDARD_CD"] = "cfrstandardcode"
+names(assessments)[names(assessments) == "CFR_STANDARD_CD"] = "subsectioncode"
 names(assessments)[names(assessments) == "CITATION_TYPE_CD"] = "violationtypecode"
 names(assessments)[names(assessments) == "COAL_METAL_IND"] = "coalcormetalm"
 names(assessments)[names(assessments) == "VIOLATOR_TYPE_CD"] = "violatortypecode"
@@ -95,7 +95,7 @@ assessments = assessments[assessments$minetype == "Underground", ]
 # keep only useful variables
   # 843818 rows; 11 columns; unique on violationno
 keep = c("violationno", "mineid", "assesscaseno", 
-         "sigandsubindicator", "mineactsectioncode", "cfrstandardcode", 
+         "sigandsubindicator", "mineactsectioncode", "subsectioncode", 
          "violationtypecode", "proposedpenaltyamount", "currentassessmentamount", 
          "penaltypoints", "issuedate")
 assessments = assessments[, (names(assessments) %in% keep)] 

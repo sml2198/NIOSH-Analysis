@@ -7,7 +7,8 @@
 # 6 - Prepare MR (Maintenance and Repair) 
   # Train/Test:
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 # Last edit 1/13/17
 
 ################################################################################
@@ -18,25 +19,25 @@ library(zoo)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
-merged.input.path = paste0(root, "/2_merged", collapse = NULL) 
-prepped.output.path = paste0(root, "/5_prepped", collapse = NULL) 
+cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+merged.path = paste0(root, "/2_merged", collapse = NULL) 
+prepped.path = paste0(root, "/5_prepped", collapse = NULL) 
 
 # inputs
   # clean MR training set
-training.set.in.file.name = paste0(cleaned.input.path, "/clean_MR_training_set.rds", collapse = NULL)
+training.set.in.file.name = paste0(cleaned.path, "/clean_MR_training_set.rds", collapse = NULL)
   # merged MR accidents
-merged.MR.in.file.name =  paste0(merged.input.path, "/merged_MR_accidents.rds", collapse = NULL)
+merged.MR.in.file.name =  paste0(merged.path, "/merged_MR_accidents.rds", collapse = NULL)
 
 # outputs
   # prepped MR training set
-prepped.train.out.file.name = paste0(prepped.output.path, "/prepped_MR_train_test.rds", collapse = NULL)
+prepped.train.out.file.name = paste0(prepped.path, "/prepped_MR_train_test.rds", collapse = NULL)
   # prepped and merged MR-accidents data
-prepped.classify.out.file.name = paste0(prepped.output.path, "/prepped_MR_classify.rds", collapse = NULL)
+prepped.classify.out.file.name = paste0(prepped.path, "/prepped_MR_classify.rds", collapse = NULL)
 
 # generate file paths
 dir.create(prepped.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 

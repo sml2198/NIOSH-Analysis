@@ -5,7 +5,7 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 4 - Collapse Accidents Data
-  # Merges mine type data (produced in 1_clean_mined) and classified accidents 
+  # Merges mine type data (produced in 1_clean_mines) and classified accidents 
     # data (produced in 10_classify_MR and 11_classify_PS) to produce mine-quarter-level data
   # Collapses data to mine-year level
 

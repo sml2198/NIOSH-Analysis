@@ -97,6 +97,10 @@ inspections = inspections[inspections$minetype == "Underground", ]
 inspections$too_new = ifelse(inspections$year == 2016 & inspections$quarter > 1, 1, 0)
 inspections = inspections[inspections$too_new == 0,]
 
+# remove observations missing eventno
+  # 192141 rows; 48 columns; unique on eventno
+inspections = inspections[complete.cases(inspections$eventno),]
+
 ################################################################################
 
 # keep only useful variables
@@ -109,8 +113,30 @@ inspections = inspections[, (names(inspections) %in% keep)]
 
 ################################################################################
 
+# create an indicator for inspections, so we can sum inspections per year
+  # in the prepare_stage_3
+inspections$numinspections = 1
+
+# While in theory inspections are quarterly, they do not always happen once per quarter or even 
+# four times per year, and some inspections might even last a whole year. As a check, we not only 
+# count the total number of inspections per year, but we also confirm that there are no inspections 
+# that begin in one calendar year and end in another calendar year. Fortunately, there are none.
+# See lines 133 and 134.
+
+# create and format endyear variable
+datevars = names(inspections)[grep("date", names(inspections))]
+for (i in 1:length(datevars)) {
+  inspections[, datevars[i]] = as.Date(as.character(inspections[, datevars[i]]), "%m/%d/%Y")
+}
+inspections$endyear = as.numeric(format(inspections$endingdate, "%Y"))
+
+# count number of inspections lasting more than one calendar year - all zero, good!
+# sum((inspections$endyear - inspections$year) != 0)
+
+################################################################################
+
 # output inspection-level data
-  # 192652 rows; 10 columns; unique on eventno
+  # 192141 rows; 12 columns; unique on eventno
 saveRDS(inspections, file = inspections.out.file.name)
 
 ################################################################################
