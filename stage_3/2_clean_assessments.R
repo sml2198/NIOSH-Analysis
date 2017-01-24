@@ -5,9 +5,10 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 2 - Clean Assessments
-  # Cleans assessments
+  # Cleans assessments data from the MSHA open data portal
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 # Last edit 1/11/17
 
 ################################################################################
@@ -16,33 +17,49 @@ library(stringr)
 
 ################################################################################
 
-# set root directory
+# define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 originals.path = paste0(root, "/0_originals", collapse = NULL) 
-clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # assessments data
+  # assessments data from the MSHA open data portal
+    # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 assessments.in.file.name = paste0(originals.path, "/AssessedViolations.txt", collapse = NULL)
-  # mine types data (used to remove underground observations)
-mine.types.in.file.name = paste0(clean.path, "/clean_mine_types.rds", collapse = NULL)
+  # mine type data
+    # produced in 1_clean_mines
+mine.type.in.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
 
 # outputs
-  # cleaned assessments data
-assessments.out.file.name = paste0(clean.path, "/clean_assessments.rds", collapse = NULL)
+  # clean assessments data
+assessments.out.file.name = paste0(cleaned.path, "/clean_assessments.rds", collapse = NULL)
 
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(clean.path, recursive = TRUE)
+# generate file paths 
+dir.create(cleaned.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
+
+# bye
+rm(root, originals.path, cleaned.path)
 
 ################################################################################
+
+# READ DATA
 
 # load data
   # 2137348 rows; 58 columns; unique on violation_no
 assessments = read.table(assessments.in.file.name, header = T, sep = "|", na.strings = c("", "NA"))
+
+# read mine types data (assessments data does NOT contain "minetype" field so we need
+# to merge on mine type information by mineid)
+# 86362 rows; 3 columns; unique on mineid
+mine.types = readRDS(mine.types.in.file.name)
+
+################################################################################
+
+# CLEAN DATA
 
 # rename variables
 names(assessments)[names(assessments) == "VIOLATION_NO"] = "violationno"
@@ -75,10 +92,7 @@ assessments$mineid = str_pad(assessments$mineid, 7, pad = "0")
   # 1160380 rows; 58 columns; unique on violation_no
 assessments = assessments[assessments$coalcormetalm == "C", ] 
 
-# read mine types data (assessments data does NOT contain "minetype" field so we need
-# to merge on mine type information by mineid)
-  # 86362 rows; 3 columns; unique on mineid
-mine.types = readRDS(mine.types.in.file.name)
+
 
 # merge assessments with mine types & drop non-merged observations
   # 1160380 rows; 60 columns; unique on violationno

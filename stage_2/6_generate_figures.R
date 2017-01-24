@@ -51,7 +51,7 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
 
   # READ DATA
   
-  # input data
+  # read data
   data = readRDS(data.file.name)
   
   if (injury == "MR") {
@@ -65,16 +65,18 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
     }
   
   # keep variables of interest
-  data$numquarters = 
+  data$operatorid = 
     data$operatortime = 
     data$safetycommittee = NULL
   
   # generate outcome variables
   data$dv.exp = data$dv / data$hours
   data$dv.rel = data$dv / data$total_injuries
+  data$dv.rel = ifelse(is.na(data$dv.rel) & data$total_injuries == 0, 0, data$dv.rel)
   
   # bye
-  data$dv = data$total_injuries = NULL
+  data$dv = 
+    data$total_injuries = NULL
 
   ##############################################################################
   

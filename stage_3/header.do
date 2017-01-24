@@ -22,8 +22,6 @@ set maxiter 1000, permanently
 * global PROJECT_ROOT "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 global PROJECT_ROOT "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
-adopath ++ `"$PROJECT_ROOT\ado"'
-
 * First close any open log file
 capture log close
 

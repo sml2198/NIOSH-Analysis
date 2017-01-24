@@ -9,7 +9,8 @@
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
-# Last edit 1/4/17
+
+# Last edit 1/23/2017
 
 ################################################################################
 
@@ -27,7 +28,7 @@ originals.path = paste0(root, "/0_originals", collapse = NULL)
 cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
 
 # inputs
-  # accidents data from the MSHA open data portal 
+  # accidents data
     # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 accidents.in.file.name = paste0(originals.path, "/Accidents.txt", collapse = NULL)
 
@@ -46,7 +47,7 @@ rm(root, originals.path, cleaned.path)
 # READ DATA 
 
 # read accidents data
-  # 212611 rows; 57 columns; unique on documentno
+  # 212611 rows; 57 columns; unique on DOCUMENT_NO
 accidents = read.table(accidents.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
 
 # bye
@@ -57,15 +58,14 @@ rm(accidents.in.file.name)
 # CLEAN DATA 
 
 # drop unnecessary variables
-  # 212611 rows; 23 columns; unique on documentno
+  # 212611 rows; 21 columns; unique on DOCUMENT_NO
 accidents = accidents[, c("ACCIDENT_DT", "ACCIDENT_TYPE", "ACCIDENT_TYPE_CD", 
                           "ACTIVITY", "ACTIVITY_CD", "CAL_QTR", 
                           "CAL_YR", "CLASSIFICATION", "COAL_METAL_IND", 
-                          "DEGREE_INJURY", "DOCUMENT_NO", "EQUIP_MFR_NAME", 
-                          "IMMED_NOTIFY", "INJ_BODY_PART_CD", "INJURY_SOURCE", 
-                          "INJURY_SOURCE_CD", "MINE_ID", "MINING_EQUIP_CD", 
-                          "NARRATIVE", "NATURE_INJURY", "OCCUPATION", 
-                          "OCCUPATION_CD", "SUBUNIT")]
+                          "DEGREE_INJURY", "DOCUMENT_NO", "INJ_BODY_PART_CD", 
+                          "INJURY_SOURCE", "INJURY_SOURCE_CD", "MINE_ID", 
+                          "MINING_EQUIP_CD", "NARRATIVE", "NATURE_INJURY", 
+                          "OCCUPATION", "OCCUPATION_CD", "SUBUNIT")]
 
 # rename variables
 names(accidents)[names(accidents) == "ACCIDENT_DT"] = "accidentdate"
@@ -79,8 +79,6 @@ names(accidents)[names(accidents) == "CLASSIFICATION"] = "accidentclassification
 names(accidents)[names(accidents) == "COAL_METAL_IND"] = "coalmetalind"
 names(accidents)[names(accidents) == "DEGREE_INJURY"] = "degreeofinjury"
 names(accidents)[names(accidents) == "DOCUMENT_NO"] = "documentno"
-names(accidents)[names(accidents) == "EQUIP_MFR_NAME"] = "equipmanufacturer"
-names(accidents)[names(accidents) == "IMMED_NOTIFY"] = "immediatenotificationclass"
 names(accidents)[names(accidents) == "INJ_BODY_PART_CD"] = "bodypartcode"
 names(accidents)[names(accidents) == "INJURY_SOURCE"] = "sourceofinjury"
 names(accidents)[names(accidents) == "INJURY_SOURCE_CD"] = "injurysourcecode"
@@ -98,8 +96,6 @@ accidents$mineid = str_pad(accidents$mineid, 7, pad = "0")
 accidents$accidentclassification = tolower(accidents$accidentclassification)
 accidents$accidenttype = tolower(accidents$accidenttype)
 accidents$degreeofinjury = tolower(accidents$degreeofinjury)
-accidents$equipmanufacturer = tolower(accidents$equipmanufacturer)
-accidents$immediatenotificationclass = tolower(accidents$immediatenotificationclass)
 accidents$mineractivity = tolower(accidents$mineractivity)
 accidents$narrative = iconv(accidents$narrative,"WINDOWS-1252","UTF-8") # remove encoded characters
 accidents$narrative = tolower(accidents$narrative)
@@ -108,17 +104,17 @@ accidents$occupation = tolower(accidents$occupation)
 accidents$sourceofinjury = tolower(accidents$sourceofinjury)
 
 # drop data from environments not of interest 
-  # 75672 rows; 23 columns; unique on documentno
+  # 75672 rows; 21 columns; unique on documentno
 accidents = accidents[which(accidents$coalmetalind == "C" & 
                               accidents$subunit == "UNDERGROUND"), ]
 
 # drop data after 2016 Q1
-  # 75016 rows; 23 columns; unique on documentno
+  # 75016 rows; 21 columns; unique on documentno
 accidents = accidents[which(!(accidents$calendaryear == 2016 & 
                                  accidents$calendarquarter > 1)), ]
 
 # drop unnecessary variables
-  # 75016 rows; 19 columns; unique on documentno
+  # 75016 rows; 17 columns; unique on documentno
 accidents$calendarquarter = 
   accidents$calendaryear =
   accidents$coalmetalind = 
@@ -126,10 +122,10 @@ accidents$calendarquarter =
 
 ################################################################################
 
-# OUPUT CLEAN DATA
+# OUPUT DATA
 
-# output clean accidents data
-  # 75016 rows; 19 columns; unique on documentno
+# output cleaned accidents data
+  # 75016 rows; 17 columns; unique on documentno
 saveRDS(accidents, file = accidents.out.file.name)
 
 # bye

@@ -4,17 +4,18 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 7 - Prepare PS (Pinning and Striking) 
-  # Train/Test:
+# 6 - Prepare PS (Pinning and Striking) 
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/13/17
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+
+# Last edit 1/20/2017
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
