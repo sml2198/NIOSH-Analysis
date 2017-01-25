@@ -13,18 +13,18 @@
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 1/23/2017
+# Last edit 1/25/2017
 
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
-merged.path = paste0(root, "/2_merged", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
+merged.path = paste0(root, "/data/2_merged", collapse = NULL) 
 
 # inputs
   # cleaned accidents data

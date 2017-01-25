@@ -24,7 +24,6 @@ include "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/pr
 /****** SETTINGS **************************/
 pause off
 set matsize 11000, perm
-local date "1-20"
 
 /********************************************************************************
 ********************************************************************************/
@@ -57,7 +56,7 @@ local run_nulls "on" // if you want to run the nulls (preferred)
 /*******************************************************************************
 NULL MODEL KEY
 
-WEAK NULL: no violation-specific vars, regualr specification otherwise
+WEAK NULL: no violation-specific vars, regular specification otherwise
 STRONG NULL 1: no violation-specific vars, total violations (1 lag)
 STRONG NULL 2: no violation-specific vars, total violations/inspection hours (both 1 lag)
 ********************************************************************************/
@@ -69,11 +68,8 @@ STRONG NULL 2: no violation-specific vars, total violations/inspection hours (bo
 
 cap mkdir "$PROJECT_ROOT/results/"
 cap mkdir "$PROJECT_ROOT/results/tex/"
-cap mkdir "$PROJECT_ROOT/results/tex/`date'/"
 cap mkdir "$PROJECT_ROOT/results/csv/"
-cap mkdir "$PROJECT_ROOT/results/csv/`date'/"
 cap mkdir "$PROJECT_ROOT/results/dta/"
-cap mkdir "$PROJECT_ROOT/results/dta/`date'/"
 
 /********************************************************************************
 ********************************************************************************/
@@ -118,100 +114,26 @@ Model W.X.Z
 foreach inj_type in `injury_types' {
 	foreach viol_form in `violation_form' {
 		
-		use "$PROJECT_ROOT/data/5_prepared/prepped_stage_3_`inj_type'.dta", clear
+		use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
 		pause "`inj_type' data loaded" 
 		
 		*+- rename injury variable of interest and create list of relevant parts
 		if "`inj_type'" == "PS" {
-			rename PS dv
 			local relevant_parts "48 75"
 		}
 		if "`inj_type'" == "MR" {
-			rename MR dv
 			local relevant_parts "47 48 71 72 75 77"
 		}
-		
-		*+- format time
-		tostring(year), replace
-		encode year, gen(time)
-		
-		*+- count orphan years (will be dropped when we produce lags)
-		sort mineid year
-		qui gen mine_year = regexs(0) if(regexm(year, "(1[0-5]$)|([0-9]$)"))
-		destring mine_year, replace
-		qui bys mineid: gen orphan = (mine_year[_n] - mine_year[_n - 1]) // orphan equals the number of years between _n and _n-1 (should be 1 if no missing years between observations)
-		qui bys mineid: replace orphan = 1 if (_n == 1) // set the first year at a given mine artificially equal to one (these lags aren't generated anyway)  
-
-		pause "before generating lags"
-		*+- generate violation and injury lags for t-1, t-2, t-3, t-4, t-5, and cumulative t-3, t-4, t-5 (3 and 5 are robustness checks)
-		sort mineid year
-		local varlist "sp* dv inspectionhours totalviolations total_injuries" 
-		foreach var of varlist `varlist' {
-			* first generate lags 1 through 5 (non-cumulative)
-			local numlist "1/5"
-			foreach x of numlist `numlist' {
-				qui by mineid: gen `var'_`x'lag = `var'[_n - `x']
-				qui replace `var'_`x'lag = . if orphan != 1 // by strict definition, lags can only exist if there is a previous year of data 
-				* there are only 227 mine-years where orphan > 1 (3.63%)
-				
-				* by lag, pipe in missings where orphan is greater than 1 for previous years
-				if `x' == 1 qui replace `var'_`x'lag = . if orphan != 1
-				if `x' == 2 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1]) != 2
-				if `x' == 3 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2]) != 3
-				if `x' == 4 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2] + orphan[_n-3]) != 4
-				if `x' == 5 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2] + orphan[_n-3] + orphan[_n-4]) != 5
-			}
-			pause "created missings in data to reflect orphan years"
-			
-			* now sum lags to produce cumulative lag 3, 4, 5 and then drop non-cumulative vars
-			by mineid: gen `var'_c3lag = (`var'_1lag + `var'_2lag + `var'_3lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag))
-			by mineid: gen `var'_c4lag = (`var'_1lag + `var'_2lag + `var'_3lag + `var'_4lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag) & !missing(`var'_4lag))
-			by mineid: gen `var'_c5lag = (`var'_1lag + `var'_2lag + `var'_3lag + `var'_4lag + `var'_5lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag) & !missing(`var'_4lag) & !missing(`var'_5lag))
-			drop `var'_2lag `var'_3lag `var'_4lag `var'_5lag 
-			pause "cumulative lags produced"
-		}
-		pause "all lags generated"
-		
-		*+- prepare total violations for strong null model (violations/hours, lagged once)
-		gen total_violations_hours_1lag = (totalviolations_1lag/inspectionhours_1lag)
-		
-		*+- format hours and dependent variables for binary outcome models
-		gen lnhours = log(hours)
-		gen dv_indicator = dv >= 1
-		
-		*+- take the log of covariates that are highly skewed
-		gen lnemployment = log(employment)
-		gen lncoal_prod = log(prod)
-		gen lnoperator_time = log(operatortime)
-		
+	
 		*+- if doing the union/longwall specification test, create "ulw" subfolder, and file name extension ("_ulw")
 		if "`specification_check'" == "on" local sub_folder "ulw/"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/tex/`date'/`sub_folder'"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/csv/`date'/`sub_folder'"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/dta/`date'/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/tex/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/csv/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/dta/`sub_folder'"
 		if "`specification_check'" != "on" local sub_folder ""
 		if "`specification_check'" == "on" local spec_file_ext "_ulw"
 		if "`specification_check'" == "on" local spec_null_file_ext "_ulw"
 		if "`specification_check'" == "on" local title_options " (Specification Test: Union and Longwall Indicators)"
-		
-		*+- remove all var labels and re-label (we tell eststo command to grab label names after estimation because they're prettier than variable names)
-		foreach var of varlist * {
-			label var `var' ""
-		}
-		label var hours "Total annual production hours"
-		label var safetycommittee "Safety committee indicator"
-		label var appalachia "Appalachian state indicator"
-		label var lncoal_prod "Log total annual coal production (tons)"
-		label var lnemployment "Log mean annual employment at given mine"
-		label var lnoperator_time "Log operator tenure at given mine"	
-		label var time "Year"
-		label var dv_1lag "Number of injuries in previous year"
-		label var totalviolations_1lag "Number of violations in previous year (any type)"
-		label var total_violations_hours_1lag "Number of violations per inspection hour in previous year (any type)"
-		if "`inj_type'" == "MR" label var dv "Number of MR injuries"
-		if "`inj_type'" == "MR" label var dv_indicator "MR injury indicator"
-		if "`inj_type'" == "PS" label var dv "Number of PS injuries"
-		if "`inj_type'" == "PS" label var dv_indicator "PS injury indicator"
 
 		*+- identify training (0) & test (1) set based on specified cutoff year - used for robustness assessments
 		if "`train_test_split'" == "2010" local cutoff "inlist(year, "2015", "2014", "2013", "2012", "2011", "2010")"
@@ -219,7 +141,7 @@ foreach inj_type in `injury_types' {
 		if "`train_test_split'" == "2012" local cutoff "inlist(year, "2015", "2014", "2013", "2012")"
 		if "`train_test_split'" == "2013" local cutoff "inlist(year, "2015", "2014", "2013")"
 		if "`train_test_split'" == "2014" local cutoff "inlist(year, "2015", "2014")"
-		if "`train_test_split'" != "2012" local cutoff_ext "_`train_test_split'"
+		local cutoff_ext "_`train_test_split'"
 		* set variable flags TESTING set (if set = 0, then the observation is in the training set)
 		gen set = 1 if `cutoff'
 		replace set = 0 if missing(set)
@@ -291,12 +213,14 @@ foreach inj_type in `injury_types' {
 					*+- set locals & file extensions for covariates of interest if doing a lag 3/5 robustness assessment
 					if "`lag'" == "3" local sub_folder "lag_3/"
 					if "`lag'" == "5" local sub_folder "lag_5/"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/tex/`date'/`sub_folder'"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/csv/`date'/`sub_folder'"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/dta/`date'/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/tex/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/csv/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/dta/`sub_folder'"
 					
 					*+- set file and table title options if using violation counts (not a rate)
-					if "`viol_form'" == "count" local file_ext "_non-rate"
+					if "`viol_form'" == "rate" local file_ext "_VR"
+					if "`viol_form'" == "count" local file_ext "_VC"
+					if "`viol_form'" == "rate" local title_options " (Rate)"
 					if "`viol_form'" == "count" local title_options " (Not a Rate)"
 					
 					*+- set locals for table titles 
@@ -391,11 +315,11 @@ foreach inj_type in `injury_types' {
 						}
 						
 						*+- create tex file with estimates and csv file with only significant variable estimates (used for randomization inference)
-						esttab using "$PROJECT_ROOT/results/tex/`date'/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`sample_ext'`add_covars_ext'.tex", replace ///
+						esttab using "$PROJECT_ROOT/results/tex/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`add_covars_ext'.tex", replace ///
 							mlabels() label eform b(3) not booktabs longtable /// use labels, report irrs, grab coefficients and no se's
 							`table_notes' nonote /// add table notes and suppress automated notes
 							`tex_covars' title(`inj_type' Injuries, `outcome_label', `title_lag_level'`title_options') 
-						esttab using "$PROJECT_ROOT/results/csv/`date'/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`sample_ext'`add_covars_ext'.csv", replace ///
+						esttab using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`add_covars_ext'.csv", replace ///
 							`csv_covars' plain p noobs wide star // no eform - we want coefficients
 					} // converge == 1 
 					
@@ -443,10 +367,12 @@ foreach inj_type in `injury_types' {
 				} // run null models
 			} // outcome form (C or B)
 		
-		* save new data (with produced predictions as new vars)
-		drop p* sp*
-		save "$PROJECT_ROOT/results/dta/`date'/`sub_folder'`inj_type'_with_predictions`file_ext'`cutoff_ext'`spec_file_ext'`sample_ext'.dta", replace
-		export delimited using "$PROJECT_ROOT/results/csv/`date'/`sub_folder'`inj_type'_with_predictions`file_ext'`cutoff_ext'`spec_file_ext'`sample_ext'.csv", replace
+		* save new data (with produced predictions as new vars) - needs to happen outside outcome loop
+		if "`run_nulls'" != "off" {
+			drop p* sp*
+			save "$PROJECT_ROOT/results/dta/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.dta", replace
+			export delimited using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.csv", replace
+		}
 		
 		* reset locals
 		local relevant_parts "" 

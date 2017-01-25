@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 7 - Prepare Stage 3 Data
+# 7 - Prepare Stage 3 Data (R)
   # 
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
@@ -25,7 +25,7 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/dat
 # define file paths
 clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
 merged.path = paste0(root, "/2_merged", collapse = NULL) 
-prepped.path = paste0(root, "/5_prepped", collapse = NULL)
+prepped.path = paste0(root, "/5_prepared", collapse = NULL)
                      
 # inputs
   # violations data
@@ -33,16 +33,13 @@ violations.in.file.name = paste0(merged.path, "/merged_violations.rds", collapse
   # inspections data
 inspections.in.file.name = paste0(clean.path, "/clean_inspections.rds", collapse = NULL)
   # mine-year data
-mines.in.file.name = paste0(prepped.path, "/prepped_mine_years.rds", collapse = NULL)
+mines.in.file.name = paste0(prepped.path, "/prepared_mine_years.rds", collapse = NULL)
 
 # outputs
   # prediction-ready MR data
-MR.data.out.file.name = paste0(prepped.path, "/prepped_stage_3_MR", collapse = NULL)
+MR.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1", collapse = NULL)
   # prediction-ready PS data
-PS.data.out.file.name = paste0(prepped.path, "/prepped_stage_3_PS", collapse = NULL)
-
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(merged.path, recursive = TRUE)
+PS.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_2", collapse = NULL)
 
 ################################################################################
 

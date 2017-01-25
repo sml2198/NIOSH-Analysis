@@ -1,35 +1,67 @@
 # NIOSH Project 2014-N-15776
+# Designing a Statistical Algorithm for Strategic Identification and Development 
+# of New Mine Safety Technologies and Technological Applications
 
-# 24 - Analyze Predictions
+# Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# Last edit 11/14/16
+# 13 - Analyze Predictions
 
-######################################################################################################
+# Coded by: Julia Bodson, juliabodson@gmail.com
+
+# Last edit 1/25/2017
+
+################################################################################
 
 library(foreign)
 
-# set preferences
-date = "15-15/"
+################################################################################
 
-injtype = "PS"
-# injtype = "MR"
+# define root directory
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
-# define file names
-folder = "X:/Projects/Mining/NIOSH/analysis/results/dta/"
-root = paste0(folder, date, collapse = NULL)
+# define file paths
+results.in.path = paste0(root, "/results/dta/1-20", collapse = NULL) 
+results.out.path = paste0(root, "/results/csv/prediction", collapse = NULL) 
+  
+# inputs
+  # targeting algorithm predictions
+    # produced in 9_fit_models
+for (injury in c("MR", "PS")) {
+  for (var in c("VC", "VR")) {
+    for (year in 2010:2014) {
+      assign(paste(injury, var, toString(year), "prediction", "file.name", sep = "."), 
+             paste0(results.in.path, "/", paste(injury, var, toString(year), "predictions", sep = "_"), ".dta", collapse = NULL))
+    }
+  }
+}
+
+# outputs
+  # tables presenting targeting algorithm predictions
+for (injury in c("MR", "PS")) {
+  for (year in 2010:2014) {
+    assign(paste(injury, toString(year), "binary", "file.name", sep = "."), 
+           paste0(results.out.path, "/", paste(injury, toString(year), "Binary Diff Table", sep = "_"), ".csv", collapse = NULL))
+    assign(paste(injury, toString(year), "count", "file.name", sep = "."), 
+           paste0(results.out.path, "/", paste(injury, toString(year), "Count Diff Table", sep = "_"), ".csv", collapse = NULL))
+    assign(paste(injury, toString(year), "appendix.binary", "file.name", sep = "."), 
+           paste0(results.out.path, "/", paste(injury, toString(year), "Appendix Binary Diff Table", sep = "_"), ".csv", collapse = NULL))
+    assign(paste(injury, toString(year), "appendix.count", "file.name", sep = "."), 
+           paste0(results.out.path, "/", paste(injury, toString(year), "Appendix COunt Diff Table", sep = "_"), ".csv", collapse = NULL))
+  }
+}
+
+# generate file paths
+dir.create(results.out.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
+
+# bye
+rm(root, results.in.path, results.out.path)
+
+################################################################################
 
 for (year in c("2010", "2011", "2012", "2013", "2014")) {
-  # load in model predictions - the "x" indicates it's bee saved as Stata 12 for hte "foreign" package will work
-  rate_data_in_file_name = paste0(root, injtype, "_with_predictions_", year, ".dta", collapse = NULL)
-  nonrate_data_in_file_name = paste0(root, injtype, "_with_predictions_non-rate_", year, ".dta", collapse = NULL)
-  
-  # KEY
-  # null 1 - weak null
-  # null 2 - strong null (total violations - 1 lag)
-  # null 3 - strong null (total violations/onsite inspection hours - 1 lag)
-  
-  ######################################################################################################
-  
+
   # LOAD DATA
   
   rate_data = read.dta(rate_data_in_file_name)

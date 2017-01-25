@@ -26,13 +26,13 @@ library(plyr)
 
 # set root directory
 # root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
 collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
-prepped.path = paste0(root, "/5_prepped", collapse = NULL) 
+prepped.path = paste0(root, "/5_prepared", collapse = NULL) 
 
 # inputs
   # cleaned mines data
@@ -53,7 +53,7 @@ PS.in.file.name = paste0(collapsed.path, "/collapsed_PS_accidents.rds", collapse
 
 # outputs
   # mine-year-level data
-mine.years.out.file.name = paste0(prepped.path, "/prepped_mine_years.rds", collapse = NULL)
+mine.years.out.file.name = paste0(prepped.path, "/prepared_mine_years.rds", collapse = NULL)
 
 # create file paths 
 dir.create(prepped.path, recursive = TRUE) # (recursive = TRUE will create this file structure if it does not exist)

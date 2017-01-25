@@ -10,7 +10,7 @@
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 
-# Last edit 1/23/2017
+# Last edit 1/25/2017
 
 ################################################################################
 
@@ -19,13 +19,13 @@ library(stringr)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL)
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL)
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
   # accidents data

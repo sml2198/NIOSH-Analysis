@@ -15,13 +15,13 @@
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL)
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL)
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
   # master PS dataset

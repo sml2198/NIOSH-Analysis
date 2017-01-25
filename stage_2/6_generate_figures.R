@@ -27,7 +27,7 @@ output.path = paste0(root, "/figures", collapse = NULL)
 
 # inputs
   # mine-year-level dataset created in 5_prepare_mines
-data.file.name = paste0(input.path, "/prepped_mine_years.rds", collapse = NULL)
+data.file.name = paste0(input.path, "/prepared_mine_years.rds", collapse = NULL)
 
 # outputs
   # figures in paper
