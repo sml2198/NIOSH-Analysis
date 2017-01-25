@@ -39,7 +39,7 @@ mines.in.file.name = paste0(prepped.path, "/prepared_mine_years.rds", collapse =
   # prediction-ready MR data
 MR.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1", collapse = NULL)
   # prediction-ready PS data
-PS.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_2", collapse = NULL)
+PS.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1", collapse = NULL)
 
 ################################################################################
 
@@ -76,7 +76,7 @@ rm(root, clean.path, merged.path, prepped.path, inspections.in.file.name,
 
 ################################################################################
 
-for (injury in c("MR", "PS")) { # create separate datasets for MR and PS injuries
+for (injury in c("PS")) { # create separate datasets for MR and PS injuries
 
   ##############################################################################
 

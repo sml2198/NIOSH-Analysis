@@ -418,8 +418,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   uniq_vehcls = function(x) {
     return(length(unique(substr(unlist(regmatches(x, gregexpr("VEHICLE[0-9][0-9]*", x))), 8, 9))))
   }
-  data$num_unique_vehcl = sapply(data$narrative, uniq_vehcls)
-  data$mult_vehcl = ifelse(data$num_unique_vehcl > 1, 1, 0)
+  data$num.unique.vehcl = sapply(data$narrative, uniq_vehcls)
+  data$mult.vehcl = ifelse(data$num.unique.vehcl > 1, 1, 0)
   
   # bye
   rm(uniq_vehcls)
@@ -803,10 +803,10 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
            "likely_source", "likely_type", "loose", 
            "loose_rbolting", "maybe_false_keyword", "maybe_likely_actvty", 
            "maybe_type", "mineid", "moving_vehcl", 
-           "mult_vehcl", "neg_keyword_pts", "neg_pts", 
-           "neg_roofbolt", "neg_wrench", "no_vehcl", 
+           "mult.vehcl", "neg_keyword_pts", "neg_pts", 
+           "neg_roofbolt", "neg.wrench", "no_vehcl", 
            "num.body", "num.person", "num.pinstrike", 
-           "num.vehicles", "num_unique_vehcl", "operating", 
+           "num.vehicles", "num.unique.vehcl", "operating", 
            "outsidevehicle", "pin", "pos_pts", 
            "pos_roofbolt", "potential_ps", "PS", 
            "psobject_test", "ranover", "resin", 

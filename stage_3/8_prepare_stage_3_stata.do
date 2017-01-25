@@ -87,6 +87,9 @@ foreach inj_type in `injury_types' {
 	gen lncoal_prod = log(prod)
 	gen lnoperator_time = log(operatortime)
 	
+	*+- prepare total violations for strong null model (violations/hours, lagged once)
+	gen total_violations_hours_1lag = (totalviolations_1lag/inspectionhours_1lag)
+	
 	*+- remove all var labels and re-label (we tell eststo command to grab label names after estimation because they're prettier than variable names)
 	foreach var of varlist * {
 		label var `var' ""
@@ -109,9 +112,6 @@ foreach inj_type in `injury_types' {
 	*+- drop unnecessary stuff
 	drop orphan employment prod operatortime mine_year
 	
-	*+- prepare total violations for strong null model (violations/hours, lagged once)
-	gen total_violations_hours_1lag = (totalviolations_1lag/inspectionhours_1lag)
-	
-	save "$PROJECT_ROOT/data/5_prepared/prepped_stage_3_`inj_type'_part_2.dta", replace
+	save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", replace
 }
 *end*

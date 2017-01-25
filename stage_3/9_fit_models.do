@@ -7,7 +7,7 @@ of New Mine Safety Technologies and Technological Applications
 
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-8 - Fit Models
+9 - Fit Models
  # Fit preferred models
  # Fit weak and strong null models
  # Fit predictive algorithms
