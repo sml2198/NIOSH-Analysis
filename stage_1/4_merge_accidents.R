@@ -6,8 +6,8 @@
 
 # 4 - Merge Accidents
   # Merges accidents data (produced in 1_clean_accidents) 
-    # and MR training/testing set (produced in 2_clean_MR_training_set) 
-    # or PS training/testing set (3_clean_PS_training_set)
+    # and MR training/testing set (produced in 2_clean_MR_train_test_set) 
+    # or PS training/testing set (3_clean_PS_train_test_set)
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
@@ -31,10 +31,10 @@ merged.path = paste0(root, "/2_merged", collapse = NULL)
     # produced in 1_clean_accidents
 accidents.in.file.name = paste0(cleaned.path, "/clean_accidents.rds", collapse = NULL)
   # cleaned MR training/testing set
-    # produced in 2_clean_MR_training_set
+    # produced in 2_clean_MR_train_test_set
 MR.train.test.set.in.file.name = paste0(cleaned.path, "/clean_MR_train_test_set.rds", collapse = NULL)
   # cleaned PS training/testing set
-    # produced in 3_clean_PS_training_set
+    # produced in 3_clean_PS_train_test_set
 PS.train.test.set.in.file.name = paste0(cleaned.path, "/clean_PS_train_test_set.rds", collapse = NULL)
 
 # outputs

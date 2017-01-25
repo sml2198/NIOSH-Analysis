@@ -52,8 +52,8 @@ local lag_levels "1 4" // preferred models
 * local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
-local num_iterations = 5
-local max_iterations = 7 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local num_iterations = 1000
+local max_iterations = 1200 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -68,10 +68,10 @@ local specification_check "off"
 local injury_types "MR PS"
 
 /****** OUTCOME FORMS *********************/
-local outcome_form "B C"
+local outcome_forms "C B"
 
 /****** RATE VS. COUNTS *******************/
-local violation_forms "rate count"
+local violation_forms "count rate"
 
 /****** COVARIATES ************************/
 * time is included (unlike in fit models) because no prediction is done here
@@ -85,8 +85,8 @@ if "`specification_check'" == "on" {
 
 /******** METHOD 2? ***********************/
 if "`method'" == "2" {
-	local num_iterations = 5
-	local max_iterations = 7
+	local num_iterations = 1
+	local max_iterations = 2
 }
 
 /********************************************************************************
@@ -131,7 +131,6 @@ Model W.X.Y.Z
     C: response variable is count of injuries
     B: response variable is binary of injuries 
   Z
-    0: inj_t ~ viol_t
     1: inj_t ~ viol_(t_-1)
 	4: inj_t ~ viol_(t_-1 + t_-2 + t_-3 + t_-4)
 
@@ -140,8 +139,14 @@ Model W.X.Y.Z
 
 foreach inj_type in `injury_types' {
 	foreach viol_form in `violation_forms' {
-		foreach outcome in `outcome_form' {	
+	
+		*+- set file extension for non-rate models
+		local violform_ext ""
+		if "`viol_form'" != "rate" local violform_ext "non-rate_"
 		
+		foreach outcome in `outcome_forms' {	
+		
+			*+- load injury-specific datasets 
 			use "$PROJECT_ROOT/data/5_prepared/prepped_stage_3_`inj_type'.dta", clear
 			pause "`inj_type' data loaded"
 			
@@ -221,7 +226,6 @@ foreach inj_type in `injury_types' {
 				}
 				pause "complete: rate variables formatted"
 			}
-			if "`viol_form'" != "rate" local violform_ext "non-rate_"
 			
 			* set locals for models, dependent variables, exposure terms, and irrs
 			if "`outcome'" == "C" {
@@ -318,15 +322,6 @@ foreach inj_type in `injury_types' {
 						qui describe `cov_of_interest'
 						local count: word count `cov_of_interest' 
 						
-						/*+- create a local matrix containing the variance/covariance matrix 
-						matrix B = J(`num_iterations',`count',.) 
-						local z = 1 // set counter
-						foreach var of varlist `cov_of_interest' {
-							matrix B[`x', `z'] = _b[`var']  // row is equal to the iteration #, column is equal to variable number in list of covariates of interest
-							local z = `z' + 1
-						}
-						pause "matrix created" */
-						
 						*+- grab the coefficient on each shuffled variable of interest & replace each corresponding _c var with the proper coefficient
 						sort mineid year
 						if "`converged'" == "1" {
@@ -355,7 +350,7 @@ foreach inj_type in `injury_types' {
 						}
 						
 				} // num iterations
-				pause "iterations complete for model `inj_type' `outcome' `lag'"
+				pause "iterations complete for model `inj_type' `viol_form' `outcome' `lag'"
 				
 				*+- name sub-folder (if a ulw, lag 3, or lag 5 specification test)
 				if "`lag'" == "3" local sub_folder "lag_3/"
@@ -397,7 +392,8 @@ foreach inj_type in `injury_types' {
 					*+- this must be done before the *official* preserve/restore
 					preserve
 					
-					*+- load in relevant results from fit_models, transpose data to make subpart/violation variable names the column names 
+					*+- load in relevant results (produced in method 1)
+						*+- transpose data to make subpart/violation variable names the column names 
 					import delimited "$PROJECT_ROOT/results/csv/`date'/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'method_2_input`ulw_ext'", clear 
 					rename subpart _varname
 					xpose, clear varname
@@ -551,6 +547,7 @@ foreach inj_type in `injury_types' {
 				local lag_4_vars "" 
 				local lag_5_vars ""
 			} // method 2
+			
 		} // outcome form  
 		local covars ""
 		local lag_1_vars ""

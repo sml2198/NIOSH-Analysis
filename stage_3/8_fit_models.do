@@ -81,7 +81,7 @@ cap mkdir "$PROJECT_ROOT/results/dta/`date'/"
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "PS MR"
+local injury_types "MR PS"
 
 /****** OUTCOME FORMS *********************/
 local outcome_form "B C"
@@ -247,7 +247,6 @@ foreach inj_type in `injury_types' {
 				foreach var of varlist inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
 					rename `var' `var'_x
 				}
-				
 				* replace vars with rates (x 1000)
 				foreach var of varlist *_1lag {
 					replace `var' = (`var'/inspectionhours_1lag_x)*1000
@@ -359,7 +358,7 @@ foreach inj_type in `injury_types' {
 					else pause "after `inj_type' `outcome' lag `lag' (`viol_form') - converged"
 					
 					*+- if model did not converge, capture it's name in a local so we can print at the end
-					local converge = e(converge)
+					local converge = e(converged)
 					if "`converge'" == "0" {
 						pause on
 						pause "MODEL DID NOT CONVERGE: `inj_type' `outcome' lag `lag' (`viol_form')"

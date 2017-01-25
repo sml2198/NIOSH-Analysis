@@ -5,11 +5,16 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 5 - Prepare MR (Maintenance and Repair) Accidents Data
+  # Prepares MR training/testing set (produced in 2_clean_MR_train_test_set) 
+    # or merged MR accidents data (produced in 4_merge_accidents)
+    # to be used for classification algorithm training and testing 
+    # or accident classification purposes, respectively
+  # Generates key word and category variables for classification purposes
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 
-# Last edit 1/23/2017
+# Last edit 1/24/2017
 
 ################################################################################
 
@@ -21,11 +26,11 @@ root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data
 # define file paths
 cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
 merged.path = paste0(root, "/2_merged", collapse = NULL) 
-prepared.path = paste0(root, "/5_prepped", collapse = NULL) 
+prepared.path = paste0(root, "/5_prepared", collapse = NULL) 
 
 # inputs
   # cleaned MR training/testing set
-    # produced in 2_clean_MR_training_set
+    # produced in 2_clean_MR_train_test_set
 train.test.set.in.file.name = paste0(cleaned.path, "/clean_MR_train_test_set.rds", collapse = NULL)
   # merged MR accidents data
     # produced in 4_merge_accidents
@@ -33,9 +38,9 @@ merged.data.in.file.name =  paste0(merged.path, "/merged_MR_accidents.rds", coll
 
 # outputs
   # prepared MR training/testing set
-prepared.train.test.out.file.name = paste0(prepared.path, "/prepped_MR_train_test.rds", collapse = NULL)
+prepared.train.test.out.file.name = paste0(prepared.path, "/prepared_MR_train_test.rds", collapse = NULL)
   # prepared merged MR accidents data
-prepared.classify.out.file.name = paste0(prepared.path, "/prepped_MR_classify.rds", collapse = NULL)
+prepared.classify.out.file.name = paste0(prepared.path, "/prepared_MR_classify.rds", collapse = NULL)
 
 # generate file paths
 dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -44,8 +49,6 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 rm(root, cleaned.path, merged.path, prepared.path)
 
 ################################################################################
-
-# DEFINE LOOP THAT WILL ITERATE THROUGH PURPOSES
 
 for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
@@ -463,7 +466,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   }
   
   # bye
-  rm(var, keep, post.algorithm)
+  rm(var, keep, post.classification)
   
   ##############################################################################
   
