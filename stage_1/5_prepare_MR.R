@@ -70,7 +70,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
 
   ##############################################################################
   
-  # CLEAN DATASET
+  # CLEAN DATA
 
   # drop non-injury accidents 
   data$accident.only = ifelse(data$degreeofinjury == "accident only" | data$accidenttype == "acc type, without injuries", 1, 0)
@@ -277,8 +277,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   data$falling.accident = ifelse(data$falling.class == 1 | data$falling.word == 1, 1, 0)
   
-  data$accident.only = ifelse((data$degreeofinjury == "accident only" | 
-                                 data$accidenttype == "acc type, without injuries"), 1, 0)
+  data$accident.only = ifelse(data$degreeofinjury == "accident only" | 
+                                data$accidenttype == "acc type, without injuries", 1, 0)
   
   ##############################################################################
   
@@ -464,19 +464,19 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   for (var in names(data)) {
     data[, var] = factor(data[, var])
   }
+
+  # randomly sort data (in case it was ordered)
+  set.seed(626)
+  rand = runif(nrow(data))
+  data = data[order(rand),]
   
   # bye
-  rm(var, keep, post.classification)
+  rm(keep, var, rand, post.classification)
   
   ##############################################################################
   
   # OUTPUT DATA
   
-  # set seed so the randomizations are conducted equally each time this file is run
-  set.seed(626)
-  rand = runif(nrow(data))
-  data = data[order(rand),]
-
   if (purpose == "train.test") {
     # output prepared MR training/testing set
       # 1018 rows; 58 columns; unique on documentno 
