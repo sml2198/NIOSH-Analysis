@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 10 - Analyze RI Method 1
+# 12 - Analyze RI Method 1
   # Takes in results from first randomization inference procedure
   # Outputs data taken into second randomizaiton inference procedure
 

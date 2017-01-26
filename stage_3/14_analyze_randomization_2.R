@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 11 - Analyze RI Method 2
+# 14 - Analyze RI Method 2
   # Takes in results from second randomization inference procedure
   # Outputs lists of robustly significant subparts
 
