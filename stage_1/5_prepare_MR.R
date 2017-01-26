@@ -49,8 +49,8 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 rm(root, cleaned.path, merged.path, prepared.path)
 
 ################################################################################
-purpose = "train.test"
-# for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
+#purpose = "train.test"
+for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
   # READ DATA
   
@@ -85,19 +85,6 @@ purpose = "train.test"
   
   # clean "not-found" values
   data$natureofinjury = ifelse(data$natureofinjury == "unclassified,not determed", "no value found", data$natureofinjury)
-
-  # "character" vars are factor variables
-  #var.classes = sapply(data[,names(data)], class)
-  #charac.vars = names(var.classes[c(grep("character", var.classes), grep("factor", var.classes))])
-  #charac.vars = charac.vars
-  
-  #for (i in 1:length(charac.vars)) {
-    #data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
-     #                                  data[,charac.vars[i]] == "unknown" | 
-      #                                 data[,charac.vars[i]] == "?" | 
-       #                                data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
-    #data[, charac.vars[i]] = factor(data[, charac.vars[i]])
-  #}
   
   # bye
   rm(i)
@@ -292,6 +279,46 @@ purpose = "train.test"
   
   data$accident.only = ifelse(data$degreeofinjury == "accident only" | 
                                 data$accidenttype == "acc type, without injuries", 1, 0)
+  
+  ##############################################################################
+  
+  # IMPUTATION
+  
+  # list variables by type
+  var.classes = sapply(data[,names(data)], class)
+  charac.vars = names(var.classes[c(grep("character", var.classes), grep("factor", var.classes))])
+  num.vars = names(var.classes[c(grep("numeric", var.classes), grep("integer", var.classes))])
+  
+  # replace missings
+  for (i in 1:length(charac.vars)) {
+    data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
+                                       data[,charac.vars[i]] == "unknown" | 
+                                       data[,charac.vars[i]] == "?" | 
+                                       data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
+    data[, charac.vars[i]] = factor(data[, charac.vars[i]])
+  }
+  
+  # define mode function for imputation
+  modus = function(x) {
+    uniqv = unique(x)
+    uniqv[which.max(tabulate(match(x, uniqv)))]
+  }
+  
+  # impute variables by type
+  for (i in 1:length(num.vars)) {
+      i_rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
+      while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
+        replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
+        data[i_rowsmissing, num.vars[i]] = data[replace_rows, num.vars[i]]
+      }
+  }
+  for (i in 1:length(charac.vars)) {
+      i_rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
+      while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
+        replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
+        data[i_rowsmissing, charac.vars[i]] = data[replace_rows, charac.vars[i]]
+      }
+  }
   
   ##############################################################################
   

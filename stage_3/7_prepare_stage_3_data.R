@@ -76,7 +76,7 @@ rm(root, clean.path, merged.path, prepped.path, inspections.in.file.name,
 
 ################################################################################
 
-for (injury in c("PS")) { # create separate datasets for MR and PS injuries
+for (injury in c("MR", "PS")) { # create separate datasets for MR and PS injuries
 
   ##############################################################################
 

@@ -15,3 +15,38 @@
 # Last edit 1/26/17
 
 ################################################################################
+
+# set root directory
+# root = "/NIOSH-Analysis/data"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+
+# define file paths
+clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+merged.path = paste0(root, "/2_merged", collapse = NULL) 
+prepped.path = paste0(root, "/5_prepared", collapse = NULL)
+
+# inputs
+  # prediction-ready MR data
+MR.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1", collapse = NULL)
+  # prediction-ready PS data
+PS.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1", collapse = NULL)
+
+
+# outputs
+  # prediction-ready MR data with union and longwall indicators
+MR.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1_ulw", collapse = NULL)
+  # prediction-ready PS data with union and longwall indicators
+PS.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1_ulw", collapse = NULL)
+
+################################################################################
+
+for (injury in c("MR", "PS")) { # create separate datasets for MR and PS injuries
+  
+  ##############################################################################
+
+} # end of the PS/MR loop
+
+rm(list = ls())
+
+################################################################################
