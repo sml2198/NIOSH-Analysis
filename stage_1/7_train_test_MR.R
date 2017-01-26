@@ -18,19 +18,19 @@
 library(rpart)
 library(randomForest)
 library(ROSE)
-###library(SMOTE)
-#library(psych)
-#library(DMwR)
-#library(caret)
-#library(ggplot2)
-#library(adabag)
+library(SMOTE)
+library(psych)
+library(DMwR)
+library(caret)
+library(ggplot2)
+library(adabag)
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
 prepared.path = paste0(root, "/data/5_prepared", collapse = NULL) 

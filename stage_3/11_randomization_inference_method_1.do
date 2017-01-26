@@ -44,8 +44,8 @@ local lag_levels "1 4" // preferred models
 * local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
-local num_iterations = 1000
-local max_iterations = 1200 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local num_iterations = 1
+local max_iterations = 2 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -115,7 +115,8 @@ foreach inj_type in `injury_types' {
 		foreach outcome in `outcome_forms' {	
 		
 			*+- load injury-specific datasets 
-			use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+			if "`specification_check'" == "off" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+			if "`specification_check'" == "on" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2_ulw.dta", clear
 			pause "`inj_type' data loaded"
 			
 			*+- rename injury variable of interest and create list of relevant parts

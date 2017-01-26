@@ -74,6 +74,12 @@ for (injury in c("MR", "PS")) { # create separate datasets for MR and PS injurie
     # PS: 6253 observations, 112 variables, unique on mineid-year
   merged.data = merged.data[complete.cases(merged.data$hours),]
   
+  # replace longwall with zero if it's not a 1 and the year is one for which we have data (2000-2015)
+  merged.data$longwall = ifelse(is.na(merged.data$longwall) & merged.data$year < 2016, 0, merged.data$longwall)
+  
+  # replace union with zero if it's not a 1 and the year is one for which we have data (2000-2013)
+  merged.data$union = ifelse(is.na(merged.data$union) & merged.data$year < 2014, 0, merged.data$union)
+  
   ##############################################################################
   
   # OUTPUT DATA

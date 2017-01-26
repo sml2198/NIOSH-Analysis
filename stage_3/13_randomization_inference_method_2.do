@@ -112,7 +112,8 @@ foreach inj_type in `injury_types' {
 		foreach outcome in `outcome_forms' {	
 		
 			*+- load injury-specific datasets 
-			use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+			if "`specification_check'" == "off" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+			if "`specification_check'" == "on" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2_ulw.dta", clear
 			pause "`inj_type' data loaded"
 			
 			*+- rename injury variable of interest and create list of relevant parts

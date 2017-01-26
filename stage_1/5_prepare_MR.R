@@ -49,8 +49,8 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 rm(root, cleaned.path, merged.path, prepared.path)
 
 ################################################################################
-#purpose = "train.test"
-for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
+purpose = "train.test"
+#for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
   # READ DATA
   
@@ -284,12 +284,29 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   # IMPUTATION
   
-  # list variables by type
-  var.classes = sapply(data[,names(data)], class)
-  charac.vars = names(var.classes[c(grep("character", var.classes), grep("factor", var.classes))])
-  num.vars = names(var.classes[c(grep("numeric", var.classes), grep("integer", var.classes))])
+  num.vars = c(paste("temp", 1:16, sep = "."))
   
-  # replace missings
+  charac.vars = c(paste("temp", 17:18, sep = "."), 
+                  "accidentclassification", "accidenttype", "sourceofinjury", "natureofinjury", 
+                  paste("temp", 19:23, sep = "."), 
+                  "mineractivity", "occupation", 
+                  paste("temp", 24:25, sep = "."))
+  
+  set.seed(100)
+  data[, paste("temp", 1:25, sep = ".")] = NA
+  for (var in names(data)[grepl("temp", names(data))]) {
+    data[, var] = sample(1:100, nrow(data), replace = TRUE)
+    data[, var] = ifelse(data[, var] > 50, NA, data[, var])
+  }
+
+  for (var in num.vars) {
+    data[, var] = as.numeric(data[, var])
+  }
+  
+  for (var in charac.vars) {
+    data[, var] = as.character(data[, var])
+  }
+
   for (i in 1:length(charac.vars)) {
     data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
                                        data[,charac.vars[i]] == "unknown" | 
@@ -298,60 +315,22 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     data[, charac.vars[i]] = factor(data[, charac.vars[i]])
   }
   
-  # define mode function for imputation
-  modus = function(x) {
-    uniqv = unique(x)
-    uniqv[which.max(tabulate(match(x, uniqv)))]
-  }
-  
-  imputation.method = 3
-  data = data[order(data$documentno), ]
   set.seed(181994)
-  # impute variables by type
   
-  if (imputation.method == 1 | imputation.method == 2) {
-    for (i in 1:length(num.vars)) {
-      data[, num.vars[i]] = ifelse(is.na(data[, num.vars[i]]), mean(data[, num.vars[i]]), data[, num.vars[i]])
+  for (i in 1:length(num.vars)) {
+    i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
+    while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
+      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+      data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
     }
-    if (imputation.method == 2) {
-      for (i in 1:length(num.vars)) {
-        data[, num.vars[i]] = ifelse(is.na(data[, num.vars[i]]), median(data[, num.vars[i]]), data[, num.vars[i]])
-      }
+  }
+  for (i in 1:length(charac.vars)) {
+    i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
+    while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
+      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+      data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
     }
-    for (i in 1:length(charac.vars)) {
-      data[, charac.vars[i]] = ifelse(is.na(data[, charac.vars[i]]), modus(data[, charac.vars[i]]), data[, charac.vars[i]])
-    }
-  } else if (imputation.method == 3) {
-    for (i in 1:length(num.vars)) {
-      i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
-      while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
-        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-        data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
-      }
-    }
-    for (i in 1:length(charac.vars)) {
-      i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
-      while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
-        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-        data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
-      }
-    }
-  } 
-  
-  #for (i in 1:length(num.vars)) {
-   #   i_rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
-    #  while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
-     #   replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
-      #  data[i_rowsmissing, num.vars[i]] = data[replace_rows, num.vars[i]]
-      #}
-  #}
-  #for (i in 1:length(charac.vars)) {
-   #   i_rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
-    #  while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
-     #   replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
-      #  data[i_rowsmissing, charac.vars[i]] = data[replace_rows, charac.vars[i]]
-      #}
-  #}
+  }
   
   ##############################################################################
   

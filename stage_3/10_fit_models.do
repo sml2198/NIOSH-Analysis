@@ -42,8 +42,10 @@ local train_test_split "2012" // targeting algorithms
 *local train_test_split "2014" // targeting algorithms robustness check 
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
-/* includes "longwall" and "union" indicators  - you MUST  have access to EIA and
- NIOSH data for this test to work! */
+/* Includes "longwall" and "union" indicators  - you MUST  have access to EIA and
+ NIOSH data for this test to work! This will also turn off the option to run the
+ targeting algorithms, since we don't do this robustness assessment on those
+ analyses. */
 local specification_check "on" 
 *local specification_check "off"
 
@@ -54,6 +56,7 @@ local report_add_covars "off" // preferred models
 /*********** RUN NULL MODELS? *************/
 *local targeting_algorithms "on" // if you want to run the nulls (preferred)
 local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
+if "`specification_check'" == "on" local targeting_algorithms "off" // never do this with the union/longwall covariates
 
 /*******************************************************************************
 NULL MODEL KEY
