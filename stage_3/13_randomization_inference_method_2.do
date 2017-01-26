@@ -7,7 +7,7 @@ of New Mine Safety Technologies and Technological Applications
 
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-9 - Randomization Inference Method 2
+13 - Randomization Inference Method 2
 	This file applies two randomization inference techniques to our data at the 
 	mine-year level. Here, we randomize each subpart found to be significant in 
 	the first (method 1) randimization inference procedure 1000 times ONE AT A TIME.

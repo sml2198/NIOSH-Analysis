@@ -7,7 +7,7 @@ of New Mine Safety Technologies and Technological Applications
 
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-8 - prepare_stage_3_stata
+9 - prepare_stage_3_stata
  # Generate lagged violations and other variables
 
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
