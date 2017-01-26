@@ -23,6 +23,12 @@ include "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/pr
 pause off
 set matsize 11000, perm
 
+/*** UNION/LONGWALL SPECIFICATION TEST ****/
+/* includes "longwall" and "union" indicators  - you MUST  have access to EIA and
+ NIOSH data for this test to work! */
+*local specification_check "on" 
+local specification_check "off"
+
 /********************************************************************************
 ********************************************************************************/	
 local injury_types "MR PS"
@@ -31,7 +37,8 @@ local injury_types "MR PS"
 foreach inj_type in `injury_types' {	
 		
 	*+- load injury-specific datasets 
-	use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_1.dta", clear
+	if "`specification_check'" == "off" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_1.dta", clear
+	if "`specification_check'" == "on" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_1_ulw.dta", clear
 	pause "`inj_type' data loaded"
 			
 	*+- rename injury variable of interest and create list of relevant parts
@@ -113,5 +120,7 @@ foreach inj_type in `injury_types' {
 	drop orphan employment prod operatortime mine_year
 	
 	save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", replace
+	if "`specification_check'" == "off" save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", replace
+	if "`specification_check'" == "on" save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2_ulw.dta", replace
 }
 *end*

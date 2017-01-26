@@ -42,7 +42,9 @@ local train_test_split "2012" // targeting algorithms
 *local train_test_split "2014" // targeting algorithms robustness check 
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
-*local specification_check "on" // includes "longwall" and "union" indicators 
+/* includes "longwall" and "union" indicators  - you MUST  have access to EIA and
+ NIOSH data for this test to work! */
+*local specification_check "on" 
 local specification_check "off"
 
 /* PRODUCE TABLES WITH ADDITIONAL COVARIATES? */
@@ -114,7 +116,8 @@ Model W.X.Z
 foreach inj_type in `injury_types' {
 	foreach viol_form in `violation_form' {
 		
-		use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+		if "`specification_check'" == "off" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", clear
+		if "`specification_check'" == "on" use "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2_ulw.dta", clear
 		pause "`inj_type' data loaded" 
 		
 		*+- rename injury variable of interest and create list of relevant parts

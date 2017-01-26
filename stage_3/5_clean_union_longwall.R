@@ -4,16 +4,15 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 5 - Clean Union/Longwall Data
-  # Merges cleaned mines and cleaned employment data and collapses
-  # Then merges collapsed accidents data
+# 5 - OPTIONAL Clean Union/Longwall Data
+  # Cleans union and longwall indicators from NIOSH and EIA datasets
 
 ### NOTE ###
   # Only run this file if you have access to BOTH the "EIA-data" and "NIOSH-data"
   # data sub-folders, and intend to run the union/longwall specification test.
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/13/17
+# Last edit 1/26/17
 
 ################################################################################
 
