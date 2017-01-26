@@ -282,7 +282,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   data$narrative = gsub("mucker", "VEHICLE45", data$narrative)
   
   # create special vehicle flag
-  data$shuttlecar_or_rbolter = ifelse(grepl("VEHICLE(8|10|36)", data$narrative) | 
+  data$shuttlecar.or.rbolter = ifelse(grepl("VEHICLE(8|10|36)", data$narrative) | 
                                         grepl("(s(ch|h)uttle).{1,30}( |-|- |v)*(trip|car)( car)*", data$old_narrative), 1, 0)
   
   ##############################################################################
@@ -428,11 +428,11 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   # GENERATE KEY WORDS USING UPPERCASE WORDS
   
-  data$dif_vehicle = ifelse(grepl("(second|another|different).{1,5}VEHICLE", data$narrative), 1, 0)
+  data$dif.vehicle = ifelse(grepl("(second|another|different).{1,5}VEHICLE", data$narrative), 1, 0)
   
-  data$loose_rbolting = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", data$narrative), 1, 0)
+  data$loose.rbolting = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", data$narrative), 1, 0)
   
-  data$drill_action = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", data$narrative), 1, 0)
+  data$drill.action = ifelse(grepl("(plate|bit|bolt)+.{1,10}PINNED/STRUCK", data$narrative), 1, 0)
   
   data$operating = ifelse((grepl("( |^|was|while|had)(tr(a)*m(m)*[^ ]{0,3}|op(e)*r(a)*t[^ ]{0,3}|backin.{1,10}VEHICLE|r(a|u)n|makin(g)*( )*(a)*( )*tu(r)*n|remote.{1,5}control|driv)", data$narrative) &
                              (!grepl("PERSON.{1,20}(splic(e|ing)|crawl(ing)*|repair|fix)", data$narrative) & 
@@ -459,15 +459,15 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                            !grepl("head.{1,10}roof.{1,5}bolt", data$old_narrative), 1, 0) 
   
   # roof bolting
-  data$pos_roofbolt = ifelse(data$roofbolt == 1 & 
+  data$pos.roofbolt = ifelse(data$roofbolt == 1 & 
                                grepl("PINNED/STRUCK.{1,15}between.{1,15}(roof( bolt)*|canopy|boom|(bolter|drill)( |-)*(pot|guide|head)|(drill|roof)*( |-)*(steel|guide)|( |^)rib|(bolt(er)*|torque)( |-)*wrench|lead|top).{1,30}(top|roof( bolt)*|canopy|boom|(bolter|drill)( |-)*(pot|guide|(h|l)ead)|(drill|roof)*( |-)*(steel|guide)|( |^)rib|(bolt(er)*|torque)( |-)*wrench|lead)", data$narrative), 1, 0)
   
-  data$neg_roofbolt = ifelse(data$roofbolt == 1 & 
+  data$neg.roofbolt = ifelse(data$roofbolt == 1 & 
                                (data$entrapment == 1 | 
                                   data$brokensteel == 1), 1, 0)
   
   # person inside (or hanging outside) of the vehicle
-  data$in_vehicle = ifelse(grepl("riding.{1,10}(passenger|driver|operat(o|e)r)", data$old_narrative) | 
+  data$in.vehicle = ifelse(grepl("riding.{1,10}(passenger|driver|operat(o|e)r)", data$old_narrative) | 
                              grepl("PERSON.{1,8}riding", data$narrative) |
                              grepl("riding.{1,5}outside", data$narrative) |
                              !grepl("riding.{1,15}VEHICLE", data$narrative), 1, 0)
@@ -495,13 +495,13 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                               (grepl("PINNED/STRUCK.{1,20} pol(e|l)", data$narrative) & 
                                  grepl("troll(e)*y( )*pol(e|l)", data$narrative)), 1, 0)
   
-  data$tool_break = ifelse(grepl("(wrench|roof bolt).{1,15}(br(eak|oke)|ben(d|t))", data$old_narrative) & 
+  data$tool.break = ifelse(grepl("(wrench|roof bolt).{1,15}(br(eak|oke)|ben(d|t))", data$old_narrative) & 
                              !grepl("(wrench|roof bolt).{1,15}(br(eak|oke)|ben(d|t)).{1,20}PINNED/STRUCK.{1,15}between", data$narrative), 1, 0)
   
-  data$vcomp_test = ifelse(grepl("(seat|rail|canopy|battery|drill|steel|chain|cable)+.{1,20}VEHICLE", data$narrative) | 
+  data$vcomp.test = ifelse(grepl("(seat|rail|canopy|battery|drill|steel|chain|cable)+.{1,20}VEHICLE", data$narrative) | 
                              grepl("VEHICLE.{1,20}(seat|rail|canopy|battery|drill|steel|chain|cable)+", data$narrative), 1, 0)
   
-  data$psobject_test = ifelse(grepl("(corner|beam|overcast|rib|wall|coal|rock|header|top|seat|canopy)+.{1,20}PINNED/STRUCK", data$narrative) | 
+  data$psobject.test = ifelse(grepl("(corner|beam|overcast|rib|wall|coal|rock|header|top|seat|canopy)+.{1,20}PINNED/STRUCK", data$narrative) | 
                                 grepl("PINNED/STRUCK.{1,20}(corner|beam|overcast|rib|wall|coal|rock|header|top|seat|canopy)+", data$narrative), 1, 0)
   
   data$strikerib = ifelse((grepl("PINNED/STRUCK.{0,20}( )rib", data$narrative) | 
@@ -530,7 +530,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   data$keyword = ifelse((data$pin == 1 | 
                            data$strike == 1 | 
-                           data$pos_roofbolt == 1 | 
+                           data$pos.roofbolt == 1 | 
                            data$trap == 1 | 
                            data$collided == 1 | 
                            data$hit == 1 | 
@@ -543,15 +543,15 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                            data$wheel == 1) &
                           (data$falling.accident == 0), 1, 0)
   
-  data$false_keyword = ifelse(data$jarring == 1 | 
+  data$false.keyword = ifelse(data$jarring == 1 | 
                                 data$outsidevehicle == 1 | 
                                 data$steering == 1 | 
-                                data$neg_roofbolt == 1 |
+                                data$neg.roofbolt == 1 |
                                 data$bounced == 1 | 
                                 data$rock == 1 | 
                                 data$derail == 1 | 
                                 data$cable == 1 | 
-                                data$tool_break == 1 | 
+                                data$tool.break == 1 | 
                                 data$bodyseat == 1 | 
                                 data$headroof == 1 | 
                                 data$strap == 1 | 
@@ -559,7 +559,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                 data$entrapment == 1 |
                                 data$hole == 1, 1, 0)
   
-  data$maybe_false_keyword = ifelse(data$digit == 1 | 
+  data$maybe.false.keyword = ifelse(data$digit == 1 | 
                                       data$operating == 1 |
                                       data$bent == 1 | 
                                       data$strikerib == 1 |
@@ -575,16 +575,16 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   # CREATE LIKELY/MAYBE LIKELY/UNLIKELY GROUPS FROM CATEGORICAL VARIABLES
 
-  data$likely_class = ifelse(data$accidentclassification == "powered haulage" | 
+  data$likely.class = ifelse(data$accidentclassification == "powered haulage" | 
                                data$accidentclassification == "machinery", 1, 0)
   
-  data$unlikely_class = ifelse(data$accidentclassification == "disorders (repeated trauma)" | 
+  data$unlikely.class = ifelse(data$accidentclassification == "disorders (repeated trauma)" | 
                                  data$accidentclassification == "electrical" |
                                  data$accidentclassification == "explosives and breaking agents" | 
                                  data$accidentclassification == "stepping or kneeling on object" | 
                                  data$accidentclassification == "ignition or explosion of gas or dust", 1, 0)
   
-  data$uncertain_class = ifelse(data$accidentclassification == "fall of roof or back" |
+  data$uncertain.class = ifelse(data$accidentclassification == "fall of roof or back" |
                                   data$accidentclassification == "handling of materials" |
                                   data$accidentclassification == "slip or fall of person" |
                                   data$accidentclassification == "fall of face/rib/pillar/side/highwall" |
@@ -593,7 +593,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                   data$accidentclassification == "other" |
                                   data$accidentclassification == "striking or bumping", 1, 0)
   
-  data$likely_type = ifelse(data$accidenttype == "struck by, nec" | 
+  data$likely.type = ifelse(data$accidenttype == "struck by, nec" | 
                               data$accidenttype == "struck by powered moving obj" |
                               data$accidenttype == "struck by rollng or slidng obj" |
                               data$accidenttype == "struck against moving object" |
@@ -603,7 +603,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                               data$accidenttype == "cght in, under, or btween, nec" |
                               data$accidenttype == "struck against moving object", 1, 0)
   
-  data$unlikely_type = ifelse(data$accidenttype == "fall from ladders" | 
+  data$unlikely.type = ifelse(data$accidenttype == "fall from ladders" | 
                                 data$accidenttype == "fall to lower level, nec" |
                                 data$accidenttype == "fall to wlkway or wrkng surfc" |
                                 data$accidenttype == "fall onto or against objects" |
@@ -619,55 +619,55 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                 data$accidenttype == "flash burns (electric)" |
                                 data$accidenttype == "over-exertion, nec", 1, 0)
   
-  data$uncertain_type = ifelse(data$accidenttype == "struck against stationary obj" |
+  data$uncertain.type = ifelse(data$accidenttype == "struck against stationary obj" |
                                  data$accidenttype == "fall frm mach, vehicle, equip" |
                                  data$accidenttype == "struck by falling object" |
                                  data$accidenttype == "struck by flying object" |
                                  data$accidenttype == "no value found" |
                                  data$accidenttype == "not elsewhere classified", 1, 0)
   
-  data$maybe_type = ifelse((data$accidenttype == "acc type, without injuries" |
+  data$maybe.type = ifelse((data$accidenttype == "acc type, without injuries" |
                               data$accidenttype == "struck against stationary obj" |
                               data$accidenttype == "fall frm mach, vehicle, equip" |
                               data$accidenttype == "struck by falling object" |
                               data$accidenttype == "struck by flying object" |
                               data$accidenttype == "no value found" |
                               data$accidenttype == "not elsewhere classified") & 
-                             data$false_keyword == 0, 1, 0)
+                             data$false.keyword == 0, 1, 0)
   
-  data$moving_vehcl = ifelse(!(data$equiptypecode %in% c("06", "13", "28", "53", "?")), 1, 0)
+  data$moving.vehcl = ifelse(!(data$equiptypecode %in% c("06", "13", "28", "53", "?")), 1, 0)
   
-  data$likely_equip = ifelse((data$equiptypecode %in% c("12", "23", "33", "34", "35", 
+  data$likely.equip = ifelse((data$equiptypecode %in% c("12", "23", "33", "34", "35", 
                                                         "37", "41", "61", "67")) &
-                               data$false_keyword == 0, 1, 0)
+                               data$false.keyword == 0, 1, 0)
   
-  data$unlikely_equip = ifelse(data$equiptypecode %in% c("06", "09", "15", "16", "20", 
+  data$unlikely.equip = ifelse(data$equiptypecode %in% c("06", "09", "15", "16", "20", 
                                                          "28", "29", "53", "55", "?"), 1, 0)
   
-  data$uncertain_equip = ifelse(data$equiptypecode %in% c("54", "71", "25", "13", "14"), 1, 0)
+  data$uncertain.equip = ifelse(data$equiptypecode %in% c("54", "71", "25", "13", "14"), 1, 0)
   
-  data$likely_source = ifelse((data$injurysourcecode %in% c("074", "077", "081", "087", "104", 
+  data$likely.source = ifelse((data$injurysourcecode %in% c("074", "077", "081", "087", "104", 
                                                             "105", "106", "107", "108", "110")) & 
-                                data$false_keyword == 0, 1, 0)
+                                data$false.keyword == 0, 1, 0)
   
-  data$unlikely_source = ifelse(data$injurysourcecode %in% c("003", "004", "006", "007", "008", 
+  data$unlikely.source = ifelse(data$injurysourcecode %in% c("003", "004", "006", "007", "008", 
                                                              "009", "012", "051", "089", "067", 
                                                              "068", "078", "079", "080", "083", 
                                                              "090", "092", "093", "096", "098", 
                                                              "112", "116", "125"), 1, 0)
   
-  data$uncertain_source = ifelse(data$likely_source == 0 & data$unlikely_source == 0, 1, 0)
+  data$uncertain.source = ifelse(data$likely.source == 0 & data$unlikely.source == 0, 1, 0)
   
-  data$likely_nature = ifelse(data$natureofinjury == "crushing", 1, 0)
+  data$likely.nature = ifelse(data$natureofinjury == "crushing", 1, 0)
   
-  data$unlikely_nature = ifelse(data$natureofinjury == "burn or scald (heat)" |
+  data$unlikely.nature = ifelse(data$natureofinjury == "burn or scald (heat)" |
                                   data$natureofinjury == "burn,chemicl-fume,compoun" |
                                   data$natureofinjury == "elect shock,electrocution" |
                                   data$natureofinjury == "hearing loss or impairmnt" |
                                   data$natureofinjury == "dust in eyes" |
                                   data$natureofinjury == "elect.arc burn-not contac", 1, 0)
   
-  data$uncertain_nature = ifelse(data$natureofinjury == "no value found" |
+  data$uncertain.nature = ifelse(data$natureofinjury == "no value found" |
                                    data$natureofinjury == "sprain,strain rupt disc" |
                                    data$natureofinjury == "cut,lacer,punct-opn wound" |
                                    data$natureofinjury == "contusn,bruise,intac skin" |
@@ -680,61 +680,61 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                    data$natureofinjury == "concussion-brain,cerebral" |
                                    data$natureofinjury == "joint,tendon,muscl inflam", 1, 0)
   
-  data$likely_actvty = ifelse(grepl("operate", data$mineractivity) | grepl("roof", data$mineractivity), 1, 0)
+  data$likely.actvity = ifelse(grepl("operate", data$mineractivity) | grepl("roof", data$mineractivity), 1, 0)
   
-  data$maybe_likely_actvty = ifelse(grepl("move/reel", data$mineractivity) | 
+  data$maybe.likely.actvity = ifelse(grepl("move/reel", data$mineractivity) | 
                                       grepl("handling supplies/materials", data$mineractivity), 1, 0)
   
-  data$unlikely_activity = ifelse(data$activitycode %in% c("009", "016", "020", "022", "025", 
+  data$unlikely.activity = ifelse(data$activitycode %in% c("009", "016", "020", "022", "025", 
                                                            "026", "027", "029", "030", "032", 
                                                            "034", "036", "075", "066", "065",
                                                            "056"), 1, 0)
   
-  data$uncertain_activity = ifelse(data$likely_actvty == 0 & 
-                                     data$maybe_likely_actvty == 0 & 
-                                     data$unlikely_activity == 0, 1, 0)
+  data$uncertain.activity = ifelse(data$likely.actvity == 0 & 
+                                     data$maybe.likely.actvity == 0 & 
+                                     data$unlikely.activity == 0, 1, 0)
   
-  data$likely_occup = ifelse(data$occupcode3digit %in% c("050", "046", "028", "016", "036"), 1, 0)
+  data$likely.occup = ifelse(data$occupcode3digit %in% c("050", "046", "028", "016", "036"), 1, 0)
   
-  data$unlikely_body = ifelse(data$bodypartcode %in% c("200", "340","420"), 1, 0)
+  data$unlikely.body = ifelse(data$bodypartcode %in% c("200", "340","420"), 1, 0)
   
   ##############################################################################
   
   # COMBINE LIKELY/MAYBE LIKELY/UNLIKELY GROUPS
   
-  data$keyword_pts = rowSums(data[, c("pin", "strike", "drillsteel", 
+  data$keyword.pts = rowSums(data[, c("pin", "strike", "drillsteel", 
                                       "trap", "collided", "hit", 
                                       "dropped", "ranover", "bumped", 
                                       "caught", "rolled", "between", 
                                       "wheel")], na.rm = TRUE)
   
-  data$neg_keyword_pts = rowSums(data[, c("jarring", "outsidevehicle", "steering", 
+  data$neg.keyword.pts = rowSums(data[, c("jarring", "outsidevehicle", "steering", 
                                           "bounced", "rock", "derail", 
                                           "cable", "strap", "trolleypole", 
-                                          "tool_break", "bodyseat", "headroof", 
+                                          "tool.break", "bodyseat", "headroof", 
                                           "hole")], na.rm = TRUE)
   
-  data$pos_pts = rowSums(data[, c("likely_class", "likely_equip", "likely_nature", 
-                                  "likely_source", "likely_type")], na.rm = TRUE)
+  data$pos.pts = rowSums(data[, c("likely.class", "likely.equip", "likely.nature", 
+                                  "likely.source", "likely.type")], na.rm = TRUE)
   
-  data$neg_pts = rowSums(data[, c("unlikely_class", "unlikely_equip", "unlikely_source", 
-                                  "unlikely_nature", "unlikely_type", "uncertain_activity")], na.rm = TRUE)
+  data$neg.pts = rowSums(data[, c("unlikely.class", "unlikely.equip", "unlikely.source", 
+                                  "unlikely.nature", "unlikely.type", "uncertain.activity")], na.rm = TRUE)
   
   ##############################################################################
   
   # GENERATE ADDITIONAL KEY WORDS USING EXISTING KEY WORDS
   
-  data$no_vehcl = ifelse(!grepl("VEHICLE", data$narrative), 1, 0)
+  data$no.vehcl = ifelse(!grepl("VEHICLE", data$narrative), 1, 0)
   
-  data$v_to_v = ifelse((grepl("(VEHICLE|drill|steel|bolter|shear|cutter|tire).{1,35}PINNED/STRUCK.{1,35}VEHICLE", data$narrative) |
+  data$v.to.v = ifelse((grepl("(VEHICLE|drill|steel|bolter|shear|cutter|tire).{1,35}PINNED/STRUCK.{1,35}VEHICLE", data$narrative) |
                           grepl("VEHICLE.{1,35}PINNED/STRUCK.{1,35}(VEHICLE|drill|steel|bolter|shear|cutter|tire)", data$narrative)) & 
                          data$hole == 0, 1, 0)
   
-  data$v_to_p = ifelse((grepl("(VEHICLE).{1,20}PINNED/STRUCK.{1,20}(PERSON|BODY)", data$narrative) |
+  data$v.to.p = ifelse((grepl("(VEHICLE).{1,20}PINNED/STRUCK.{1,20}(PERSON|BODY)", data$narrative) |
                           grepl("(PERSON|BODY).{1,20}PINNED/STRUCK.{1,20}(VEHICLE)", data$narrative)) & 
-                         data$false_keyword == 0, 1, 0)
+                         data$false.keyword == 0, 1, 0)
   
-  data$int_obj_strike = ifelse(grepl("( )(block|rock|cho(c)*k|chunk|rail|i-beam)( )", data$old_narrative) & 
+  data$int.obj.strike = ifelse(grepl("( )(block|rock|cho(c)*k|chunk|rail|i-beam)( )", data$old_narrative) & 
                                  grepl("VEHICLE", data$narrative) & 
                                  grepl("PINNED/STRUCK", data$narrative) &
                                  grepl("(tr(a)*m(m)*[^ ]{0,3}|op(e)*r(a)*t[^ ]{0,3}|back(in|ed).{1,10}VEHICLE|VEHICLE.{1,10}back(in|ed)|r(a|u)n|makin(g)*( )*(a)*( )*tu(r)*n|remote.{1,5}control|driv|pull)", data$narrative) &
@@ -747,39 +747,39 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   # COMBINE KEY WORDS AND LIKELY/MAYBE LIKELY/UNLIKELY GROUPS
   
-  data$holistic = ifelse((((data$likely_type == 1) | 
-                             (data$maybe_type == 1)) & 
-                            (data$likely_actvty == 1 | 
-                               data$maybe_likely_actvty == 1) & 
-                            (data$likely_class == 1) & 
-                            data$moving_vehcl == 1), 1, 0)
+  data$holistic = ifelse((((data$likely.type == 1) | 
+                             (data$maybe.type == 1)) & 
+                            (data$likely.actvity == 1 | 
+                               data$maybe.likely.actvity == 1) & 
+                            (data$likely.class == 1) & 
+                            data$moving.vehcl == 1), 1, 0)
   
-  data$potential_ps = ifelse(data$keyword == 1 | 
-                               data$likely_class == 1 | 
-                               data$v_to_v == 1 | 
-                               data$v_to_p == 1, 1, 0)
+  data$potential.ps = ifelse(data$keyword == 1 | 
+                               data$likely.class == 1 | 
+                               data$v.to.v == 1 | 
+                               data$v.to.p == 1, 1, 0)
   
-  data$likely_ps = ifelse((data$keyword == 1 | 
-                             data$likely_class == 1 | 
-                             data$v_to_v == 1 | 
-                             data$v_to_p == 1) &
+  data$likely.ps = ifelse((data$keyword == 1 | 
+                             data$likely.class == 1 | 
+                             data$v.to.v == 1 | 
+                             data$v.to.p == 1) &
                             (data$falling.accident == 0) &
                             (data$bodyseat == 0 & 
                                data$headroof == 0 & 
                                data$hole == 0 &
                                data$cable == 0 & 
                                data$strap == 0 & 
-                               data$tool_break == 0 &
+                               data$tool.break == 0 &
                                data$outsidevehicle == 0 & 
                                data$derail == 0 & 
                                data$bounced == 0  & 
                                data$trolleypole == 0 & 
-                               data$neg_roofbolt == 0 & 
-                               data$unlikely_nature == 0 & 
-                               data$unlikely_source == 0) &
-                            (data$neg_keyword_pts < 2 & 
-                               data$pos_pts > 1 & 
-                               data$neg_pts < 3), 1, 0)
+                               data$neg.roofbolt == 0 & 
+                               data$unlikely.nature == 0 & 
+                               data$unlikely.source == 0) &
+                            (data$neg.keyword.pts < 2 & 
+                               data$pos.pts > 1 & 
+                               data$neg.pts < 3), 1, 0)
   
   ##############################################################################
   
@@ -791,34 +791,34 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
            "bounced", "broke", "brokensteel", 
            "bumped", "by", "cable", 
            "canopy", "caught", "collided", 
-           "controls", "derail", "dif_vehicle", 
-           "digit", "documentno", "drill_action", 
+           "controls", "derail", "dif.vehicle", 
+           "digit", "documentno", "drill.action", 
            "drillsteel", "dropped", "entrapment", 
-           "falling.accident",  "false_keyword", "flew", 
+           "falling.accident",  "false.keyword", "flew", 
            "headcanopy", "headroof", "hit", 
-           "hole", "in_vehicle", "int_obj_strike", 
-           "jarring", "keyword", "keyword_pts", 
-           "likely_actvty", "likely_class", "likely_equip", 
-           "likely_nature", "likely_occup", "likely_ps", 
-           "likely_source", "likely_type", "loose", 
-           "loose_rbolting", "maybe_false_keyword", "maybe_likely_actvty", 
-           "maybe_type", "mineid", "moving_vehcl", 
-           "mult.vehcl", "neg_keyword_pts", "neg_pts", 
-           "neg_roofbolt", "neg.wrench", "no_vehcl", 
+           "hole", "in.vehicle", "int.obj.strike", 
+           "jarring", "keyword", "keyword.pts", 
+           "likely.actvity", "likely.class", "likely.equip", 
+           "likely.nature", "likely.occup", "likely.ps", 
+           "likely.source", "likely.type", "loose", 
+           "loose.rbolting", "maybe.false.keyword", "maybe.likely.actvity", 
+           "maybe.type", "mineid", "moving.vehcl", 
+           "mult.vehcl", "neg.keyword.pts", "neg.pts", 
+           "neg.roofbolt", "neg.wrench", "no.vehcl", 
            "num.body", "num.person", "num.pinstrike", 
            "num.vehicles", "num.unique.vehcl", "operating", 
-           "outsidevehicle", "pin", "pos_pts", 
-           "pos_roofbolt", "potential_ps", "PS", 
-           "psobject_test", "ranover", "resin", 
+           "outsidevehicle", "pin", "pos.pts", 
+           "pos.roofbolt", "potential.ps", "PS", 
+           "psobject.test", "ranover", "resin", 
            "rock", "rolled", "roofbolt", 
-           "shuttlecar_or_rbolter", "steering", "strap", 
-           "strike", "strikerib", "tool_break", "trap", 
-           "trolleypole", "type", "uncertain_activity", 
-           "uncertain_class", "uncertain_equip", "uncertain_nature", 
-           "uncertain_source", "uncertain_type", "unevenbottom", 
-           "unlikely_activity", "unlikely_body", "unlikely_class", 
-           "unlikely_equip", "unlikely_nature", "unlikely_source", 
-           "unlikely_type", "v_to_p", "v_to_v", "vcomp_test", 
+           "shuttlecar.or.rbolter", "steering", "strap", 
+           "strike", "strikerib", "tool.break", "trap", 
+           "trolleypole", "type", "uncertain.activity", 
+           "uncertain.class", "uncertain.equip", "uncertain.nature", 
+           "uncertain.source", "uncertain.type", "unevenbottom", 
+           "unlikely.activity", "unlikely.body", "unlikely.class", 
+           "unlikely.equip", "unlikely.nature", "unlikely.source", 
+           "unlikely.type", "v.to.p", "v.to.v", "vcomp.test", 
            "wheel", "wrench")
   
   if (purpose == "train.test") {

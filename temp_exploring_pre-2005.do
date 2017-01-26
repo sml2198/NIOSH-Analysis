@@ -32,3 +32,6 @@ foreach var of varlist accidenttype mineractivity accidentclassification degreeo
 	replace `var' = . if inlist(`var', "no value found", "nec", "miscellaneous,nec", "other", "unknown", "other, nec", "unclassified, insufficient data")
 
 }
+
+
+* look at union and longwall next

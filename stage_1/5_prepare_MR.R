@@ -20,8 +20,8 @@
 
 # define root directory
 # root = "/NIOSH-Analysis"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
 cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
@@ -77,13 +77,26 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   data$MR = ifelse(data$MR == "YES" & data$accident.only == 0, 1, 0)
   data$MR = factor(ifelse(data$MR == 1, "YES", "NO"))
   
-  # clean "not-found" values
-  data$natureofinjury = ifelse(data$natureofinjury == "unclassified,not determed", "no value found", data$natureofinjury)
-
   # clean number typos
   data$numbertypo = ifelse(grepl("[a-z][0-9][a-z]", data$narrative), 1, 0)
   for (i in 0:9) {
     data[data$numbertypo == 1, "narrative"] = gsub(i, "", data[data$numbertypo == 1, "narrative"])
+  }
+  
+  # clean "not-found" values
+  data$natureofinjury = ifelse(data$natureofinjury == "unclassified,not determed", "no value found", data$natureofinjury)
+
+  # "character" vars are factor variables
+  var.classes = sapply(data[,names(data)], class)
+  charac.vars = names(var.classes[c(grep("character", var.classes), grep("factor", var.classes))])
+  charac.vars = charac.vars
+  
+  for (i in 1:length(charac.vars)) {
+    data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
+                                       data[,charac.vars[i]] == "unknown" | 
+                                       data[,charac.vars[i]] == "?" | 
+                                       data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
+    data[, charac.vars[i]] = factor(data[, charac.vars[i]])
   }
   
   # bye
@@ -302,10 +315,25 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                data$mineractivity == "inspect equipment" & 
                                data$accident.only == 0, 1, 0)
   
+  ############
+  ############
+  ############
+  ############
+  
   data$likely.class = ifelse(data$accidentclassification == "handtools (nonpowered)" |
                                data$accidentclassification == "machinery" |
                                data$accidentclassification == "electrical" & 
                                data$accident.only == 0, 1, 0)
+  
+  data[, "likely.class2"] = ifelse(match("handtools (nonpowered)", data[,"accidentclassification"]) |
+                                   match("machinery", data[,"accidentclassification"]) |
+                                   match("electrical", data[,"accidentclassification"]) & 
+                                    data$accident.only == 0, 1, 0)
+  
+  ############
+  ############
+  ############
+  ############
   
   data$likely.source = ifelse((data$sourceofinjury == "wrench" | 
                                  data$sourceofinjury == "knife" |
@@ -440,8 +468,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
            "MR", "mrworker", "oil", 
            "pain", "power", "pullbelt", 
            "remove", "repair", "reposition", 
-           "rethread", "retrack", "rib.hole", 
-           "roller", "roof.bolt", "rplace", 
+           "rethread", "retrack", "mineid",
+           "roller", "rplace", 
            "service", "shovel", "splice", 
            "surgery", "tests", "tighten", 
            "tire", "toolbox", "trash", 
@@ -451,7 +479,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   if (purpose == "train.test") {
       # 1018 rows; 58 columns; unique on documentno
     data = data[, (names(data) %in% keep)]
-    data$accidentdate = data$mineid = NULL
+    data$accidentdate = NULL #data$mineid = NULL
   }
   
   if (purpose == "classify") {

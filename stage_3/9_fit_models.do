@@ -268,9 +268,6 @@ foreach inj_type in `injury_types' {
 					
 					/****** BEGINNING PREFERRED MODELS ********/
 					
-					
-					* pick up here 
-					
 					eststo clear
 					local cmd ""
 					local cmd "`model' `depvar' `cov_of_interest' `covariates' ib(freq).time, vce(cl mineid) `suffix' iter(500)" // for inference (on all data)
