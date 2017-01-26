@@ -16,6 +16,10 @@
 
 ################################################################################
 
+library(foreign)
+
+################################################################################
+
 # set root directory
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
@@ -27,25 +31,89 @@ merged.path = paste0(root, "/2_merged", collapse = NULL)
 prepped.path = paste0(root, "/5_prepared", collapse = NULL)
 
 # inputs
-  # prediction-ready MR data
-MR.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1", collapse = NULL)
+  # prediction-ready MR data (part 1)
+MR.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1.rds", collapse = NULL)
   # prediction-ready PS data
-PS.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1", collapse = NULL)
-
+PS.data.in.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1.rds", collapse = NULL)
+  # cleaned union/longwall data
+union.longwall.in.file.name = paste0(clean.path, "/clean_union_longwall.rds", collapse = NULL)
 
 # outputs
-  # prediction-ready MR data with union and longwall indicators
+  # prediction-ready MR data with union and longwall indicators (part 1)
 MR.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_MR_part_1_ulw", collapse = NULL)
-  # prediction-ready PS data with union and longwall indicators
+  # prediction-ready PS data with union and longwall indicators (part 1)
 PS.data.out.file.name = paste0(prepped.path, "/prepared_stage_3_PS_part_1_ulw", collapse = NULL)
 
 ################################################################################
+
+# LOAD DATA
+
+  # 24403 observations, 4 variables, unique on mineid-year
+ulw = readRDS(union.longwall.in.file.name)
 
 for (injury in c("MR", "PS")) { # create separate datasets for MR and PS injuries
   
   ##############################################################################
 
+  # load prepped injury-specific datasets, unique at mineid-year
+  if (injury == "MR") {
+      # 6253 observations, 350 variables, unique on mineid-year
+    data = readRDS(MR.data.in.file.name)
+  }
+  
+  if (injury == "PS") {
+      # 6253 observations, 110 variables, unique on mineid-year
+    data = readRDS(PS.data.in.file.name)
+  }
+  
+  # merge on union and longwall fields
+  merged.data = merge(data, ulw, by = c("mineid", "year"), all = TRUE)
+  
+  # drop non-merging fields
+    # MR: 6253 observations, 352 variables, unique on mineid-year
+    # PS: 6253 observations, 112 variables, unique on mineid-year
+  merged.data = merged.data[complete.cases(merged.data$hours),]
+  
+  ##############################################################################
+  
+  # OUTPUT DATA
+  
+  # create file names
+  if (injury == "MR") {
+    r.file.name = paste0(MR.data.out.file.name, ".rds")
+    stata.file.name = paste0(MR.data.out.file.name, ".dta")
+  }
+  
+  if (injury == "PS") {
+    r.file.name = paste0(PS.data.out.file.name, ".rds")
+    stata.file.name = paste0(PS.data.out.file.name, ".dta")
+  }
+  
+  # output prediction-ready mine-year data as an R dataset
+    # MR: 6253 rows; 352 columns; unique on mineid-year
+    # PS: 6253 rows; 112 columns; unique on mineid-year
+  saveRDS(merged.data, file = r.file.name)
+  
+  # remove special characters from data names so it's stata-friendly
+  stata.names = names(merged.data)
+  stata.names = gsub("\\.", "_", stata.names)
+  stata.names = gsub("-", "_", stata.names)
+  stata.data = merged.data
+  names(stata.data) = stata.names
+  
+  # output prediction-ready mine-year data as a dta for stata
+    # MR: 6253 rows; 352 columns; unique on mineid-year
+    # PS: 6253 rows; 112 columns; unique on mineid-year
+  write.dta(stata.data, file = stata.file.name)
+  
+  # bye
+  rm(stata.names, stata.data, r.file.name, stata.file.name)
+  
+  ################################################################################
+  
 } # end of the PS/MR loop
+
+################################################################################
 
 rm(list = ls())
 

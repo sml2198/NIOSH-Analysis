@@ -44,16 +44,16 @@ local train_test_split "2012" // targeting algorithms
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 /* includes "longwall" and "union" indicators  - you MUST  have access to EIA and
  NIOSH data for this test to work! */
-*local specification_check "on" 
-local specification_check "off"
+local specification_check "on" 
+*local specification_check "off"
 
 /* PRODUCE TABLES WITH ADDITIONAL COVARIATES? */
 local report_add_covars "off" // preferred models
 * local report_add_covars "on" // if you want to produce tables reports all model covariates EXCEPT significant subparts
 
 /*********** RUN NULL MODELS? *************/
-local run_nulls "on" // if you want to run the nulls (preferred)
-*local run_nulls "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
+*local targeting_algorithms "on" // if you want to run the nulls (preferred)
+local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
 
 /*******************************************************************************
 NULL MODEL KEY
@@ -129,13 +129,12 @@ foreach inj_type in `injury_types' {
 		}
 	
 		*+- if doing the union/longwall specification test, create "ulw" subfolder, and file name extension ("_ulw")
+		if "`specification_check'" != "on" local sub_folder ""
 		if "`specification_check'" == "on" local sub_folder "ulw/"
 		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/tex/`sub_folder'"
 		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/csv/`sub_folder'"
 		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/dta/`sub_folder'"
-		if "`specification_check'" != "on" local sub_folder ""
 		if "`specification_check'" == "on" local spec_file_ext "_ulw"
-		if "`specification_check'" == "on" local spec_null_file_ext "_ulw"
 		if "`specification_check'" == "on" local title_options " (Specification Test: Union and Longwall Indicators)"
 
 		*+- identify training (0) & test (1) set based on specified cutoff year - used for robustness assessments
@@ -324,10 +323,12 @@ foreach inj_type in `injury_types' {
 					} // converge == 1 
 					
 					* run model again (just on training set) to generate predictions (just on test set) and store in new variable
-					noi di "`cmd_pred'"
-					cap qui eststo: `cmd_pred'
-					qui predict `inj_type'_`outcome'_`lag'_pred if set == 1
-					pause "complete: `inj_type' `outcome' lag `lag' (`viol_form')"
+					if "`targeting_algorithms'" != "off" {
+						noi di "`cmd_pred'"
+						cap qui eststo: `cmd_pred'
+						qui predict `inj_type'_`outcome'_`lag'_pred if set == 1
+						pause "complete: `inj_type' `outcome' lag `lag' (`viol_form')"
+					}
 				
 			local tex_covars ""
 			local sig_vars ""
@@ -338,7 +339,7 @@ foreach inj_type in `injury_types' {
 			
 				pause "beginning null models"
 				/****** BEGINNING NULL MODELS ********/
-				if "`run_nulls'" != "off" {
+				if "`targeting_algorithms'" != "off" {
 				
 				*+- run null models (on training set) to generate predictions (on test set) and store predictions in new variable
 				
@@ -364,11 +365,11 @@ foreach inj_type in `injury_types' {
 					predict `inj_type'_`outcome'_null_3 if set == 1
 					pause "all `inj_type' `outcome' complete"	
 				
-				} // run null models
+				} // targeting_algoritghms
 			} // outcome form (C or B)
 		
 		* save new data (with produced predictions as new vars) - needs to happen outside outcome loop
-		if "`run_nulls'" != "off" {
+		if "`targeting_algorithms'" != "off" {
 			drop p* sp*
 			save "$PROJECT_ROOT/results/dta/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.dta", replace
 			export delimited using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.csv", replace

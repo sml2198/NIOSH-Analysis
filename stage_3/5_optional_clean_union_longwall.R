@@ -48,7 +48,7 @@ longwall.8.in.file.name = paste0(originals.path, "/NIOSH-data/Data from Linda Mc
 
 # output
   # clean data with mine-year specific union and longwall information
-ulw.out.file.name = "X:/Projects/Mining/NIOSH/analysis/data/2_cleaned/clean_union_longwall.rds"
+ulw.out.file.name = paste0(clean.path, "/clean_union_longwall.rds", collapse = NULL)
 
 # create file paths (recursive = TRUE will create this file structure if it does not exist)
 dir.create(clean.path, recursive = TRUE)

@@ -304,21 +304,54 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     uniqv[which.max(tabulate(match(x, uniqv)))]
   }
   
+  imputation.method = 3
+  data = data[order(data$documentno), ]
+  set.seed(181994)
   # impute variables by type
-  for (i in 1:length(num.vars)) {
-      i_rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
+  
+  if (imputation.method == 1 | imputation.method == 2) {
+    for (i in 1:length(num.vars)) {
+      data[, num.vars[i]] = ifelse(is.na(data[, num.vars[i]]), mean(data[, num.vars[i]]), data[, num.vars[i]])
+    }
+    if (imputation.method == 2) {
+      for (i in 1:length(num.vars)) {
+        data[, num.vars[i]] = ifelse(is.na(data[, num.vars[i]]), median(data[, num.vars[i]]), data[, num.vars[i]])
+      }
+    }
+    for (i in 1:length(charac.vars)) {
+      data[, charac.vars[i]] = ifelse(is.na(data[, charac.vars[i]]), modus(data[, charac.vars[i]]), data[, charac.vars[i]])
+    }
+  } else if (imputation.method == 3) {
+    for (i in 1:length(num.vars)) {
+      i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
       while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
-        replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
-        data[i_rowsmissing, num.vars[i]] = data[replace_rows, num.vars[i]]
+        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+        data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
       }
-  }
-  for (i in 1:length(charac.vars)) {
-      i_rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
+    }
+    for (i in 1:length(charac.vars)) {
+      i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
       while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
-        replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
-        data[i_rowsmissing, charac.vars[i]] = data[replace_rows, charac.vars[i]]
+        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+        data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
       }
-  }
+    }
+  } 
+  
+  #for (i in 1:length(num.vars)) {
+   #   i_rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
+    #  while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
+     #   replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
+      #  data[i_rowsmissing, num.vars[i]] = data[replace_rows, num.vars[i]]
+      #}
+  #}
+  #for (i in 1:length(charac.vars)) {
+   #   i_rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
+    #  while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
+     #   replace_rows = sample(setdiff(row.names(data), i_rowsmissing), length(i_rowsmissing), replace = T)
+      #  data[i_rowsmissing, charac.vars[i]] = data[replace_rows, charac.vars[i]]
+      #}
+  #}
   
   ##############################################################################
   
