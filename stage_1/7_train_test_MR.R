@@ -50,7 +50,7 @@ rm(root, prepared.path)
 ################################################################################
 
 # set seed to enable reproducible results
-set.seed(625)
+set.seed(626)
 
 ################################################################################
 
@@ -65,6 +65,9 @@ data = readRDS(prepared.train.test.in.file.name)
 
 # bye
 rm(prepared.train.test.in.file.name)
+
+data$likely.class = data$maybe.activity = NULL
+data$mineid = as.numeric(data$mineid)
 
 ################################################################################
 

@@ -18,12 +18,6 @@
 
 ################################################################################
 
-for (i in 1:31) {
-  x = eval(parse(text = paste0("seed", i)))
-  y = eval(parse(text = paste0("new.seed", i)))
-  print(all(x == y))
-}
-
 # define root directory
 # root = "/NIOSH-Analysis"
 # root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
@@ -53,6 +47,9 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 
 # bye
 rm(root, cleaned.path, merged.path, prepared.path)
+
+SEED = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/omgseeeed.txt")
+SEED = SEED[, 1]
 
 ################################################################################
 purpose = "train.test"
@@ -288,70 +285,107 @@ purpose = "train.test"
   
   ##############################################################################
   
+  ### ADD COMMENTS HERE
+  
   # IMPUTATION
   
-  num.vars = c(paste("temp", 1:16, sep = "."))
-  
-  charac.vars = c(paste("temp", 17:18, sep = "."), 
-                  "accidentclassification", "accidenttype", "sourceofinjury", "natureofinjury", 
-                  paste("temp", 19:23, sep = "."), 
-                  "mineractivity", "occupation", 
-                  paste("temp", 24:25, sep = "."))
-  
-  data[, paste("temp", 1:25, sep = ".")] = NA
-  
-  set.seed(100)
-  for (var in names(data)[grepl("temp", names(data))]) {
-    data[, var] = sample(1:100, nrow(data), replace = TRUE)
-    data[, var] = ifelse(data[, var] > 50, NA, data[, var])
-  }
-
-  for (var in num.vars) {
-    data[, var] = as.numeric(data[, var])
-  }
-  
-  for (var in charac.vars) {
-    data[, var] = as.character(data[, var])
-  }
-
-  for (i in 1:length(charac.vars)) {
-    data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
-                                       data[,charac.vars[i]] == "unknown" | 
-                                       data[,charac.vars[i]] == "?" | 
-                                       data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
-    data[, charac.vars[i]] = factor(data[, charac.vars[i]])
-  }
-  
-  for (var in charac.vars) {
-    print(sum(is.na(data[, var])))
-  }
-  
-  rm(.Random.seed, envir=globalenv())
-  set.seed(181994)
-  j = 0
-  for (i in 1:length(num.vars)) {
-    i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
-    while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
-      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-      
-      j = j + 1
-      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
-      
-      data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
+  if (purpose == "train.test") {
+    
+    num.vars = c(paste("temp", 1:16, sep = "."))
+    
+    charac.vars = c(paste("temp", 17:18, sep = "."), 
+                    "accidentclassification", "accidenttype", "sourceofinjury", "natureofinjury", 
+                    paste("temp", 19:23, sep = "."), 
+                    "mineractivity", "occupation", 
+                    paste("temp", 24:25, sep = "."))
+    
+    data[, paste("temp", 1:25, sep = ".")] = NA
+    
+    set.seed(100)
+    for (var in names(data)[grepl("temp", names(data))]) {
+      data[, var] = sample(1:100, nrow(data), replace = TRUE)
+    }
+    
+    data$temp.1[1:400] = NA
+    data$temp.2[1:372] = NA
+    data$temp.3[1:379] = NA
+    data$temp.4[1:89] = NA
+    data$temp.5[1:50] = NA
+    data$temp.6[1:1] = NA
+    data$temp.7[1:2] = NA
+    data$temp.8[1:762] = NA
+    data$temp.9[1:396] = NA
+    data$temp.10[1:767] = NA
+    data$temp.11[1:1002] = NA
+    data$temp.12[1:388] = NA
+    data$temp.13[1:358] = NA
+    data$temp.14[1:343] = NA
+    data$temp.15[1:1016] = NA
+    data$temp.16[1:404] = NA
+    data$temp.17[1:996] = NA
+    data$temp.18[1:137] = NA
+    data$temp.19[1:355] = NA
+    data$temp.20[1:624] = NA
+    data$temp.21[1:746] = NA
+    data$temp.22[1:836] = NA
+    data$temp.23[1:655] = NA
+    data$temp.24[1:1] = NA
+    data$temp.25[1:424] = NA
+    
+    for (var in num.vars) {
+      data[, var] = as.numeric(data[, var])
+    }
+    
+    for (var in charac.vars) {
+      data[, var] = as.character(data[, var])
+    }
+    
+    for (i in 1:length(charac.vars)) {
+      data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
+                                         data[,charac.vars[i]] == "unknown" | 
+                                         data[,charac.vars[i]] == "?" | 
+                                         data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
+      data[, charac.vars[i]] = factor(data[, charac.vars[i]])
+    }
+    
+    for (var in charac.vars) {
+      print(var)
+      print(sum(is.na(data[, var])))
+    }
+    
+    set.seed(100)
+    j = 0
+    for (i in 1:length(num.vars)) {
+      i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
+      while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
+        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+        
+        j = j + 1
+        
+        if (j == 1) {
+          .Random.seed = SEED
+        }
+        
+        assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+        
+        data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
+      }
+    }
+    for (i in 1:length(charac.vars)) {
+      i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
+      while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
+        replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+        
+        j = j + 1
+        assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+        
+        data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
+        
+      }
     }
   }
-  for (i in 1:length(charac.vars)) {
-    i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
-    while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
-      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-      
-      j = j + 1
-      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
-      
-      data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
-      
-    }
-  }
+  
+  #all(seed2 == new.seed2)
   
   ##############################################################################
   
@@ -363,17 +397,17 @@ purpose = "train.test"
   data$maybe.occup = ifelse(grepl("electrician", data$occupation) & 
                               data$accident.only == 0, 1, 0)
   
-  data$likely.activy = ifelse(grepl("maintenance", data$mineractivity) | 
-                                grepl("wet down working place", data$mineractivity) & 
-                                data$accident.only == 0, 1, 0)
+  data$likely.activity = ifelse(grepl("maintenance", data$mineractivity) | 
+                                  grepl("wet down working place", data$mineractivity) & 
+                                  data$accident.only == 0, 1, 0)
   
-  data$maybe.activy = ifelse(data$mineractivity == "handling supplies/materials" |
-                               data$mineractivity == "hand tools (not powered)" | 
-                               data$mineractivity == "no value found" | 
-                               data$mineractivity == "unknown" | 
-                               data$mineractivity == "clean up" | 
-                               data$mineractivity == "inspect equipment" & 
-                               data$accident.only == 0, 1, 0)
+  data$maybe.activity = ifelse(data$mineractivity == "handling supplies/materials" |
+                                 data$mineractivity == "hand tools (not powered)" | 
+                                 data$mineractivity == "no value found" | 
+                                 data$mineractivity == "unknown" | 
+                                 data$mineractivity == "clean up" | 
+                                 data$mineractivity == "inspect equipment" & 
+                                 data$accident.only == 0, 1, 0)
   
   data$likely.class = ifelse(data$accidentclassification == "handtools (nonpowered)" |
                                data$accidentclassification == "machinery" |
@@ -505,10 +539,10 @@ purpose = "train.test"
            "cover", "dismantl", "documentno", 
            "falling.accident", "false.keyword", "fix", 
            "grease", "helping", "hoist", 
-           "inspect", "install", "likely.activy", 
+           "inspect", "install", "likely.activity", 
            "likely.class", "likely.keyword", "likely.occup", 
            "likely.source", "loosen", "lug", 
-           "maintain", "maybe.activy", "maybe.keyword", 
+           "maintain", "maybe.activity", "maybe.keyword", 
            "maybe.occup", "mineid", "moretools", 
            "MR", "mrworker", "oil", 
            "pain", "power", "pullbelt", 
@@ -564,7 +598,7 @@ purpose = "train.test"
     rm(prepared.classify.out.file.name)
   }
     
-}
+# }
 
 ################################################################################
 
