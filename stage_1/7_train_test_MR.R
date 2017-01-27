@@ -67,7 +67,7 @@ data = readRDS(prepared.train.test.in.file.name)
 rm(prepared.train.test.in.file.name)
 
 data$likely.class = data$maybe.activity = NULL
-data$mineid = as.numeric(data$mineid)
+data$mineid = as.numeric(as.character(data$mineid))
 
 ################################################################################
 

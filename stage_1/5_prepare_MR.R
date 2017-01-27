@@ -48,8 +48,7 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 # bye
 rm(root, cleaned.path, merged.path, prepared.path)
 
-SEED = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/omgseeeed.txt")
-SEED = SEED[, 1]
+SEED = read.csv("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/seeds3.csv")
 
 ################################################################################
 purpose = "train.test"
@@ -353,7 +352,7 @@ purpose = "train.test"
       print(sum(is.na(data[, var])))
     }
     
-    set.seed(100)
+    set.seed(625)
     j = 0
     for (i in 1:length(num.vars)) {
       i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
@@ -362,9 +361,7 @@ purpose = "train.test"
         
         j = j + 1
         
-        if (j == 1) {
-          .Random.seed = SEED
-        }
+        #.Random.seed = SEED[, j]
         
         assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
         
@@ -377,6 +374,9 @@ purpose = "train.test"
         replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
         
         j = j + 1
+        
+        #.Random.seed = SEED[, j]
+        
         assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
         
         data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
@@ -384,8 +384,6 @@ purpose = "train.test"
       }
     }
   }
-  
-  #all(seed2 == new.seed2)
   
   ##############################################################################
   
@@ -568,9 +566,9 @@ purpose = "train.test"
   }
   
   # enforce factor storage
-  for (var in names(data)) {
-    data[, var] = factor(data[, var])
-  }
+  #for (var in names(data)) {
+  #  data[, var] = factor(data[, var])
+  #}
 
   # randomly sort data (in case it was ordered)
   set.seed(626)
@@ -603,6 +601,6 @@ purpose = "train.test"
 ################################################################################
 
 # bye
-rm(list = ls())
+# rm(list = ls())
 
 ################################################################################
