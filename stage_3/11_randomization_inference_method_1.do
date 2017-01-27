@@ -40,12 +40,12 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "4" // preferred models 
-* local lag_levels "3 5" // robustness check
+local lag_levels "1 4" // preferred models 
+*local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
-local num_iterations = 50
-local max_iterations = 60 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local num_iterations = 1000
+local max_iterations = 1200 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -57,13 +57,13 @@ local specification_check "off"
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "PS"
+local injury_types "PS MR"
 
 /****** OUTCOME FORMS *********************/
-local outcome_forms "C"
+local outcome_forms "B C"
 
 /****** RATE VS. COUNTS *******************/
-local violation_forms "rate"
+local violation_forms "rate count"
 
 /****** COVARIATES ************************/
 * time is included (unlike in fit models) because no prediction is done here
@@ -87,22 +87,6 @@ cap mkdir "$PROJECT_ROOT/results/dta/lag_3/"
 cap mkdir "$PROJECT_ROOT/results/dta/lag_5/"
 
 /*******************************************************************************
-********************************************************************************
-
-// MODEL LABEL KEY
-
-Model W.X.Y.Z
-  W
-	MR: Maintenance and repair injuries
-	PS: Pinning and striking injuries
-  X
-    C: response variable is count of injuries
-    B: response variable is binary of injuries 
-  Z
-    1: inj_t ~ viol_(t_-1)
-	4: inj_t ~ viol_(t_-1 + t_-2 + t_-3 + t_-4)
-
-*******************************************************************************
 ********************************************************************************/
 
 foreach inj_type in `injury_types' {
@@ -110,7 +94,8 @@ foreach inj_type in `injury_types' {
 	
 		*+- set file extension for non-rate models
 		local violform_ext ""
-		if "`viol_form'" != "rate" local violform_ext "non-rate_"
+		if "`viol_form'" == "rate" local violform_ext "VR_"
+		if "`viol_form'" != "rate" local violform_ext "VC_"
 		
 		foreach outcome in `outcome_forms' {	
 		
@@ -203,7 +188,7 @@ foreach inj_type in `injury_types' {
 				
 				*+- run preferred models once so we can capture the sample 
 					*+- the sample is injury, violation type, outcome type, and lag specific at this point
-				local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(150)"
+				local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(200)"
 				cap qui `cmd'
 				keep if e(sample)
 				pause "sample captured, non-sample observations dropped, ready to iterate"
@@ -278,7 +263,7 @@ foreach inj_type in `injury_types' {
 						keep in 1/`x'
 						keep *shuffled_c
 					}
-				} // num iterations/while
+				} // while statement - loop that iterates
 				pause "iterations complete for model `inj_type' `viol_form' `outcome' `lag'"
 				
 				*+- find and drop rows with missing values(non-convergent observations) 
@@ -301,7 +286,6 @@ foreach inj_type in `injury_types' {
 				local lag_5_vars ""
 				local covars ""
 				local cov_of_interest ""
-				local convergence_count ""
 				restore 
 				pause "data restored"
 					

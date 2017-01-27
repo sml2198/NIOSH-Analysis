@@ -30,18 +30,17 @@ csvroot = paste0(root, "/csv/", collapse = NULL)
 # specification.test = "on" # analyze results from models with union & longwall indicators
 specification.test = "off"
 
-lag_3 = "on" # cannot be on at same time as ulw specification test. will also run lag 5.
-# lag_3 = "off"
+# lag_3 = "on" # cannot be on at same time as ulw specification test. will also run lag 5.
+lag_3 = "off"
 
-lag_5 = "on" # cannot be on at same time as ulw specification test. will also run lag 3.
-# lag_5 = "off"
+#lag_5 = "on" # cannot be on at same time as ulw specification test. will also run lag 3.
+lag_5 = "off"
 
 # WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
 
-# analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-analyze.method.1 = "off"
+analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
+# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
 
-# append.models = "on" # make a csv of each model set appended - cannot be done if analyzing method 1 
 if (analyze.method.1 == "on") {
   append.models = "off"
 }
@@ -51,17 +50,11 @@ if (analyze.method.1 == "off") {
 
 ################################################################################
 
-# WHICH MODELS DO YOU WANT TO RUN?
-
-injury = "PS"
-injury = "MR"
-
-subpart.form = "rate"
-subpart.form = "not-a-rate"
+# LOOP THROUGH MODELS
 
 for (injury in c("MR", "PS")) {
   
-  for (form in c("VR", "VC")) {
+  for (form in c("VC", "VR")) {
   
   ################################################################################
   
@@ -89,34 +82,34 @@ for (injury in c("MR", "PS")) {
   # CSVS WITH LISTS OF SIGNIFICANT VARIABLES FROM PREFERRED MODELS
   
   if (lag_3 == "off" & lag_5 == "off") {
-    B.1.sig = paste0(csvroot, injury, "_B_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
-    B.4.sig = paste0(csvroot, injury, "_B_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
-    C.1.sig = paste0(csvroot, injury, "_C_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
-    C.4.sig = paste0(csvroot, injury, "_C_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)  
+    B.1.sig.in.file = paste0(csvroot, injury, "_B_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    B.4.sig.in.file = paste0(csvroot, injury, "_B_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    C.1.sig.in.file = paste0(csvroot, injury, "_C_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    C.4.sig.in.file = paste0(csvroot, injury, "_C_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)  
   }
   if (lag_3 == "on" | lag_5 == "on") {
       # never going to be true at same time as union-longwall test
-    B.1.sig = paste0(csvroot3, injury, "_B_3_", form, "_sig_2012.csv", collapse = NULL)
-    B.4.sig = paste0(csvroot5, injury, "_B_5_", form, "_sig_2012.csv", collapse = NULL)
-    C.1.sig = paste0(csvroot3, injury, "_C_3_", form, "_sig_2012.csv", collapse = NULL)
-    C.4.sig = paste0(csvroot5, injury, "_C_5_", form, "_sig_2012.csv", collapse = NULL)  
+    B.1.sig.in.file = paste0(csvroot3, injury, "_B_3_", form, "_sig_2012.csv", collapse = NULL)
+    B.4.sig.in.file = paste0(csvroot5, injury, "_B_5_", form, "_sig_2012.csv", collapse = NULL)
+    C.1.sig.in.file = paste0(csvroot3, injury, "_C_3_", form, "_sig_2012.csv", collapse = NULL)
+    C.4.sig.in.file = paste0(csvroot5, injury, "_C_5_", form, "_sig_2012.csv", collapse = NULL)  
   }
     
   # RESULTS OF RANDOMIZATION PROCEDURE METHOD 1 (must be Stata 12 .dtas)
   
   if (lag_3 == "off" & lag_5 == "off") {
-    B_1 = paste0(dtaroot, injury, "_B_1_", form, "_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot, injury, "_B_4_", form, "_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot, injury, "_C_1_", form, "_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot, injury, "_C_4_", form, "_ri.dta", collapse = NULL)
+    B.1.ri.in.file = paste0(dtaroot, injury, "_B_1_", form, "_ri.dta", collapse = NULL)
+    B.4.ri.in.file = paste0(dtaroot, injury, "_B_4_", form, "_ri.dta", collapse = NULL)
+    C.1.ri.in.file = paste0(dtaroot, injury, "_C_1_", form, "_ri.dta", collapse = NULL)
+    C.4.ri.in.file = paste0(dtaroot, injury, "_C_4_", form, "_ri.dta", collapse = NULL)
   }
   if (lag_3 == "on" | lag_5 == "on") {
-    B_1 = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
+    B.1.ri.in.file = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
+    B.4.ri.in.file = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
+    C.1.ri.in.file = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
+    C.4.ri.in.file = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
   }
-
+  
   ################################################################################
   
   # NAME OUTPUT FILES: CSVS OF SUBPARTS THAT ARE ROBUSTLY SIGNIFICANT AFTER RANDOMZIATION INFERENCE METHOD 1
@@ -128,7 +121,7 @@ for (injury in c("MR", "PS")) {
     C.4.out.file = paste0(csvroot, injury, "_C_4_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     
     # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_", form, ulw.ext, ".csv",  collapse = NULL)
+    all.out.file = paste0(csvroot, injury, "_", form, ulw.ext, ".csv",  collapse = NULL)
   }
   if (lag_3 == "on" | lag_5 == "on") {
     B.4.out.file = paste0(csvroot3, injury, "_B_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
@@ -137,7 +130,7 @@ for (injury in c("MR", "PS")) {
     C.4.out.file = paste0(csvroot5, injury, "_C_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     
     # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_", form, "_3-5", ulw.ext, ".csv",  collapse = NULL)
+    all.out.file = paste0(csvroot, injury, "_", form, "_3-5", ulw.ext, ".csv",  collapse = NULL)
   }
   
   ################################################################################
@@ -145,7 +138,7 @@ for (injury in c("MR", "PS")) {
   # LOAD DATA FROM PREFERRED MODELS
   
   # load in preferred model results (significant subparts)
-  B.1.sig = read.table(B.1.sig, sep = ",")
+  B.1.sig = read.table(B.1.sig.in.file, sep = ",")
   names = c("subpart", "coefficient", "pvalue")
   names(B.1.sig) = names
   B.1.sig = B.1.sig[c(4: nrow(B.1.sig)),]
@@ -153,21 +146,21 @@ for (injury in c("MR", "PS")) {
   B.1.sig$pvalue = as.numeric(as.character(B.1.sig$pvalue))
   B.1.sig$coefficient = gsub("\\*", "", B.1.sig$coefficient)
   
-  B.4.sig = read.table(B.4.sig, sep = ",")
+  B.4.sig = read.table(B.4.sig.in.file, sep = ",")
   names(B.4.sig) = names
   B.4.sig = B.4.sig[c(4: nrow(B.4.sig)),]
   B.4.sig = B.4.sig[which(B.4.sig$pvalue != "."),]
   B.4.sig$pvalue = as.numeric(as.character(B.4.sig$pvalue))
   B.4.sig$coefficient = gsub("\\*", "", B.4.sig$coefficient)
   
-  C.1.sig = read.table(C.1.sig, sep = ",")
+  C.1.sig = read.table(C.1.sig.in.file, sep = ",")
   names(C.1.sig) = names
   C.1.sig = C.1.sig[c(4: nrow(C.1.sig)),]
   C.1.sig = C.1.sig[which(C.1.sig$pvalue != "."),]
   C.1.sig$pvalue = as.numeric(as.character(C.1.sig$pvalue))
   C.1.sig$coefficient = gsub("\\*", "", C.1.sig$coefficient)
   
-  C.4.sig = read.table(C.4.sig, sep = ",")
+  C.4.sig = read.table(C.4.sig.in.file, sep = ",")
   names(C.4.sig) = names
   C.4.sig = C.4.sig[c(4: nrow(C.4.sig)),]
   C.4.sig = C.4.sig[which(C.4.sig$pvalue != "."),]
@@ -178,17 +171,18 @@ for (injury in c("MR", "PS")) {
   
   # FORMAT DATA FROM PREFERRED MODELS
   
-  for (d in c("B_1", "B_4", "C_1", "C_4")) {
-    data = eval(parse(text = paste(d, "sig", sep = "_")))
+  for (d in c("B.1", "B.4", "C.1", "C.4")) {
+    data = eval(parse(text = paste(d, "sig", sep = ".")))
     data$subpart = as.character(data$subpart)
     data$coefficient = as.numeric(as.character(data$coefficient))
-    assign(paste(d, "sig", sep = "_"), data)
+    assign(paste(d, "sig", sep = "."), data)
     
+    # create new dataframes with a column to store the new p-values that we will calculate next 
     temp = data.frame(data$subpart)
     names(temp) = "subpart"
     temp$subpart = as.character(temp$subpart)
     temp$p = numeric(nrow(temp))
-    assign(paste(d, "ri", sep = "_"), temp)
+    assign(paste(d, "ri", sep = "."), temp)
   }
   
   ################################################################################
@@ -226,10 +220,7 @@ for (injury in c("MR", "PS")) {
       assign(paste(d, "sig", sep = "_"), data)
     }
     
-    ################################################################################
-    
-    # MERGE & CLEAN - SAVE CSV WITH RESULTS OF ALL 4 MODELS
-    
+    # merge and clean
     data = merge(B.1.sig, B.4.sig, by = "subpart", all = T)
     names(data)[names(data) == "coefficient.x"] = "c.B.1.sig"
     names(data)[names(data) == "pvalue.x"] = "p.B.1.sig"
@@ -298,91 +289,64 @@ for (injury in c("MR", "PS")) {
       names(data) = names_3_and_5
     }
     
-    write.csv(data, file = all_out_file, row.names = FALSE, na = "")
-  }
+    write.csv(data, file = all.out.file, row.names = FALSE, na = "")
+  } # end appending models
   
   ################################################################################
   
-  # PROCESS RESULTS OF THE FIRST RANDOMIZATION INFERENCE (RI METHOD 1)
+  # PROCESS RESULTS OF RANDOMIZATION INFERENCE METHOD 1
   
   # load in RI results
-  B_1 = read.dta(B_1)
-  B_4 = read.dta(B_4)
-  C_1 = read.dta(C_1)
-  C_4 = read.dta(C_4)
+  B.1 = read.dta(B.1.ri.in.file)
+  B.4 = read.dta(B.4.ri.in.file)
+  C.1 = read.dta(C.1.ri.in.file)
+  C.4 = read.dta(C.4.ri.in.file)
   
-  # calculate p values for each subpart
-  for (d in c("B_1", "B_4", "C_1", "C_4")) {
-    true = eval(parse(text = paste(d, "sig", sep = "_")))
+  # calculate new post method 1 p values for each subpart
+  for (d in c("B.1", "B.4", "C.1", "C.4")) {
+    true = eval(parse(text = paste(d, "sig", sep = ".")))
     fake = eval(parse(text = d))
-    ri = eval(parse(text = paste(d, "ri", sep = "_")))
+    ri = eval(parse(text = paste(d, "ri", sep = ".")))
     for (i in 1:nrow(true)) {
       sp = true$subpart[i]
       true_coef = true[true$subpart == sp, "coefficient"]
       fake_coefs = fake[, grepl(sp, names(fake))]
+      # replace ".ri" datasets with new p values
       p = sum(fake_coefs >= true_coef, na.rm = TRUE) / sum(!is.na(fake_coefs))
       ri[ri$subpart == sp, "p"] = p
-      assign(paste(d, "ri", sep = "_"), ri)
+      assign(paste(d, "ri", sep = "."), ri)
     }
   }
   
   ################################################################################
   
-  # SAVE CSVS WITH NAMES OF ROBUSTLY SIGNIFICANT SUBPARTS  (AFTER RI METHOD 1)
+  # OUTPUT METHOD 1 RESULTS/METHOD 2 INPUT
   
-  B_1_ri = B_1_ri[which(B_1_ri$p < 0.05) ,]
-  B_4_ri = B_4_ri[which(B_4_ri$p < 0.05) ,]
-  C_1_ri = C_1_ri[which(C_1_ri$p < 0.05) ,]
-  C_4_ri = C_4_ri[which(C_4_ri$p < 0.05) ,]
+  # drop observations where supbarts are no longer significant
+  B.1.ri = B.1.ri[which(B.1.ri$p < 0.05) ,]
+  B.4.ri = B.4.ri[which(B.4.ri$p < 0.05) ,]
+  C.1.ri = C.1.ri[which(C.1.ri$p < 0.05) ,]
+  C.4.ri = C.4.ri[which(C.4.ri$p < 0.05) ,]
   
-  if (nrow(B_1_ri) != 0) {
-    write.csv(B_1_ri, file = B.1.out.file, row.names = FALSE)
+  # save lists of robustly significant subparts (if there are any)
+  if (nrow(B.1.ri) != 0) {
+    write.csv(B.1.ri, file = B.1.out.file, row.names = FALSE)
   }
-  if (nrow(B_4_ri) != 0) {
-    write.csv(B_4_ri, file = B.4.out.file, row.names = FALSE)
+  if (nrow(B.4.ri) != 0) {
+    write.csv(B.4.ri, file = B.4.out.file, row.names = FALSE)
   }
-  if (nrow(C_1_ri) != 0) {
-    write.csv(C_1_ri, file = C.1.out.file, row.names = FALSE)
+  if (nrow(C.1.ri) != 0) {
+    write.csv(C.1.ri, file = C.1.out.file, row.names = FALSE)
   }
-  if (nrow(C_4_ri) != 0) {
-    write.csv(C_4_ri, file = C.4.out.file, row.names = FALSE)
+  if (nrow(C.4.ri) != 0) {
+    write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
   }
   
   ################################################################################
 
   } # end of rate/not-a-rate loop
-  
 } # end of MR/PS injury loop
   
-################################################################################
-
-# # not sure what this does - can I delete it? Hmm...
-# 
-# if (subpart.form == "rate" & injury == "MR") {
-#   B_1a = unique(B_1_ri$subpart)
-#   B_4a = unique(B_4_ri$subpart)
-#   C_1a = unique(C_1_ri$subpart)
-#   C_4a = unique(C_4_ri$subpart)
-# }
-# if (subpart.form == "not-a-rate" & injury == "MR") {
-#   B_1b = unique(B_1_ri$subpart)
-#   B_4b = unique(B_4_ri$subpart)
-#   C_1b = unique(C_1_ri$subpart)
-#   C_4b = unique(C_4_ri$subpart)
-# }
-# if (subpart.form == "rate" & injury == "PS") {
-#   B_1c = unique(B_1_ri$subpart)
-#   B_4c = unique(B_4_ri$subpart)
-#   C_1c = unique(C_1_ri$subpart)
-#   C_4c = unique(C_4_ri$subpart)
-# }
-# if (subpart.form == "not-a-rate" & injury == "PS") {
-#   B_1d = unique(B_1_ri$subpart)
-#   B_4d = unique(B_4_ri$subpart)
-#   C_1d = unique(C_1_ri$subpart)
-#   C_4d = unique(C_4_ri$subpart)
-# }
-
 ################################################################################
 
 rm(list = ls())

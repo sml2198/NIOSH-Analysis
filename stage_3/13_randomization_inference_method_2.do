@@ -43,8 +43,8 @@ local lag_levels "1 4" // preferred models
 * local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
-local num_iterations = 1000
-local max_iterations = 1200 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local num_iterations = 500
+local max_iterations = 600 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -91,7 +91,8 @@ foreach inj_type in `injury_types' {
 	
 		*+- set file extension for non-rate models
 		local violform_ext ""
-		if "`viol_form'" != "rate" local violform_ext "non-rate_"
+		if "`viol_form'" == "rate" local violform_ext "VR_"
+		if "`viol_form'" != "rate" local violform_ext "VC_"
 		
 		foreach outcome in `outcome_forms' {	
 		
