@@ -27,19 +27,18 @@ csvroot = paste0(root, "/csv/", collapse = NULL)
 
 ################################################################################
 
-# specification.test = "on" # analyze results from models with union & longwall indicators
-specification.test = "off"
+specification.test = "on" # analyze results from models with union & longwall indicators
+#specification.test = "off"
 
-# lag_3 = "on" # cannot be on at same time as ulw specification test. will also run lag 5.
-lag_3 = "off"
-
-#lag_5 = "on" # cannot be on at same time as ulw specification test. will also run lag 3.
+#lag_3 = "on" # cannot be on at same time as ulw specification test
+#lag_5 = "on" # cannot be on at same time as ulw specification test
 lag_5 = "off"
+lag_3 = "off"
 
 # WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
 
-analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
+# analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
+analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
 
 if (analyze.method.1 == "on") {
   append.models = "off"
@@ -48,34 +47,34 @@ if (analyze.method.1 == "off") {
   append.models = "on"
 }
 
+
+################################################################################
+
+# DEFINE DTA AND CSV ROOTS FOR SPECIFICATION TESTS
+
+if (specification.test == "on") {
+  ulw.ext = "_ulw"
+}
+if (specification.test != "on") {
+  ulw.ext = ""
+}
+
+if (specification.test == "on") {
+  dtaroot = paste0(dtaroot, "ulw/", collapse = NULL)
+  csvroot = paste0(csvroot, "ulw/", collapse = NULL)
+}
+
+dtaroot3 = paste0(dtaroot, "lag_3/", collapse = NULL)
+csvroot3 = paste0(csvroot, "lag_3/", collapse = NULL)
+dtaroot5 = paste0(dtaroot, "lag_5/", collapse = NULL)
+csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
+
 ################################################################################
 
 # LOOP THROUGH MODELS
 
 for (injury in c("MR", "PS")) {
-  
-  for (form in c("VC", "VR")) {
-  
-  ################################################################################
-  
-  # DEFINE DTA AND CSV ROOTS FOR SPECIFICATION TESTS
-  
-  if (specification.test == "on") {
-    ulw.ext = "_ulw"
-  }
-  if (specification.test != "on") {
-    ulw.ext = ""
-  }
-    
-  if (specification.test == "on") {
-    dtaroot = paste0(dtaroot, "ulw/", collapse = NULL)
-    csvroot = paste0(csvroot, "ulw/", collapse = NULL)
-  }
-  
-  dtaroot3 = paste0(dtaroot, "lag_3/", collapse = NULL)
-  csvroot3 = paste0(csvroot, "lag_3/", collapse = NULL)
-  dtaroot5 = paste0(dtaroot, "lag_5/", collapse = NULL)
-  csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
+  for (form in c("VR", "VC")) {
   
   ################################################################################
   
@@ -191,88 +190,84 @@ for (injury in c("MR", "PS")) {
   
   if (append.models == "on") {
     
-    for (d in c("B_1", "B_4", "C_1", "C_4")) {
-      if ((d == "B_1" | d == "C_1") & (lag_3 != "on" & lag_5 != "on")) {
+    # for each file, create a "strip" of the length necessary to extract the prefix from 
+      # violation subpart variable names, so that only the subpart name goes into the table
+    for (d in c("B.1", "B.4", "C.1", "C.4")) {
+      if ((d == "B.1" | d == "C.1") & (lag_3 != "on" & lag_5 != "on")) {
         strip = 5
       }
-      if ((d == "B_4" | d == "C_4") | ((lag_3 == "on" | lag_5 != "on") & (d == "B.1.ri" | d == "C_1"))) {
+      if ((d == "B.4" | d == "C.4") | ((lag_3 == "on" | lag_5 == "on") & (d == "B.1" | d == "C.1"))) {
         strip = 6
       }
-      data = eval(parse(text = paste(d, "sig", sep = "_")))
+      data = eval(parse(text = paste(d, "sig", sep = ".")))
       data$subpart = substr(data$subpart, 1, nchar(data$subpart) - strip)
-      assign(paste(d, "sig", sep = "_"), data)
+      assign(paste(d, "sig", sep = "."), data)
     }
     
-    all_subparts = c(B.1.sig$subpart, B.4.sig$subpart, C.1.sig$subpart, C.4.sig$subpart)
-    all_subparts = unique(all_subparts)
+    # capture all subparts across each set of models that will go into one table (B-1, B-4, C-1, C-4)
+      # this is because we can a row for every subpart for each column in this table, regardless
+        # of whether or not that subpart will have a reported (significant) coefficient in the table
+    all.subparts = c(B.1.sig$subpart, B.4.sig$subpart, C.1.sig$subpart, C.4.sig$subpart)
+    all.subparts = unique(all.subparts)
     
-    for (d in c("B_1", "B_4", "C_1", "C_4")) {
-      data = eval(parse(text = paste(d, "sig", sep = "_")))
-      add = setdiff(all_subparts, data$subpart)
-      
+    # now make sure each dataframe has rows for every significant subpart in this model-set
+    for (d in c("B.1", "B.4", "C.1", "C.4")) {
+      data = eval(parse(text = paste(d, "sig", sep = ".")))
+      add = setdiff(all.subparts, data$subpart)
       add = data.frame(add)
       names(add) = "subpart"
       add$coefficient = NA
       add$pvalue = NA
-      
       data = rbind(data, add)
-      
-      assign(paste(d, "sig", sep = "_"), data)
+      assign(paste(d, "sig", sep = "."), data)
     }
     
-    # merge and clean
+    # merge and clean each dataset (rename coefficient/p value)
     data = merge(B.1.sig, B.4.sig, by = "subpart", all = T)
     names(data)[names(data) == "coefficient.x"] = "c.B.1.sig"
     names(data)[names(data) == "pvalue.x"] = "p.B.1.sig"
     names(data)[names(data) == "coefficient.y"] = "c.B.4.sig"
     names(data)[names(data) == "pvalue.y"] = "p.B.4.sig"
     
+    # merge on remaining models, rename variables
     data = merge(data, C.1.sig, by = "subpart", all = T)
     names(data)[names(data) == "coefficient"] = "c.C.1.sig"
     names(data)[names(data) == "pvalue"] = "p.C.1.sig"
-    
     data = merge(data, C.4.sig, by = "subpart", all = T)
     names(data)[names(data) == "coefficient"] = "c.C.4.sig"
     names(data)[names(data) == "pvalue"] = "p.C.4.sig"
-    
+
     # format coefficients (c) and p-values (p)
-    data$c.B.1.sig = as.numeric(as.character(data$c.B.1.sig))
-    data$p.B.1.sig = as.numeric(as.character(data$p.B.1.sig))
-    data$c.B.1.sig = round(data$c.B.1.sig, digits = 3)
-    data$p.B.1.sig = round(data$p.B.1.sig, digits = 3)
+    for (d in c("c.B.1.sig", "c.B.4.sig", "c.C.1.sig", "c.C.4.sig")) {
+      # format coefficient variables
+      data[, d] = as.numeric(as.character(data[, d]))
+      data[, d] = round(data[, d], digits = 3)
+    }
+    for (d in c("p.B.1.sig", "p.B.4.sig", "p.C.1.sig", "p.C.4.sig")) {
+      # format coefficient variables
+      data[, d] = as.numeric(as.character(data[, d]))
+      data[, d] = round(data[, d], digits = 3)
+    }
     
-    data$c.B.4.sig = as.numeric(as.character(data$c.B.4.sig))
-    data$p.B.4.sig = as.numeric(as.character(data$p.B.4.sig))
-    data$c.B.4.sig = round(data$c.B.4.sig, digits = 3)
-    data$p.B.4.sig = round(data$p.B.4.sig, digits = 3)
-    
-    data$c.C.1.sig = as.numeric(as.character(data$c.C.1.sig))
-    data$p.C.1.sig = as.numeric(as.character(data$p.C.1.sig))
-    data$c.C.1.sig = round(data$c.C.1.sig, digits = 3)
-    data$p.C.1.sig = round(data$p.C.1.sig, digits = 3)
-    
-    data$c.C.4.sig = as.numeric(as.character(data$c.C.4.sig))
-    data$p.C.4.sig = as.numeric(as.character(data$p.C.4.sig))
-    data$c.C.4.sig = round(data$c.C.4.sig, digits = 3)
-    data$p.C.4.sig = round(data$p.C.4.sig, digits = 3)
+    # format coefficient variables, make sure trailing zero's will be preserved 
+      # (so everything is nice and 3 digits after the decimal point in the table)
+    for (d in c("c.B.1.sig", "c.B.4.sig", "c.C.1.sig", "c.C.4.sig")) {
+      data[, d] = sprintf("%.3f", round(data[, d],3))
+    }
     
     # add significance stars back in based on p-values
-    data$c.B.1.sig = as.character(data$c.B.1.sig)
     data$c.B.1.sig = ifelse(data$p.B.1.sig < 0.001, paste0(data$c.B.1.sig, "***"), data$c.B.1.sig)
     data$c.B.1.sig = ifelse(data$p.B.1.sig < 0.01 & data$p.B.1.sig >= 0.001, paste0(data$c.B.1.sig, "**"), data$c.B.1.sig)
     data$c.B.1.sig = ifelse(data$p.B.1.sig <= 0.05 & data$p.B.1.sig >= 0.01, paste0(data$c.B.1.sig, "*"), data$c.B.1.sig)
     
-    data$c.B.4.sig = as.character(data$c.B.4.sig)
     data$c.B.4.sig = ifelse(data$p.B.4.sig < 0.001, paste0(data$c.B.4.sig, "***"), data$c.B.4.sig)
     data$c.B.4.sig = ifelse(data$p.B.4.sig < 0.01 & data$p.B.4.sig >= 0.001, paste0(data$c.B.4.sig, "**"), data$c.B.4.sig)
     data$c.B.4.sig = ifelse(data$p.B.4.sig <= 0.05 & data$p.B.4.sig >= 0.01, paste0(data$c.B.4.sig, "*"), data$c.B.4.sig)
     
-    data$c.C.1.sig = as.character(data$c.C.1.sig)
     data$c.C.1.sig = ifelse(data$p.C.1.sig < 0.001, paste0(data$c.C.1.sig, "***"), data$c.C.1.sig)
     data$c.C.1.sig = ifelse(data$p.C.1.sig < 0.01 & data$p.C.1.sig >= 0.001, paste0(data$c.C.1.sig, "**"), data$c.C.1.sig)
     data$c.C.1.sig = ifelse(data$p.C.1.sig <= 0.05 & data$p.C.1.sig >= 0.01, paste0(data$c.C.1.sig, "*"), data$c.C.1.sig)
     
-    data$c.C.4.sig = as.character(data$c.C.4.sig)
     data$c.C.4.sig = ifelse(data$p.C.4.sig < 0.001, paste0(data$c.C.4.sig, "***"), data$c.C.4.sig)
     data$c.C.4.sig = ifelse(data$p.C.4.sig < 0.01 & data$p.C.4.sig >= 0.001, paste0(data$c.C.4.sig, "**"), data$c.C.4.sig)
     data$c.C.4.sig = ifelse(data$p.C.4.sig <= 0.05 & data$p.C.4.sig >= 0.01, paste0(data$c.C.4.sig, "*"), data$c.C.4.sig)
@@ -281,6 +276,14 @@ for (injury in c("MR", "PS")) {
     data = data[, c(-grep("^p", names(data)))]
     data$subpart = substr(data$subpart, 3, nchar(data$subpart) - 0)
     data$subpart = gsub("_", ".", data$subpart)
+    
+    # even if we format subpart as a character, when R writes to a csv, any subparts ending in "0"
+      # will have the 0's dropped, e.g. "75.800" will become "75.8". adding a single quote around 
+        # the subpart will guarantee zero's aren't dropped, and then when we paste the excel table in
+          # our helpful online latex generator (http://www.tablesgenerator.com/latex_tables) the single quotes
+            # will automatically be dropped.
+    data$subpart = paste0("'", data$subpart, "'")
+    data$subpart = as.character(data$subpart)
     
     # if lags 3 and 5 are being run, we imported "3" as "1" and "5" as "4" (because this file we coded before 3 and 5 were
     # being used as a robustness test), so rename the variables appropriately now before outputting
@@ -294,54 +297,57 @@ for (injury in c("MR", "PS")) {
   
   ################################################################################
   
-  # PROCESS RESULTS OF RANDOMIZATION INFERENCE METHOD 1
+  if (analyze.method.1 == "on")  {
   
-  # load in RI results
-  B.1 = read.dta(B.1.ri.in.file)
-  B.4 = read.dta(B.4.ri.in.file)
-  C.1 = read.dta(C.1.ri.in.file)
-  C.4 = read.dta(C.4.ri.in.file)
-  
-  # calculate new post method 1 p values for each subpart
-  for (d in c("B.1", "B.4", "C.1", "C.4")) {
-    true = eval(parse(text = paste(d, "sig", sep = ".")))
-    fake = eval(parse(text = d))
-    ri = eval(parse(text = paste(d, "ri", sep = ".")))
-    for (i in 1:nrow(true)) {
-      sp = true$subpart[i]
-      true_coef = true[true$subpart == sp, "coefficient"]
-      fake_coefs = fake[, grepl(sp, names(fake))]
-      # replace ".ri" datasets with new p values
-      p = sum(fake_coefs >= true_coef, na.rm = TRUE) / sum(!is.na(fake_coefs))
-      ri[ri$subpart == sp, "p"] = p
-      assign(paste(d, "ri", sep = "."), ri)
+    # PROCESS RESULTS OF RANDOMIZATION INFERENCE METHOD 1
+    
+    # load in RI results
+    B.1 = read.dta(B.1.ri.in.file)
+    B.4 = read.dta(B.4.ri.in.file)
+    C.1 = read.dta(C.1.ri.in.file)
+    C.4 = read.dta(C.4.ri.in.file)
+    
+    # calculate new post method 1 p values for each subpart
+    for (d in c("B.1", "B.4", "C.1", "C.4")) {
+      true = eval(parse(text = paste(d, "sig", sep = ".")))
+      fake = eval(parse(text = d))
+      ri = eval(parse(text = paste(d, "ri", sep = ".")))
+      for (i in 1:nrow(true)) {
+        sp = true$subpart[i]
+        true_coef = true[true$subpart == sp, "coefficient"]
+        fake_coefs = fake[, grepl(sp, names(fake))]
+        # replace ".ri" datasets with new p values
+        p = sum(fake_coefs >= true_coef, na.rm = TRUE) / sum(!is.na(fake_coefs))
+        ri[ri$subpart == sp, "p"] = p
+        assign(paste(d, "ri", sep = "."), ri)
+      }
     }
-  }
-  
-  ################################################################################
-  
-  # OUTPUT METHOD 1 RESULTS/METHOD 2 INPUT
-  
-  # drop observations where supbarts are no longer significant
-  B.1.ri = B.1.ri[which(B.1.ri$p < 0.05) ,]
-  B.4.ri = B.4.ri[which(B.4.ri$p < 0.05) ,]
-  C.1.ri = C.1.ri[which(C.1.ri$p < 0.05) ,]
-  C.4.ri = C.4.ri[which(C.4.ri$p < 0.05) ,]
-  
-  # save lists of robustly significant subparts (if there are any)
-  if (nrow(B.1.ri) != 0) {
-    write.csv(B.1.ri, file = B.1.out.file, row.names = FALSE)
-  }
-  if (nrow(B.4.ri) != 0) {
-    write.csv(B.4.ri, file = B.4.out.file, row.names = FALSE)
-  }
-  if (nrow(C.1.ri) != 0) {
-    write.csv(C.1.ri, file = C.1.out.file, row.names = FALSE)
-  }
-  if (nrow(C.4.ri) != 0) {
-    write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
-  }
-  
+    
+    ################################################################################
+    
+    # OUTPUT METHOD 1 RESULTS/METHOD 2 INPUT
+    
+    # drop observations where supbarts are no longer significant
+    B.1.ri = B.1.ri[which(B.1.ri$p < 0.05) ,]
+    B.4.ri = B.4.ri[which(B.4.ri$p < 0.05) ,]
+    C.1.ri = C.1.ri[which(C.1.ri$p < 0.05) ,]
+    C.4.ri = C.4.ri[which(C.4.ri$p < 0.05) ,]
+    
+    # save lists of robustly significant subparts (if there are any)
+    if (nrow(B.1.ri) != 0) {
+      write.csv(B.1.ri, file = B.1.out.file, row.names = FALSE)
+    }
+    if (nrow(B.4.ri) != 0) {
+      write.csv(B.4.ri, file = B.4.out.file, row.names = FALSE)
+    }
+    if (nrow(C.1.ri) != 0) {
+      write.csv(C.1.ri, file = C.1.out.file, row.names = FALSE)
+    }
+    if (nrow(C.4.ri) != 0) {
+      write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
+    }
+  } # end of loop of analyze method 1 = on
+    
   ################################################################################
 
   } # end of rate/not-a-rate loop
