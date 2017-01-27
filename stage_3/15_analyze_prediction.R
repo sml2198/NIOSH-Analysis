@@ -22,7 +22,7 @@ library(foreign)
 root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-results.in.path = paste0(root, "/results/dta/1-20", collapse = NULL) 
+results.in.path = paste0(root, "/results/dta", collapse = NULL) 
 results.out.path = paste0(root, "/results/csv/prediction", collapse = NULL) 
   
 # inputs

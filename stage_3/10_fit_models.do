@@ -31,8 +31,8 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-*local lag_levels "1 4" // preferred models 
-local lag_levels "3 5" //  preferred model robustness check 
+local lag_levels "1 4" // preferred models 
+*local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
 *local train_test_split "2010" // targeting algorithms robustness check 
@@ -53,9 +53,10 @@ local report_add_covars "off" // preferred models
 * local report_add_covars "on" // if you want to produce tables reports all model covariates EXCEPT significant subparts
 
 /*********** RUN NULL MODELS? *************/
-*local targeting_algorithms "on" // if you want to run the nulls (preferred)
-local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
+local targeting_algorithms "on" // if you want to run the nulls (preferred)
+*local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
 if "`specification_check'" == "on" local targeting_algorithms "off" // never do this with the union/longwall covariates
+if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this with the union/longwall covariates
 
 /********************************************************************************
 ********************************************************************************/
@@ -284,21 +285,22 @@ foreach inj_type in `injury_types' {
 						pause "significant variable list: `sig_vars'"
 						
 						*+- set locals for which variables you want to report in the latex/csv tables (does not affect null models at all)
-						if "`report_add_covars'" != "on" local tex_covars "keep ("`sig_vars'") noomitted noconstant" // preferred (tex)
-						if "`report_add_covars'" != "on" local csv_covars "keep ("`sig_vars'")" // preferred (csv)
+						if "`report_add_covars'" != "on" local keep_statement "keep (`sig_vars')"
 						if "`report_add_covars'" == "on" {
-							local tex_covars "keep (1.appalachia 1.safetycommittee *time* *district* "`nonfactor_vars'") noomitted noconstant" // for appendix table (tex)
-							local csv_covars "keep (1.appalachia 1.safetycommittee *time* *district* "`nonfactor_vars'") " // for appendix table (csv)
-							local add_covars_ext "_covars" // for appendix table (file extension for csv's and tex's)
+							local keep_statement "keep (1.appalachia 1.safetycommittee *time* *district* `nonfactor_vars')"
+							local add_covars_ext "_covars" // for appendix table
 						}
 						
-						*+- create tex file with estimates and csv file with only significant variable estimates (used for randomization inference)
-						esttab using "$PROJECT_ROOT/results/tex/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`add_covars_ext'.tex", replace ///
-							mlabels() label eform b(3) not booktabs longtable /// use labels, report irrs, grab coefficients and no se's
-							`table_notes' nonote /// add table notes and suppress automated notes
-							`tex_covars' title(`inj_type' Injuries, `outcome_label', `title_lag_level'`title_options') 
-						esttab using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`add_covars_ext'.csv", replace ///
-							`csv_covars' plain p noobs wide star // no eform - we want coefficients
+						if "`train_test_split'" == "2012" {
+							*+- create tex file with estimates and csv file with only significant variable estimates (used for randomization inference)
+								*+- we only do this for preferred models (not rpediction robustness assessments with different year cutoffs
+							esttab using "$PROJECT_ROOT/results/tex/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`add_covars_ext'.tex", replace ///
+								mlabels() label eform b(3) not booktabs longtable /// use labels, report irrs, grab coefficients and no se's
+								`table_notes' noomitted noconstant nonote /// add table notes and suppress automated notes
+								`keep_statement' title(`inj_type' Injuries, `outcome_label', `title_lag_level'`title_options') 
+							esttab using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`add_covars_ext'.csv", replace ///
+								`keep_statement' plain p noobs wide star // no eform - we want coefficients
+						}
 					} // converge == 1 
 					
 					* run model again (just on training set) to generate predictions (just on test set) and store in new variable
@@ -309,7 +311,7 @@ foreach inj_type in `injury_types' {
 						pause "complete: `inj_type' `outcome' lag `lag' (`viol_form')"
 					}
 				
-			local tex_covars ""
+			local keep_statement ""
 			local sig_vars ""
 			local cov_of_interest ""
 			} // lag level		
@@ -350,7 +352,6 @@ foreach inj_type in `injury_types' {
 		* save new data (with produced predictions as new vars) - needs to happen outside outcome loop
 		if "`targeting_algorithms'" != "off" {
 			drop p* sp*
-			save "$PROJECT_ROOT/results/dta/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.dta", replace
 			export delimited using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.csv", replace
 		}
 		

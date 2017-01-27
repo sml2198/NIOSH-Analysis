@@ -9,7 +9,7 @@
   # Outputs data taken into second randomizaiton inference procedure
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-  # Last edit 1/23/17
+  # Last edit 1/26/17
 
 ################################################################################
 
@@ -61,128 +61,83 @@ subpart.form = "not-a-rate"
 
 for (injury in c("MR", "PS")) {
   
+  for (form in c("VR", "VC")) {
+  
   ################################################################################
   
   # DEFINE DTA AND CSV ROOTS FOR SPECIFICATION TESTS
   
   if (specification.test == "on") {
-    file_ext = "_ulw"
+    ulw.ext = "_ulw"
   }
   if (specification.test != "on") {
-    file_ext = ""
+    ulw.ext = ""
   }
-  
+    
   if (specification.test == "on") {
     dtaroot = paste0(dtaroot, "ulw/", collapse = NULL)
     csvroot = paste0(csvroot, "ulw/", collapse = NULL)
   }
-  if (lag_3 == "on") {
-    dtaroot3 = paste0(dtaroot, "lag_3/", collapse = NULL)
-    csvroot3 = paste0(csvroot, "lag_3/", collapse = NULL)
-  }
-  if (lag_5 == "on") {
-    dtaroot5 = paste0(dtaroot, "lag_5/", collapse = NULL)
-    csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
-  }
+  
+  dtaroot3 = paste0(dtaroot, "lag_3/", collapse = NULL)
+  csvroot3 = paste0(csvroot, "lag_3/", collapse = NULL)
+  dtaroot5 = paste0(dtaroot, "lag_5/", collapse = NULL)
+  csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
   
   ################################################################################
   
-  # NAME CSVS WITH LISTS OF SIGNIFICANT VARIABLES FROM PREFERRED MODELS
+  # CSVS WITH LISTS OF SIGNIFICANT VARIABLES FROM PREFERRED MODELS
   
-  if (subpart.form == "rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1_sig = paste0(csvroot, injury, "_B_sp_1_sig", file_ext, ".csv", collapse = NULL)
-    B_4_sig = paste0(csvroot, injury, "_B_sp_4_sig", file_ext, ".csv", collapse = NULL)
-    C_1_sig = paste0(csvroot, injury, "_C_sp_1_sig", file_ext, ".csv", collapse = NULL)
-    C_4_sig = paste0(csvroot, injury, "_C_sp_4_sig", file_ext, ".csv", collapse = NULL)
+  if (lag_3 == "off" & lag_5 == "off") {
+    B.1.sig = paste0(csvroot, injury, "_B_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    B.4.sig = paste0(csvroot, injury, "_B_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    C.1.sig = paste0(csvroot, injury, "_C_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
+    C.4.sig = paste0(csvroot, injury, "_C_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)  
   }
-  if (subpart.form == "not-a-rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1_sig = paste0(csvroot, injury, "_B_sp_1_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    B_4_sig = paste0(csvroot, injury, "_B_sp_4_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    C_1_sig = paste0(csvroot, injury, "_C_sp_1_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    C_4_sig = paste0(csvroot, injury, "_C_sp_4_non-rate_sig", file_ext, ".csv", collapse = NULL)
+  if (lag_3 == "on" | lag_5 == "on") {
+      # never going to be true at same time as union-longwall test
+    B.1.sig = paste0(csvroot3, injury, "_B_3_", form, "_sig_2012.csv", collapse = NULL)
+    B.4.sig = paste0(csvroot5, injury, "_B_5_", form, "_sig_2012.csv", collapse = NULL)
+    C.1.sig = paste0(csvroot3, injury, "_C_3_", form, "_sig_2012.csv", collapse = NULL)
+    C.4.sig = paste0(csvroot5, injury, "_C_5_", form, "_sig_2012.csv", collapse = NULL)  
   }
-  if (subpart.form == "rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1_sig = paste0(csvroot3, injury, "_B_sp_3_sig", file_ext, ".csv", collapse = NULL)
-    B_4_sig = paste0(csvroot5, injury, "_B_sp_5_sig", file_ext, ".csv", collapse = NULL)
-    C_1_sig = paste0(csvroot3, injury, "_C_sp_3_sig", file_ext, ".csv", collapse = NULL)
-    C_4_sig = paste0(csvroot5, injury, "_C_sp_5_sig", file_ext, ".csv", collapse = NULL)
-  }
-  if (subpart.form == "not-a-rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1_sig = paste0(csvroot3, injury, "_B_sp_3_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    B_4_sig = paste0(csvroot5, injury, "_B_sp_5_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    C_1_sig = paste0(csvroot3, injury, "_C_sp_3_non-rate_sig", file_ext, ".csv", collapse = NULL)
-    C_4_sig = paste0(csvroot5, injury, "_C_sp_5_non-rate_sig", file_ext, ".csv", collapse = NULL)
-  }
+    
+  # RESULTS OF RANDOMIZATION PROCEDURE METHOD 1 (must be Stata 12 .dtas)
   
-  ################################################################################
-  
-  # NAME RESULTS OF RANDOMIZATION PROCEDURE METHOD 1 
-    # (must be Stata 12 .dtas)
-  
-  if (subpart.form == "rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1 = paste0(dtaroot, injury, "_B_1_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot, injury, "_B_4_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot, injury, "_C_1_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot, injury, "_C_4_ri.dta", collapse = NULL)
+  if (lag_3 == "off" & lag_5 == "off") {
+    B_1 = paste0(dtaroot, injury, "_B_1_", form, "_ri.dta", collapse = NULL)
+    B_4 = paste0(dtaroot, injury, "_B_4_", form, "_ri.dta", collapse = NULL)
+    C_1 = paste0(dtaroot, injury, "_C_1_", form, "_ri.dta", collapse = NULL)
+    C_4 = paste0(dtaroot, injury, "_C_4_", form, "_ri.dta", collapse = NULL)
   }
-  if (subpart.form == "not-a-rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1 = paste0(dtaroot, injury, "_B_1_non-rate_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot, injury, "_B_4_non-rate_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot, injury, "_C_1_non-rate_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot, injury, "_C_4_non-rate_ri.dta", collapse = NULL)
+  if (lag_3 == "on" | lag_5 == "on") {
+    B_1 = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
+    B_4 = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
+    C_1 = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
+    C_4 = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
   }
-  if (subpart.form == "rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1 = paste0(dtaroot3, injury, "_B_3_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot5, injury, "_B_5_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot3, injury, "_C_3_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot5, injury, "_C_5_ri.dta", collapse = NULL)
-  }
-  if (subpart.form == "not-a-rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1 = paste0(dtaroot3, injury, "_B_3_non-rate_ri.dta", collapse = NULL)
-    B_4 = paste0(dtaroot5, injury, "_B_5_non-rate_ri.dta", collapse = NULL)
-    C_1 = paste0(dtaroot3, injury, "_C_3_non-rate_ri.dta", collapse = NULL)
-    C_4 = paste0(dtaroot5, injury, "_C_5_non-rate_ri.dta", collapse = NULL)
-  }
-  
+
   ################################################################################
   
   # NAME OUTPUT FILES: CSVS OF SUBPARTS THAT ARE ROBUSTLY SIGNIFICANT AFTER RANDOMZIATION INFERENCE METHOD 1
   
-  if (subpart.form == "rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1_out_file = paste0(csvroot, injury, "_B_1_method_2_input", file_ext, ".csv", collapse = NULL)
-    B_4_out_file = paste0(csvroot, injury, "_B_4_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_1_out_file = paste0(csvroot, injury, "_C_1_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_4_out_file = paste0(csvroot, injury, "_C_4_method_2_input", file_ext, ".csv", collapse = NULL)
+  if (lag_3 == "off" & lag_5 == "off") {
+    B.1.out.file = paste0(csvroot, injury, "_B_1_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    B.4.out.file = paste0(csvroot, injury, "_B_4_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    C.1.out.file = paste0(csvroot, injury, "_C_1_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    C.4.out.file = paste0(csvroot, injury, "_C_4_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     
     # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_rate", file_ext, ".csv",  collapse = NULL)
+    all_out_file = paste0(csvroot, injury, "_", form, ulw.ext, ".csv",  collapse = NULL)
   }
-  if (subpart.form == "not-a-rate" & lag_3 == "off" & lag_5 == "off") {
-    B_1_out_file = paste0(csvroot, injury, "_B_1_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    B_4_out_file = paste0(csvroot, injury, "_B_4_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_1_out_file = paste0(csvroot, injury, "_C_1_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_4_out_file = paste0(csvroot, injury, "_C_4_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
+  if (lag_3 == "on" | lag_5 == "on") {
+    B.4.out.file = paste0(csvroot3, injury, "_B_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    B.4.out.file = paste0(csvroot5, injury, "_B_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    C.1.out.file = paste0(csvroot3, injury, "_C_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    C.4.out.file = paste0(csvroot5, injury, "_C_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     
     # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_non-rate", file_ext, ".csv", collapse = NULL)
-  }
-  if (subpart.form == "rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1_out_file = paste0(csvroot3, injury, "_B_3_method_2_input", file_ext, ".csv", collapse = NULL)
-    B_4_out_file = paste0(csvroot5, injury, "_B_5_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_1_out_file = paste0(csvroot3, injury, "_C_3_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_4_out_file = paste0(csvroot5, injury, "_C_5_method_2_input", file_ext, ".csv", collapse = NULL)
-    
-    # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_rate_3-5", file_ext, ".csv",  collapse = NULL)
-  }
-  if (subpart.form == "not-a-rate" & (lag_3 == "on" | lag_5 == "on")) {
-    B_1_out_file = paste0(csvroot3, injury, "_B_3_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    B_4_out_file = paste0(csvroot5, injury, "_B_5_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_1_out_file = paste0(csvroot3, injury, "_C_3_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    C_4_out_file = paste0(csvroot5, injury, "_C_5_non-rate_method_2_input", file_ext, ".csv", collapse = NULL)
-    
-    # final csv with results from all 4 models  
-    all_out_file = paste0(csvroot, injury, "_non-rate_3-5", file_ext, ".csv", collapse = NULL)
+    all_out_file = paste0(csvroot, injury, "_", form, "_3-5", ulw.ext, ".csv",  collapse = NULL)
   }
   
   ################################################################################
@@ -190,34 +145,34 @@ for (injury in c("MR", "PS")) {
   # LOAD DATA FROM PREFERRED MODELS
   
   # load in preferred model results (significant subparts)
-  B_1_sig = read.table(B_1_sig, sep = ",")
+  B.1.sig = read.table(B.1.sig, sep = ",")
   names = c("subpart", "coefficient", "pvalue")
-  names(B_1_sig) = names
-  B_1_sig = B_1_sig[c(4: nrow(B_1_sig)),]
-  B_1_sig = B_1_sig[which(B_1_sig$pvalue != "."),]
-  B_1_sig$pvalue = as.numeric(as.character(B_1_sig$pvalue))
-  B_1_sig$coefficient = gsub("\\*", "", B_1_sig$coefficient)
+  names(B.1.sig) = names
+  B.1.sig = B.1.sig[c(4: nrow(B.1.sig)),]
+  B.1.sig = B.1.sig[which(B.1.sig$pvalue != "."),]
+  B.1.sig$pvalue = as.numeric(as.character(B.1.sig$pvalue))
+  B.1.sig$coefficient = gsub("\\*", "", B.1.sig$coefficient)
   
-  B_4_sig = read.table(B_4_sig, sep = ",")
-  names(B_4_sig) = names
-  B_4_sig = B_4_sig[c(4: nrow(B_4_sig)),]
-  B_4_sig = B_4_sig[which(B_4_sig$pvalue != "."),]
-  B_4_sig$pvalue = as.numeric(as.character(B_4_sig$pvalue))
-  B_4_sig$coefficient = gsub("\\*", "", B_4_sig$coefficient)
+  B.4.sig = read.table(B.4.sig, sep = ",")
+  names(B.4.sig) = names
+  B.4.sig = B.4.sig[c(4: nrow(B.4.sig)),]
+  B.4.sig = B.4.sig[which(B.4.sig$pvalue != "."),]
+  B.4.sig$pvalue = as.numeric(as.character(B.4.sig$pvalue))
+  B.4.sig$coefficient = gsub("\\*", "", B.4.sig$coefficient)
   
-  C_1_sig = read.table(C_1_sig, sep = ",")
-  names(C_1_sig) = names
-  C_1_sig = C_1_sig[c(4: nrow(C_1_sig)),]
-  C_1_sig = C_1_sig[which(C_1_sig$pvalue != "."),]
-  C_1_sig$pvalue = as.numeric(as.character(C_1_sig$pvalue))
-  C_1_sig$coefficient = gsub("\\*", "", C_1_sig$coefficient)
+  C.1.sig = read.table(C.1.sig, sep = ",")
+  names(C.1.sig) = names
+  C.1.sig = C.1.sig[c(4: nrow(C.1.sig)),]
+  C.1.sig = C.1.sig[which(C.1.sig$pvalue != "."),]
+  C.1.sig$pvalue = as.numeric(as.character(C.1.sig$pvalue))
+  C.1.sig$coefficient = gsub("\\*", "", C.1.sig$coefficient)
   
-  C_4_sig = read.table(C_4_sig, sep = ",")
-  names(C_4_sig) = names
-  C_4_sig = C_4_sig[c(4: nrow(C_4_sig)),]
-  C_4_sig = C_4_sig[which(C_4_sig$pvalue != "."),]
-  C_4_sig$pvalue = as.numeric(as.character(C_4_sig$pvalue))
-  C_4_sig$coefficient = gsub("\\*", "", C_4_sig$coefficient)
+  C.4.sig = read.table(C.4.sig, sep = ",")
+  names(C.4.sig) = names
+  C.4.sig = C.4.sig[c(4: nrow(C.4.sig)),]
+  C.4.sig = C.4.sig[which(C.4.sig$pvalue != "."),]
+  C.4.sig$pvalue = as.numeric(as.character(C.4.sig$pvalue))
+  C.4.sig$coefficient = gsub("\\*", "", C.4.sig$coefficient)
   
   ################################################################################
   
@@ -246,7 +201,7 @@ for (injury in c("MR", "PS")) {
       if ((d == "B_1" | d == "C_1") & (lag_3 != "on" & lag_5 != "on")) {
         strip = 5
       }
-      if ((d == "B_4" | d == "C_4") | ((lag_3 == "on" | lag_5 != "on") & (d == "B_1" | d == "C_1"))) {
+      if ((d == "B_4" | d == "C_4") | ((lag_3 == "on" | lag_5 != "on") & (d == "B.1.ri" | d == "C_1"))) {
         strip = 6
       }
       data = eval(parse(text = paste(d, "sig", sep = "_")))
@@ -254,7 +209,7 @@ for (injury in c("MR", "PS")) {
       assign(paste(d, "sig", sep = "_"), data)
     }
     
-    all_subparts = c(B_1_sig$subpart, B_4_sig$subpart, C_1_sig$subpart, C_4_sig$subpart)
+    all_subparts = c(B.1.sig$subpart, B.4.sig$subpart, C.1.sig$subpart, C.4.sig$subpart)
     all_subparts = unique(all_subparts)
     
     for (d in c("B_1", "B_4", "C_1", "C_4")) {
@@ -275,61 +230,61 @@ for (injury in c("MR", "PS")) {
     
     # MERGE & CLEAN - SAVE CSV WITH RESULTS OF ALL 4 MODELS
     
-    data = merge(B_1_sig, B_4_sig, by = "subpart", all = T)
-    names(data)[names(data) == "coefficient.x"] = "c.B_1_sig"
-    names(data)[names(data) == "pvalue.x"] = "p.B_1_sig"
-    names(data)[names(data) == "coefficient.y"] = "c.B_4_sig"
-    names(data)[names(data) == "pvalue.y"] = "p.B_4_sig"
+    data = merge(B.1.sig, B.4.sig, by = "subpart", all = T)
+    names(data)[names(data) == "coefficient.x"] = "c.B.1.sig"
+    names(data)[names(data) == "pvalue.x"] = "p.B.1.sig"
+    names(data)[names(data) == "coefficient.y"] = "c.B.4.sig"
+    names(data)[names(data) == "pvalue.y"] = "p.B.4.sig"
     
-    data = merge(data, C_1_sig, by = "subpart", all = T)
-    names(data)[names(data) == "coefficient"] = "c.C_1_sig"
-    names(data)[names(data) == "pvalue"] = "p.C_1_sig"
+    data = merge(data, C.1.sig, by = "subpart", all = T)
+    names(data)[names(data) == "coefficient"] = "c.C.1.sig"
+    names(data)[names(data) == "pvalue"] = "p.C.1.sig"
     
-    data = merge(data, C_4_sig, by = "subpart", all = T)
-    names(data)[names(data) == "coefficient"] = "c.C_4_sig"
-    names(data)[names(data) == "pvalue"] = "p.C_4_sig"
+    data = merge(data, C.4.sig, by = "subpart", all = T)
+    names(data)[names(data) == "coefficient"] = "c.C.4.sig"
+    names(data)[names(data) == "pvalue"] = "p.C.4.sig"
     
     # format coefficients (c) and p-values (p)
-    data$c.B_1_sig = as.numeric(as.character(data$c.B_1_sig))
-    data$p.B_1_sig = as.numeric(as.character(data$p.B_1_sig))
-    data$c.B_1_sig = round(data$c.B_1_sig, digits = 3)
-    data$p.B_1_sig = round(data$p.B_1_sig, digits = 3)
+    data$c.B.1.sig = as.numeric(as.character(data$c.B.1.sig))
+    data$p.B.1.sig = as.numeric(as.character(data$p.B.1.sig))
+    data$c.B.1.sig = round(data$c.B.1.sig, digits = 3)
+    data$p.B.1.sig = round(data$p.B.1.sig, digits = 3)
     
-    data$c.B_4_sig = as.numeric(as.character(data$c.B_4_sig))
-    data$p.B_4_sig = as.numeric(as.character(data$p.B_4_sig))
-    data$c.B_4_sig = round(data$c.B_4_sig, digits = 3)
-    data$p.B_4_sig = round(data$p.B_4_sig, digits = 3)
+    data$c.B.4.sig = as.numeric(as.character(data$c.B.4.sig))
+    data$p.B.4.sig = as.numeric(as.character(data$p.B.4.sig))
+    data$c.B.4.sig = round(data$c.B.4.sig, digits = 3)
+    data$p.B.4.sig = round(data$p.B.4.sig, digits = 3)
     
-    data$c.C_1_sig = as.numeric(as.character(data$c.C_1_sig))
-    data$p.C_1_sig = as.numeric(as.character(data$p.C_1_sig))
-    data$c.C_1_sig = round(data$c.C_1_sig, digits = 3)
-    data$p.C_1_sig = round(data$p.C_1_sig, digits = 3)
+    data$c.C.1.sig = as.numeric(as.character(data$c.C.1.sig))
+    data$p.C.1.sig = as.numeric(as.character(data$p.C.1.sig))
+    data$c.C.1.sig = round(data$c.C.1.sig, digits = 3)
+    data$p.C.1.sig = round(data$p.C.1.sig, digits = 3)
     
-    data$c.C_4_sig = as.numeric(as.character(data$c.C_4_sig))
-    data$p.C_4_sig = as.numeric(as.character(data$p.C_4_sig))
-    data$c.C_4_sig = round(data$c.C_4_sig, digits = 3)
-    data$p.C_4_sig = round(data$p.C_4_sig, digits = 3)
+    data$c.C.4.sig = as.numeric(as.character(data$c.C.4.sig))
+    data$p.C.4.sig = as.numeric(as.character(data$p.C.4.sig))
+    data$c.C.4.sig = round(data$c.C.4.sig, digits = 3)
+    data$p.C.4.sig = round(data$p.C.4.sig, digits = 3)
     
     # add significance stars back in based on p-values
-    data$c.B_1_sig = as.character(data$c.B_1_sig)
-    data$c.B_1_sig = ifelse(data$p.B_1_sig < 0.001, paste0(data$c.B_1_sig, "***"), data$c.B_1_sig)
-    data$c.B_1_sig = ifelse(data$p.B_1_sig < 0.01 & data$p.B_1_sig >= 0.001, paste0(data$c.B_1_sig, "**"), data$c.B_1_sig)
-    data$c.B_1_sig = ifelse(data$p.B_1_sig <= 0.05 & data$p.B_1_sig >= 0.01, paste0(data$c.B_1_sig, "*"), data$c.B_1_sig)
+    data$c.B.1.sig = as.character(data$c.B.1.sig)
+    data$c.B.1.sig = ifelse(data$p.B.1.sig < 0.001, paste0(data$c.B.1.sig, "***"), data$c.B.1.sig)
+    data$c.B.1.sig = ifelse(data$p.B.1.sig < 0.01 & data$p.B.1.sig >= 0.001, paste0(data$c.B.1.sig, "**"), data$c.B.1.sig)
+    data$c.B.1.sig = ifelse(data$p.B.1.sig <= 0.05 & data$p.B.1.sig >= 0.01, paste0(data$c.B.1.sig, "*"), data$c.B.1.sig)
     
-    data$c.B_4_sig = as.character(data$c.B_4_sig)
-    data$c.B_4_sig = ifelse(data$p.B_4_sig < 0.001, paste0(data$c.B_4_sig, "***"), data$c.B_4_sig)
-    data$c.B_4_sig = ifelse(data$p.B_4_sig < 0.01 & data$p.B_4_sig >= 0.001, paste0(data$c.B_4_sig, "**"), data$c.B_4_sig)
-    data$c.B_4_sig = ifelse(data$p.B_4_sig <= 0.05 & data$p.B_4_sig >= 0.01, paste0(data$c.B_4_sig, "*"), data$c.B_4_sig)
+    data$c.B.4.sig = as.character(data$c.B.4.sig)
+    data$c.B.4.sig = ifelse(data$p.B.4.sig < 0.001, paste0(data$c.B.4.sig, "***"), data$c.B.4.sig)
+    data$c.B.4.sig = ifelse(data$p.B.4.sig < 0.01 & data$p.B.4.sig >= 0.001, paste0(data$c.B.4.sig, "**"), data$c.B.4.sig)
+    data$c.B.4.sig = ifelse(data$p.B.4.sig <= 0.05 & data$p.B.4.sig >= 0.01, paste0(data$c.B.4.sig, "*"), data$c.B.4.sig)
     
-    data$c.C_1_sig = as.character(data$c.C_1_sig)
-    data$c.C_1_sig = ifelse(data$p.C_1_sig < 0.001, paste0(data$c.C_1_sig, "***"), data$c.C_1_sig)
-    data$c.C_1_sig = ifelse(data$p.C_1_sig < 0.01 & data$p.C_1_sig >= 0.001, paste0(data$c.C_1_sig, "**"), data$c.C_1_sig)
-    data$c.C_1_sig = ifelse(data$p.C_1_sig <= 0.05 & data$p.C_1_sig >= 0.01, paste0(data$c.C_1_sig, "*"), data$c.C_1_sig)
+    data$c.C.1.sig = as.character(data$c.C.1.sig)
+    data$c.C.1.sig = ifelse(data$p.C.1.sig < 0.001, paste0(data$c.C.1.sig, "***"), data$c.C.1.sig)
+    data$c.C.1.sig = ifelse(data$p.C.1.sig < 0.01 & data$p.C.1.sig >= 0.001, paste0(data$c.C.1.sig, "**"), data$c.C.1.sig)
+    data$c.C.1.sig = ifelse(data$p.C.1.sig <= 0.05 & data$p.C.1.sig >= 0.01, paste0(data$c.C.1.sig, "*"), data$c.C.1.sig)
     
-    data$c.C_4_sig = as.character(data$c.C_4_sig)
-    data$c.C_4_sig = ifelse(data$p.C_4_sig < 0.001, paste0(data$c.C_4_sig, "***"), data$c.C_4_sig)
-    data$c.C_4_sig = ifelse(data$p.C_4_sig < 0.01 & data$p.C_4_sig >= 0.001, paste0(data$c.C_4_sig, "**"), data$c.C_4_sig)
-    data$c.C_4_sig = ifelse(data$p.C_4_sig <= 0.05 & data$p.C_4_sig >= 0.01, paste0(data$c.C_4_sig, "*"), data$c.C_4_sig)
+    data$c.C.4.sig = as.character(data$c.C.4.sig)
+    data$c.C.4.sig = ifelse(data$p.C.4.sig < 0.001, paste0(data$c.C.4.sig, "***"), data$c.C.4.sig)
+    data$c.C.4.sig = ifelse(data$p.C.4.sig < 0.01 & data$p.C.4.sig >= 0.001, paste0(data$c.C.4.sig, "**"), data$c.C.4.sig)
+    data$c.C.4.sig = ifelse(data$p.C.4.sig <= 0.05 & data$p.C.4.sig >= 0.01, paste0(data$c.C.4.sig, "*"), data$c.C.4.sig)
     
     # remove unnecssary variables and prep data so that it can be popped into a pretty latex table
     data = data[, c(-grep("^p", names(data)))]
@@ -381,21 +336,23 @@ for (injury in c("MR", "PS")) {
   C_4_ri = C_4_ri[which(C_4_ri$p < 0.05) ,]
   
   if (nrow(B_1_ri) != 0) {
-    write.csv(B_1_ri, file = B_1_out_file, row.names = FALSE)
+    write.csv(B_1_ri, file = B.1.out.file, row.names = FALSE)
   }
   if (nrow(B_4_ri) != 0) {
-    write.csv(B_4_ri, file = B_4_out_file, row.names = FALSE)
+    write.csv(B_4_ri, file = B.4.out.file, row.names = FALSE)
   }
   if (nrow(C_1_ri) != 0) {
-    write.csv(C_1_ri, file = C_1_out_file, row.names = FALSE)
+    write.csv(C_1_ri, file = C.1.out.file, row.names = FALSE)
   }
   if (nrow(C_4_ri) != 0) {
-    write.csv(C_4_ri, file = C_4_out_file, row.names = FALSE)
+    write.csv(C_4_ri, file = C.4.out.file, row.names = FALSE)
   }
   
   ################################################################################
 
-} # dnf of MR/PS injruy loop
+  } # end of rate/not-a-rate loop
+  
+} # end of MR/PS injury loop
   
 ################################################################################
 

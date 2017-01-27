@@ -9,7 +9,7 @@
   # Outputs lists of robustly significant subparts
 
 # Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/23/17
+# Last edit 1/26/17
 
 ################################################################################
 
