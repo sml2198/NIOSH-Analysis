@@ -31,8 +31,8 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "1 4" // preferred models 
-* local lag_levels "3 5" //  preferred model robustness check 
+*local lag_levels "1 4" // preferred models 
+local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
 *local train_test_split "2010" // targeting algorithms robustness check 
@@ -45,8 +45,8 @@ local train_test_split "2012" // targeting algorithms
 /* Includes "longwall" and "union" indicators  - you MUST  have access to EIA and
  NIOSH data for this test to work! This will also turn off the option to run the
  targeting algorithms, since we don't do this robustness assessment on those analyses. */
-local specification_check "on" 
-*local specification_check "off"
+*local specification_check "on" 
+local specification_check "off"
 
 /* PRODUCE TABLES WITH ADDITIONAL COVARIATES? */
 local report_add_covars "off" // preferred models
@@ -382,5 +382,7 @@ foreach inj_type in `injury_types' {
 	local sp_count_lag_5_vars ""
 	
 } // inj type
+
+noi di "FOLLOWING MODEL(S) DID NOT CONVERGE: `not_converged'"
 
 *end*

@@ -213,12 +213,20 @@ foreach inj_type in `injury_types' {
 					
 					/****** LOOP THAT ITERATES! ********/	
 					
-					*+- "desired iterations" is equal to how many coefficients (from converged iterations) we want
+					/*+- "desired iterations" is equal to how many coefficients (from converged iterations) we want
 						*+- we create this because we will be adding to the num_iterations local whenever we have a non-convergent iteration
 					local desired_iters = `num_iterations' 
-					forval x = 1/`num_iterations' {		
+					forval x = 1/`num_iterations' {	*/
+					
+					local x = 0 // current number in loop
+					local convergence_count = 0  // number of successful/convergent iterations
+				
+					while (`convergence_count' < `num_iterations' & `x' < `max_iterations') {
 					
 						pause "beginning iteration number `x' of `num_iterations'"
+						
+						*+- first, add one to x (to keep track of number of completed loops/iterations, regardless of outcome - this starts at zero)
+						local x = (`x' + 1)
 						
 						*+- reset the subpart/violation of interest (set it equal to its real value)
 						replace `sig_subpart' = copy_`sig_subpart'
@@ -251,16 +259,10 @@ foreach inj_type in `injury_types' {
 						
 						*+- if still in progress
 						if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
-						
-						*+- if the number of iterations has been achieved, but not enough converged iterations have been achieved, keep adding 1 for the number of iterations
-						if ("`x'" >= "`desired_iters'") & ("`convergence_count'" < "`desired_iters'") & ("`x'" < "`max_iterations'") {
-							local num_iterations = `num_iterations' + 1
-							noi di "adding one to iterations - `num_iterations'"
-						}
-						
+
 						*+- if iteration limit has been reached
 						if ("`x'" == "`max_iterations'") {
-							noi di "`x' (max) iterations completed, convergence not achieved"
+							noi di "`x' (max) iterations completed, convergence NOT achieved `num_iterations' times"
 							keep in 1/`x'
 							keep *_c
 						}
@@ -272,15 +274,19 @@ foreach inj_type in `injury_types' {
 							keep *_c
 						}
 						
-					} // num iterations
+					} // while statement - loop that iterates
 
+					*+- find and drop rows with missing values(non-convergent observations) 
+					keep *_c
+					foreach var of varlist *_c {
+						drop if missing(`var')
+					}				
+						
 					*+- save a dta with the distribution of coefficients for the significant subpart of interest
 					saveold "$PROJECT_ROOT/results/dta/`sub_folder'method_2/`inj_type'_`outcome'_`lag'_`violform_ext'`sig_subpart'.dta", replace version(12)
 
 					*+- restore data and reset all subpart specific things/counters
 					restore 
-					local convergence_count ""
-					local num_iterations = `desired_iters'
 					pause "data and locals restored"
 					
 				} // sig subparts
