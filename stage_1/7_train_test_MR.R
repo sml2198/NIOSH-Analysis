@@ -19,11 +19,11 @@ library(rpart)
 library(randomForest)
 library(ROSE)
 library(SMOTE)
-library(psych)
-library(DMwR)
-library(caret)
-library(ggplot2)
-library(adabag)
+#library(psych)
+#library(DMwR)
+#library(caret)
+#library(ggplot2)
+#library(adabag)
 
 ################################################################################
 
@@ -66,9 +66,6 @@ data = readRDS(prepared.train.test.in.file.name)
 # bye
 rm(prepared.train.test.in.file.name)
 
-data$likely.class = data$maybe.activity = NULL
-data$mineid = as.numeric(as.character(data$mineid))
-
 ################################################################################
 
 # CART
@@ -96,12 +93,14 @@ rm(rf, rf.predictions)
 # RANDOM FOREST WITH ROSE
   # See Table D.1c: Confusion Matrix for Random Forest (ROSE Oversampled) Algorithm
 
-data.rosex = ROSE(MR ~ ., data = data[1:700,!(names(data) %in% c('documentno'))])$data
+# DROP MINE ID AND THIS WORKS
+
+data.rosex = ROSE(MR ~ ., data = data[1:700,!(names(data) %in% c("documentno"))])$data
 rand = runif(nrow(data.rosex))
 data.rose = data.rosex[order(rand),]
 rf.rose = randomForest(MR ~ ., data = data.rose, mtry = 15, ntree = 1000)
-rf.rose.pred = predict(rf.rose, data[701:1018,!(names(data) %in% c('documentno'))], type = "class")
-table(data[701:1018,2], predicted = rf.rose.pred)
+rf.rose.pred = predict(rf.rose, data[701:1018,!(names(data) %in% c("documentno"))], type = "class")
+table(data[701:1018, "MR"], predicted = rf.rose.pred)
 
 remove(data.rosex, rand, data.rose, rf.rose, rf.rose.pred)
 
