@@ -22,11 +22,8 @@ library(foreign)
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 
-# set preferences
-date = "1-20/"
-
-dtaroot = paste0(root, "/dta/", date, collapse = NULL)
-csvroot = paste0(root, "/csv/", date, collapse = NULL)
+dtaroot = paste0(root, "/dta/", collapse = NULL)
+csvroot = paste0(root, "/csv/", collapse = NULL)
 
 ################################################################################
 

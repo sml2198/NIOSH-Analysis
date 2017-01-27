@@ -40,12 +40,12 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "1 4" // preferred models 
+local lag_levels "4" // preferred models 
 * local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
-local num_iterations = 1
-local max_iterations = 2 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local num_iterations = 50
+local max_iterations = 60 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -57,13 +57,13 @@ local specification_check "off"
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "MR PS"
+local injury_types "PS"
 
 /****** OUTCOME FORMS *********************/
-local outcome_forms "C B"
+local outcome_forms "C"
 
 /****** RATE VS. COUNTS *******************/
-local violation_forms "count rate"
+local violation_forms "rate"
 
 /****** COVARIATES ************************/
 * time is included (unlike in fit models) because no prediction is done here
@@ -203,16 +203,22 @@ foreach inj_type in `injury_types' {
 				
 				*+- run preferred models once so we can capture the sample 
 					*+- the sample is injury, violation type, outcome type, and lag specific at this point
-				local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(500)"
+				local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(150)"
 				cap qui `cmd'
 				keep if e(sample)
 				pause "sample captured, non-sample observations dropped, ready to iterate"
 				
 				/****** LOOP THAT ITERATES! ********/	
-				local desired_iters = `num_iterations' 
-				forval x = 1/`num_iterations' {	
-					
+				
+				local x = 0 // current number in loop
+				local convergence_count = 0  // number of successful/convergent iterations
+				
+				while (`convergence_count' < `num_iterations' & `x' < `max_iterations') {
+
 					pause "beginning iteration number `x' of `num_iterations'"
+					
+					*+- first, add one to x (to keep track of number of completed loops/iterations, regardless of outcome - this starts at zero)
+					local x = (`x' + 1)
 					
 					*+- reset locals 
 					local converged ""
@@ -233,7 +239,7 @@ foreach inj_type in `injury_types' {
 					pause "complete: variables-of-interest local assigned"
 						
 					/****** THE MODEL! ********/	
-					local cmd "`model' `depvar' `cov_of_interest' `covariates', vce(cl mineid) `suffix' iter(500)"
+					local cmd "`model' `depvar' `cov_of_interest' `covariates', vce(cl mineid) `suffix' iter(50)"
 					cap noi `cmd'
 					pause "model number `x' run"
 					
@@ -244,8 +250,10 @@ foreach inj_type in `injury_types' {
 					qui describe `cov_of_interest'
 					local count: word count `cov_of_interest' 
 					
-					*+- grab the coefficient on each shuffled variable of interest & replace each corresponding _c var with the proper coefficient
+					*+- sort (stably) on mineid and year so storing the coefficients can be done according to iteration number
 					sort mineid year
+					
+					*+- grab the coefficient on each shuffled variable of interest & replace each corresponding _c var with the proper coefficient
 					if "`converged'" == "1" {
 						foreach var of varlist `cov_of_interest' {
 							qui replace x_`var'_c = _b[`var'] in `x'
@@ -254,25 +262,30 @@ foreach inj_type in `injury_types' {
 						local convergence_count = `convergence_count' + 1
 					}
 					
-					*+- if the number of iterations has been achieved, but not enough converged iterations have been achieved, keep adding 1 to the number of iterations
-					if ("`x'" >= "`desired_iters'") & ("`convergence_count'" < "`desired_iters'") & ("`x'" < "`max_iterations'") {
-						local num_iterations = `num_iterations' + 1
-						pause "added one to iterations: `num_iterations'"
-					}
+					*+- if still in progress
+					if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
+					
+					*+- if iteration limit has been reached
 					if ("`x'" == "`max_iterations'") {
-						noi di "`x' (max) iterations completed, convergence not achieved"
+						noi di "`x' (max) iterations completed, convergence NOT achieved `num_iterations' times"
 						keep in 1/`x'
 						keep *shuffled_c
 					}
-					if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
+					
+					*+- if finished in less than the maximum number of iterations
 					if "`convergence_count'" == "`num_iterations'" {
 						noi di "finished! in `x' iterations"
-						keep in 1/`num_iterations'
+						keep in 1/`x'
 						keep *shuffled_c
 					}
-					
-				} // num iterations
+				} // num iterations/while
 				pause "iterations complete for model `inj_type' `viol_form' `outcome' `lag'"
+				
+				*+- find and drop rows with missing values(non-convergent observations) 
+				keep *shuffled_c
+				foreach var of varlist *shuffled_c {
+					drop if missing(`var')
+				}
 				
 				*+- name sub-folder (if a ulw, lag 3, or lag 5 specification test)
 				if "`lag'" == "3" local sub_folder "lag_3/"
@@ -289,7 +302,6 @@ foreach inj_type in `injury_types' {
 				local covars ""
 				local cov_of_interest ""
 				local convergence_count ""
-				local num_iterations = `desired_iters'
 				restore 
 				pause "data restored"
 					

@@ -84,22 +84,6 @@ cap mkdir "$PROJECT_ROOT/results/dta/lag_3/method_2/"
 cap mkdir "$PROJECT_ROOT/results/dta/lag_5/method_2/"
 
 /*******************************************************************************
-********************************************************************************
-
-// MODEL LABEL KEY
-
-Model W.X.Y.Z
-  W
-	MR: Maintenance and repair injuries
-	PS: Pinning and striking injuries
-  X
-    C: response variable is count of injuries
-    B: response variable is binary of injuries 
-  Z
-    1: inj_t ~ viol_(t_-1)
-	4: inj_t ~ viol_(t_-1 + t_-2 + t_-3 + t_-4)
-
-*******************************************************************************
 ********************************************************************************/
 
 foreach inj_type in `injury_types' {
@@ -118,52 +102,12 @@ foreach inj_type in `injury_types' {
 			
 			*+- rename injury variable of interest and create list of relevant parts
 			if "`inj_type'" == "PS" {
-				rename PS dv
 				local relevant_parts "48 75"
 			}
 			if "`inj_type'" == "MR" {
-				rename MR dv
 				local relevant_parts "47 48 71 72 75 77"
 			}
-			
-			*+- format time
-			tostring(year), replace
-			encode year, gen(time)
-			
-			*+- count orphan years
-			sort mineid year
-			qui gen mine_year = regexs(0) if(regexm(year, "(1[0-5]$)|([0-9]$)"))
-			destring mine_year, replace
-			qui bys mineid: gen orphan = (mine_year[_n] - mine_year[_n - 1]) // orphan equals the number of years between _n and _n-1 (should be 1 if no missing years between observations)
-			qui bys mineid: replace orphan = 1 if (_n == 1) // set the first year at a given mine artificially equal to one (these lags aren't generated anyway)  
-
-			*+- generate violation and injury lags for t-1, t-2, t-3, t-4, t-5, and cumulative t-3, t-4, t-5 (3 and 5 are robustness checks)
-			sort mineid year
-			local varlist "sp* dv inspectionhours" 
-			foreach var of varlist `varlist' {
-				* first generate lags 1 through 5 (non-cumulative)
-				local numlist "1/5"
-				foreach x of numlist `numlist' {
-					qui by mineid: gen `var'_`x'lag = `var'[_n - `x']
-					qui replace `var'_`x'lag = . if orphan != 1 // lags can only exist if there is a previous year of data 
-					* by lag, pipe in missings where orphan is greater than 1 for previous years
-					if `x' == 1 qui replace `var'_`x'lag = . if orphan != 1
-					if `x' == 2 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1]) != 2
-					if `x' == 3 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2]) != 3
-					if `x' == 4 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2] + orphan[_n-3]) != 4
-					if `x' == 5 qui replace `var'_`x'lag = . if (orphan[_n] + orphan[_n-1] + orphan[_n-2] + orphan[_n-3] + orphan[_n-4]) != 5
-				}
-				pause "created missings in data to reflect orphan years"
-				
-				* now sum lags to produce cumulative lag 3, 4, 5 and then drop non-cumulative vars
-				by mineid: gen `var'_c3lag = (`var'_1lag + `var'_2lag + `var'_3lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag))
-				by mineid: gen `var'_c4lag = (`var'_1lag + `var'_2lag + `var'_3lag + `var'_4lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag) & !missing(`var'_4lag))
-				by mineid: gen `var'_c5lag = (`var'_1lag + `var'_2lag + `var'_3lag + `var'_4lag + `var'_5lag) if (!missing(`var'_1lag) & !missing(`var'_2lag) & !missing(`var'_3lag) & !missing(`var'_4lag) & !missing(`var'_5lag))
-				drop `var'_2lag `var'_3lag `var'_4lag `var'_5lag 
-				pause "cumulative lags produced"
-			}
-			pause "all lags generated"
-			
+		
 			*+- format dependent variable as a rate (violations per inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
@@ -287,41 +231,41 @@ foreach inj_type in `injury_types' {
 							
 						/****** THE MODEL! ********/	
 						
-						local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(75)"
+						local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(200)"
 						noi di "`cmd'"
 						cap noi `cmd'
 						pause "model number `x' run"
 						
 						*+- create a local macro containing a binary value indicating whether or not the regression converged
-						if e(rc) {
-							noi di e(rc)
-							local converged = 0
-						}
-						else {
-							local converged = 1
-						}
-						local converge = e(converge)
-						if "`converge'" == "0" local converged = 0
+						local converged = e(converged)
 						
-						*+- we grab the coefficient on the fake subpart variable & replace each _c variable with its coefficient
+						*+- sort (stably) on mineid and year so storing the coefficients can be done according to iteration number
 						sort mineid year
+					
+						*+- grab the coefficient on each shuffled variable of interest & replace each corresponding _c var with the proper coefficient
 						if "`converged'" == "1" {
 							qui replace x_`sig_subpart'_c = _b[`sig_subpart'] in `x'
 							pause "coefficients should now be stored in vars"
 							local convergence_count = `convergence_count' + 1
 						}
 						
+						*+- if still in progress
+						if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
+						
 						*+- if the number of iterations has been achieved, but not enough converged iterations have been achieved, keep adding 1 for the number of iterations
 						if ("`x'" >= "`desired_iters'") & ("`convergence_count'" < "`desired_iters'") & ("`x'" < "`max_iterations'") {
 							local num_iterations = `num_iterations' + 1
 							noi di "adding one to iterations - `num_iterations'"
 						}
+						
+						*+- if iteration limit has been reached
 						if ("`x'" == "`max_iterations'") {
 							noi di "`x' (max) iterations completed, convergence not achieved"
 							keep in 1/`x'
 							keep *_c
 						}
-						if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
+						
+						*+- if finished in less than the maximum number of iterations
 						if "`convergence_count'" == "`num_iterations'" {
 							noi di "finished! in `x' iterations"
 							keep in 1/`x'
@@ -353,6 +297,7 @@ foreach inj_type in `injury_types' {
 					append using "$PROJECT_ROOT/results/dta/`sub_folder'method_2/`inj_type'_`outcome'_`lag'_`violform_ext'`sig_subpart'.dta"
 				}
 				local significant_subparts ""
+				
 			} // lag levels
 			local covars ""
 			local lag_1_vars ""

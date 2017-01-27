@@ -18,6 +18,12 @@
 
 ################################################################################
 
+for (i in 1:31) {
+  x = eval(parse(text = paste0("seed", i)))
+  y = eval(parse(text = paste0("new.seed", i)))
+  print(all(x == y))
+}
+
 # define root directory
 # root = "/NIOSH-Analysis"
 # root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
@@ -292,8 +298,9 @@ purpose = "train.test"
                   "mineractivity", "occupation", 
                   paste("temp", 24:25, sep = "."))
   
-  set.seed(100)
   data[, paste("temp", 1:25, sep = ".")] = NA
+  
+  set.seed(100)
   for (var in names(data)[grepl("temp", names(data))]) {
     data[, var] = sample(1:100, nrow(data), replace = TRUE)
     data[, var] = ifelse(data[, var] > 50, NA, data[, var])
@@ -315,12 +322,21 @@ purpose = "train.test"
     data[, charac.vars[i]] = factor(data[, charac.vars[i]])
   }
   
-  set.seed(181994)
+  for (var in charac.vars) {
+    print(sum(is.na(data[, var])))
+  }
   
+  rm(.Random.seed, envir=globalenv())
+  set.seed(181994)
+  j = 0
   for (i in 1:length(num.vars)) {
     i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
     while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
       replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+      
+      j = j + 1
+      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+      
       data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
     }
   }
@@ -328,7 +344,12 @@ purpose = "train.test"
     i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
     while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
       replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
+      
+      j = j + 1
+      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+      
       data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
+      
     }
   }
   

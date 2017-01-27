@@ -44,8 +44,7 @@ local train_test_split "2012" // targeting algorithms
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 /* Includes "longwall" and "union" indicators  - you MUST  have access to EIA and
  NIOSH data for this test to work! This will also turn off the option to run the
- targeting algorithms, since we don't do this robustness assessment on those
- analyses. */
+ targeting algorithms, since we don't do this robustness assessment on those analyses. */
 local specification_check "on" 
 *local specification_check "off"
 
@@ -57,24 +56,6 @@ local report_add_covars "off" // preferred models
 *local targeting_algorithms "on" // if you want to run the nulls (preferred)
 local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
 if "`specification_check'" == "on" local targeting_algorithms "off" // never do this with the union/longwall covariates
-
-/*******************************************************************************
-NULL MODEL KEY
-
-WEAK NULL: no violation-specific vars, regular specification otherwise
-STRONG NULL 1: no violation-specific vars, total violations (1 lag)
-STRONG NULL 2: no violation-specific vars, total violations/inspection hours (both 1 lag)
-********************************************************************************/
-
-/********************************************************************************
-********************************************************************************/
-
-*+- MAKE DIRECTORIES
-
-cap mkdir "$PROJECT_ROOT/results/"
-cap mkdir "$PROJECT_ROOT/results/tex/"
-cap mkdir "$PROJECT_ROOT/results/csv/"
-cap mkdir "$PROJECT_ROOT/results/dta/"
 
 /********************************************************************************
 ********************************************************************************/
@@ -99,21 +80,16 @@ if "`specification_check'" == "on" {
 }
 
 /*******************************************************************************
-********************************************************************************
+********************************************************************************/
 
-// MODEL LABEL KEY
-Model W.X.Z
-  W
-	MR: Maintenance and repair injuries
-	PS: Pinning and striking injuries
-  X
-    C: response variable is count of injuries
-    B: response variable is binary of injuries 
-  Z
-    1: inj_t ~ viol_(t_-1)
-	4: inj_t ~ viol_(t_-1 + t_-2 + t_-3 + t_-4)
+*+- MAKE DIRECTORIES
 
-*******************************************************************************
+cap mkdir "$PROJECT_ROOT/results/"
+cap mkdir "$PROJECT_ROOT/results/tex/"
+cap mkdir "$PROJECT_ROOT/results/csv/"
+cap mkdir "$PROJECT_ROOT/results/dta/"
+
+/********************************************************************************
 ********************************************************************************/
 
 foreach inj_type in `injury_types' {
