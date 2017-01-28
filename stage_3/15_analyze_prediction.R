@@ -8,7 +8,7 @@
 
 # Coded by: Julia Bodson, juliabodson@gmail.com
 
-# Last edit 1/25/2017
+# Last edit 1/27/2017
 
 ################################################################################
 
@@ -20,135 +20,130 @@ root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 # define file paths
 results.in.path = paste0(root, "/results/csv", collapse = NULL) 
 results.out.path = paste0(root, "/results/csv", collapse = NULL) 
-  
+
 # inputs
-  # targeting algorithm predictions
-    # produced in 9_fit_models
-#for (injury in c("MR", "PS")) {
-#  for (var in c("VC", "VR")) {
-#    for (year in 2010:2014) {
-#      assign(paste(injury, var, toString(year), "predictions", "file.name", sep = "."), 
-#             paste0(results.in.path, "/", paste(injury, var, toString(year), "predictions", sep = "_"), ".csv", collapse = NULL))
-#    }
-#  }
-#}
 
 # outputs
-  # tables presenting targeting algorithm predictions
-#for (injury in c("MR", "PS")) {
-#  for (year in 2010:2014) {
-#    assign(paste(injury, toString(year), "binary", "file.name", sep = "."), 
-#           paste0(results.out.path, "/", paste(injury, toString(year), "Binary Diff Table", sep = "_"), ".csv", collapse = NULL))
-#    assign(paste(injury, toString(year), "count", "file.name", sep = "."), 
-#           paste0(results.out.path, "/", paste(injury, toString(year), "Count Diff Table", sep = "_"), ".csv", collapse = NULL))
-#    assign(paste(injury, toString(year), "appendix.binary", "file.name", sep = "."), 
-#           paste0(results.out.path, "/", paste(injury, toString(year), "Appendix Binary Diff Table", sep = "_"), ".csv", collapse = NULL))
-#    assign(paste(injury, toString(year), "appendix.count", "file.name", sep = "."), 
-#           paste0(results.out.path, "/", paste(injury, toString(year), "Appendix COunt Diff Table", sep = "_"), ".csv", collapse = NULL))
-#  }
-#}
 
 # generate file paths
 dir.create(results.out.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
 
 # bye
-#rm(root, results.in.path, results.out.path)
+rm(root)
 
 ################################################################################
 
-calc.TP = function(data, predict.var.name, true.var.name) {
+# DEFINE FUNCTIONS TO CALCULATE MEASURES OF INTEREST
+
+calc.TP = function(data, predict.var.name, true.var.name) { # true positive
   return(sum(data[, predict.var.name] == 1 & data[, true.var.name] == 1))
 }
-calc.TN = function(data, predict.var.name, true.var.name) {
+calc.TN = function(data, predict.var.name, true.var.name) { # true negative
   return(sum(data[, predict.var.name] == 0 & data[, true.var.name] == 0))
 }
-calc.FP = function(data, predict.var.name, true.var.name) {
+calc.FP = function(data, predict.var.name, true.var.name) { # false positive
   return(sum(data[, predict.var.name] == 1 & data[, true.var.name] == 0))
 }
-calc.FN = function(data, predict.var.name, true.var.name) {
+calc.FN = function(data, predict.var.name, true.var.name) { # false negative
   return(sum(data[, predict.var.name] == 0 & data[, true.var.name] == 1))
 }
-calc.CCR = function(TP, TN, FP, FN) {
+calc.CCR = function(TP, TN, FP, FN) { # correct classification rate
   return(round(100 * ((TP + TN) / (TP + TN + FP + FN)), 2))
 }
-calc.FPR = function(TP, TN, FP, FN) {
+calc.FPR = function(TP, TN, FP, FN) { # false positive rate
   return(round(100 * (FP / (FP + TN)), 2))
 }
-calc.FNR = function(TP, TN, FP, FN) {
+calc.FNR = function(TP, TN, FP, FN) { # false negative rate
   return(round(100 * (FN / (FN + TP)), 2))
 }
 
+################################################################################
 
-injury = "MR"
-#for (injury in c("MR", "PS")) {
-
-  year = 2012
-  #for (year in 2010:2014) {
-
-    var = "VC"
-    #for (var in c("VC", "VR")) {
-
-      # read data
-      data = read.csv(paste0(results.in.path, "/", paste(injury, var, toString(year), "predictions", sep = "_"), ".csv", collapse = NULL))
+for (injury in c("MR", "PS")) {
   
-      # drop variables that shouldn't be in the dataset anyway
-      data = data[, c(names(data)[grepl(injury, names(data))], "dv", "dv_indicator")]
+  for (year in 2010:2014) {
+    
+    for (var in c("VC", "VR")) {
       
-      # group model types
-      bin.data = data[, c(names(data)[grepl("B", names(data))], "dv_indicator")]
-      count.data = data[, c(names(data)[grepl("C", names(data))], "dv", "dv_indicator")]
-  
+      # READ DATA
+      
+      # read predictions
+        # produced in 10_fit_models
+        # 6253 rows; 49 columns; unique on mineid-year
+      data = read.csv(paste0(results.in.path, "/", paste(injury, var, toString(year), "predictions", sep = "_"), ".csv", collapse = NULL))
+      
+      ############################################################################
+      
+      # CLEAN DATA
+      
+      # drop unnecessary variables
+        # 6253 rows; 13 columns; unique on mineid-year
+      data = data[, c(names(data)[grepl(injury, names(data))], "dv", "dv_indicator")]
+
+      # group data based on B or C model type
+      b.data = data[, c(names(data)[grepl("B", names(data))], "dv_indicator")]
+      c.data = data[, c(names(data)[grepl("C", names(data))], "dv", "dv_indicator")]
+    }}}
       # transform predictions
-        # binary: FILL IN
-        # count: FILL IN
-      bin.data = data.frame(ifelse(bin.data <= 0.5, 0, 1))
-      count.as.bin.data = data.frame(ifelse(count.data <= 0.5, 0, 1))
-      count.data = data.frame(round(count.data))
+      b.data = data.frame(ifelse(b.data <= 0.5, 0, 1))
+      c.as.b.data = data.frame(ifelse(c.data <= 0.5, 0, 1))
+      c.data = data.frame(round(c.data))
       
       # rename variables
-      names(bin.data) = c(paste0("B_1_", var), 
+      names(b.data) = c(paste0("B_1_", var), 
                           paste0("B_4_", var),
-                          "B_NULL_1",
-                          "B_NULL_2",
-                          "B_NULL_3",
+                          "B_WEAK_NULL",
+                          "B_STRONG_NULL_1",
+                          "B_STRONG_NULL_2",
                           "true_indicator")
-      names(count.data) = c(paste0("C_1_", var), 
+      names(c.data) = c(paste0("C_1_", var), 
                             paste0("C_4_", var),
-                            "C_NULL_1",
-                            "C_NULL_2",
-                            "C_NULL_3",
+                            "C_WEAK_NULL",
+                            "C_STRONG_NULL_1",
+                            "C_STRONG_NULL_2",
                             "true_count", 
                             "true_indicator")
-      names(count.as.bin.data) = names(count.data)
+      names(c.as.b.data) = names(c.data)
       
-      # prepare summary data frame
-        # binary
-      bin.model.sum = data.frame(names(bin.data)[grepl("B", names(bin.data))])
-      names(bin.model.sum) = "Model"
-      bin.model.sum$Model = as.character(bin.model.sum$Model)
-      bin.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR")] = NA
+      # bye
+      rm(data)
+      
+      ############################################################################
+      
+      # PREPARE EMPTY DATAFRAME TO HOLD MEASURES OF INTEREST
+      
+      # B models
+      b.model.sum = data.frame(names(b.data)[grepl("B", names(b.data))])
+      names(b.model.sum) = "Model"
+      b.model.sum$Model = as.character(b.model.sum$Model)
+      b.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR")] = NA
     
-        # count
-      count.model.sum = data.frame(names(count.data)[grepl("C", names(count.data))])
-      names(count.model.sum) = "Model"
-      count.model.sum$Model = as.character(count.model.sum$Model)
-      count.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR", "SSD", "SSPD", "SSND")] = NA
+      # C models
+      c.model.sum = data.frame(names(c.data)[grepl("C", names(c.data))])
+      names(c.model.sum) = "Model"
+      c.model.sum$Model = as.character(c.model.sum$Model)
+      c.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR", "SSD", "SSPD", "SSND")] = NA
       
-      # fill in measures of interest
-      for (type in c("bin", "count")) {
+      ############################################################################
+      
+      # FILL IN MEASURES OF INTEREST
+      
+      for (type in c("B", "C")) {
         
-        if (type == "bin") {
-          temp.data = bin.data
-          model.sum.data = bin.model.sum
+        # use the data for either B or C models
+        if (type == "B") {
+          data = b.data
+          model.sum.data = b.model.sum
         }
-        else if (type == "count") {
-          temp.data = count.as.bin.data
-          model.sum.data = count.model.sum
+        else if (type == "C") {
+          data = c.as.b.data
+          model.sum.data = c.model.sum
         }
         
+        # fill in measures of interest
         for (i in 1:nrow(model.sum.data)) {
           model = model.sum.data$Model[i]
-          model.data = temp.data[!is.na(temp.data[, model]), c(model, "true_indicator")]
+          model.data = data[!is.na(data[, model]), c(model, "true_indicator")]
           
           for (measure in c("TP", "TN", "FP", "FN")) {
             f = eval(parse(text = paste0("calc.", measure)))
@@ -163,9 +158,9 @@ injury = "MR"
                                            model.sum.data[i, "FN"])
           }
         
-          if (type == "count") {
-            count.model.data = count.data[!is.na(count.data[, model]), c(model, "true_count")]
-            D = count.model.data[, model] - count.model.data$true_count
+          if (type == "C") { # for C models, calculate SSD, SSPD, and SSND
+            c.model.data = c.data[!is.na(c.data[, model]), c(model, "true_count")]
+            D = c.model.data[, model] - c.model.data$true_count
             PD = D[D > 0]
             ND = D[D < 0]
             model.sum.data$SSD[i] = sum(D ^ 2) 
@@ -173,80 +168,123 @@ injury = "MR"
             model.sum.data$SSND[i] = sum(ND ^ 2)
           }
         }
-      
-        if (type == "bin") {
-          bin.model.sum = model.sum.data
+        
+        # save data for either B or C models
+        if (type == "B") {
+          b.model.sum = model.sum.data
         }
-        if(type == "count") {
-          count.model.sum = model.sum.data
+        if(type == "C") {
+          c.model.sum = model.sum.data
+        }
+        
+      }
+      
+      # label B and C data to bind VC and VR data later
+      assign(paste(var, "b.model.sum", sep = "."), b.model.sum)
+      assign(paste(var, "c.model.sum", sep = "."), c.model.sum)
+      
+      # bye
+      drop = c("TP", "TN", "FP", "FN")
+      b.model.sum = b.model.sum[, !(names(b.model.sum) %in% drop)]
+      c.model.sum = c.model.sum[, !(names(c.model.sum) %in% drop)]
+      rm(b.data, c.data, c.as.b.data, 
+         model.data, model.sum.data, data, c.model.data, 
+         i, model, measure, f, D, PD, ND, drop)
+      
+    }
+  
+    ##############################################################################
+
+    # COMBINE B AND C DATA FOR VR AND VC MODELS
+    
+    b.model.sum = rbind(VC.b.model.sum, VR.b.model.sum)
+    c.model.sum = rbind(VC.c.model.sum, VR.c.model.sum)  
+
+    # drop duplicates
+    b.model.sum = b.model.sum[!duplicated(b.model.sum$Model), ]
+    c.model.sum = c.model.sum[!duplicated(c.model.sum$Model), ]
+    
+    # sort
+    b.model.sum = b.model.sum[order(b.model.sum$Model), ]
+    c.model.sum = c.model.sum[order(c.model.sum$Model), ]
+    
+    # bye
+    rm(VC.b.model.sum, VR.b.model.sum, VC.c.model.sum, VR.c.model.sum, data)
+    
+    ##############################################################################
+    
+    # PREPARE EMPTY DATAFRAME TO HOLD PRESENTED RESULTS
+    
+    # get model names
+    bin.model.names = b.model.sum[!grepl("NULL",  b.model.sum$Model), "Model"]
+    bin.null.model.names = b.model.sum[grepl("NULL",  b.model.sum$Model), "Model"]
+    count.model.names = c.model.sum[!grepl("NULL",  c.model.sum$Model), "Model"]
+    count.null.model.names = c.model.sum[grepl("NULL",  c.model.sum$Model), "Model"]
+    
+    # B models
+    bin.out = data.frame(sort(rep(bin.model.names, 3)))
+    names(bin.out) = "Model"
+    bin.out$Model = as.character(bin.out$Model)
+    bin.out$Measure = rep(c("CCR", "FPR", "FNR"), length(bin.model.names))
+    bin.out[, bin.null.model.names] = NA
+    
+    # C models
+    count.out = data.frame(sort(rep(count.model.names, 6)))
+    names(count.out) = "Model"
+    count.out$Model = as.character(count.out$Model)
+    count.out$Measure = rep(c("CCR", "FPR", "FNR", "SSD", "SSPD", "SSND"), length(count.model.names))
+    count.out[, count.null.model.names] = NA
+    
+    ##############################################################################
+    
+    
+    for (type in c("B", "C")) {
+      
+      if (type == "B") {
+        out.data = bin.out
+        model.sum = b.model.sum
+        null.model.names = bin.null.model.names
+      }
+      if (type == "C") {
+        out.data = count.out
+        model.sum = c.model.sum
+        null.model.names = count.null.model.names
+      }
+      
+      for (null.model in null.model.names) {
+        for (i in 1:nrow(out.data)) {
+          model = out.data$Model[i]
+          measure = out.data$Measure[i]
+          target = model.sum[model.sum$Model == model, measure]
+          null = model.sum[model.sum$Model == null.model, measure]
+          out.data[i, null.model] = target - null 
         }
       }
       
-      assign(paste(var, "bin.model.sum", sep = "."), bin.model.sum)
-      assign(paste(var, "count.model.sum", sep = "."), count.model.sum)
+      if (type == "B") {
+        bin.out = out.data
+      }
+      if (type == "C") {
+        count.out = out.data
+      }
       
-#    }
-#  }
-#}
-
-  
-
-  
-  bin_models = names(bin_data)[grepl("B", names(bin_data)) & !grepl("NULL", names(bin_data))]
-  bin_null_models = names(bin_data)[grepl("B", names(bin_data)) & grepl("NULL", names(bin_data))]
-  bin_models = sort(rep(bin_models, 3))
-  
-  bin_out = data.frame(bin_models)
-  names(bin_out) = "Model"
-  bin_out$Model = as.character(bin_out$Model)
-  bin_out$Measure = rep(c("CCR", "FPR", "FNR"), 4)
-  bin_out[, bin_null_models] = NA
-  
-  for (j in 3:ncol(bin_out)) {
-    null_model = names(bin_out)[j]
-    for (i in 1:nrow(bin_out)) {
-      model = bin_out$Model[i]
-      measure = bin_out$Measure[i]
-      pref = bin_model_stats[bin_model_stats$model == model, measure]
-      null = bin_model_stats[bin_model_stats$model == null_model, measure]
-      bin_out[i, j] = pref - null 
     }
+    
+    ##############################################################################
+    
+    # OUTPUT DATA
+    
+    write.csv(bin.out, paste0(results.out.path, "/", paste(injury, toString(year), "Binary Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    write.csv(count.out, paste0(results.out.path, "/", paste(injury, toString(year), "Count Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    write.csv(b.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Appendix Binary Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    write.csv(c.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Appendix COunt Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    
   }
-  
-  count_models = names(count_data)[grepl("C", names(count_data)) & !grepl("NULL", names(count_data))]
-  count_null_models = names(count_data)[grepl("C", names(count_data)) & grepl("NULL", names(count_data))]
-  count_models = sort(rep(count_models, 6))
-  
-  count_out = data.frame(count_models)
-  names(count_out) = "Model"
-  count_out$Model = as.character(count_out$Model)
-  count_out$Measure = rep(c("CCR", "FPR", "FNR", "SSD", "SSPD", "SSND"), 4)
-  count_out[, count_null_models] = NA
-  
-  for (j in 3:ncol(count_out)) {
-    null_model = names(count_out)[j]
-    for (i in 1:nrow(count_out)) {
-      model = count_out$Model[i]
-      measure = count_out$Measure[i]
-      pref = count_model_stats[count_model_stats$model == model, measure]
-      null = count_model_stats[count_model_stats$model == null_model, measure]
-      count_out[i, j] = pref - null 
-    }
-  }
-  
-  
-  bin_out[, 3:ncol(bin_out)] = data.frame(round(bin_out[, 3:ncol(bin_out)], 2))
-  count_out[, 3:ncol(count_out)] = data.frame(round(count_out[, 3:ncol(count_out)], 2))
-  
-  bin_model_stats = bin_model_stats[, c("model", "CCR", "FPR", "FNR")]
-  bin_model_stats[, 2:ncol(bin_model_stats)] = data.frame(round(bin_model_stats[, 2:ncol(bin_model_stats)], 2))
-  
-  count_model_stats = count_model_stats[, c("model", "CCR", "FPR", "FNR", "SSD", "SSPD", "SSND")]
-  count_model_stats[, 2:ncol(count_model_stats)] = data.frame(round(count_model_stats[, 2:ncol(count_model_stats)], 2))
-  
-  write.csv(bin_out, paste("C:/Users/jbodson/Dropbox (Stanford Law School)/R-code/prediction tables/Binary Diff Table ", injtype, year, ".csv", sep = ""), row.names = F)
-  write.csv(count_out, paste("C:/Users/jbodson/Dropbox (Stanford Law School)/R-code/prediction tables/Count Diff Table ", injtype, year, ".csv", sep = ""), row.names = F)
-  write.csv(bin_model_stats, paste("C:/Users/jbodson/Dropbox (Stanford Law School)/R-code/prediction tables/Binary Appendix Table ", injtype, year, ".csv", sep = ""), row.names = F)
-  write.csv(count_model_stats, paste("C:/Users/jbodson/Dropbox (Stanford Law School)/R-code/prediction tables/Count Appendix Table ", injtype, year, ".csv", sep = ""), row.names = F)
-  
+}
 
+################################################################################
+
+# bye
+rm(list = ls())
+
+################################################################################

@@ -117,7 +117,8 @@ foreach inj_type in `injury_types' {
 	if "`inj_type'" == "PS" label var dv_indicator "PS injury indicator"
 	
 	*+- drop unnecessary stuff
-	drop orphan employment prod operatortime mine_year
+	drop orphan employment prod operatortime mine_year total_injuries_c3lag 
+	drop total_injuries_c4lag total_injuries_c5lag totalviolations_c3lag totalviolations_c4lag totalviolations_c5lag
 	
 	if "`specification_check'" == "off" save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2.dta", replace
 	if "`specification_check'" == "on" save "$PROJECT_ROOT/data/5_prepared/prepared_stage_3_`inj_type'_part_2_ulw.dta", replace

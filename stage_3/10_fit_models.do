@@ -35,9 +35,9 @@ local lag_levels "1 4" // preferred models
 *local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
-*local train_test_split "2010" // targeting algorithms robustness check 
+local train_test_split "2010" // targeting algorithms robustness check 
 *local train_test_split "2011" // targeting algorithms robustness check 
-local train_test_split "2012" // targeting algorithms
+*local train_test_split "2012" // targeting algorithms
 *local train_test_split "2013" // targeting algorithms robustness check 
 *local train_test_split "2014" // targeting algorithms robustness check 
 
@@ -64,7 +64,7 @@ if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this wit
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "MR PS"
+local injury_types "PS MR"
 
 /****** OUTCOME FORMS *********************/
 local outcome_form "B C"
@@ -125,8 +125,8 @@ foreach inj_type in `injury_types' {
 		if "`train_test_split'" == "2014" local cutoff "inlist(year, "2015", "2014")"
 		local cutoff_ext "_`train_test_split'"
 		* set variable flags TESTING set (if set = 0, then the observation is in the training set)
-		gen set = 1 if `cutoff'
-		replace set = 0 if missing(set)
+		qui gen set = 1 if `cutoff'
+		qui replace set = 0 if missing(set)
 		
 			/****** PREPARE INDEPENDENT VARIABLE LOCALS **************/
 			foreach x in 1 2 3 4 5 6 7 8 9 0 {
@@ -148,22 +148,25 @@ foreach inj_type in `injury_types' {
 			*+- format violations variables as rates (violations per onsite inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
-				foreach var of varlist inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
-					rename `var' `var'_x
+				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag totalviolations_1lag total_violations_hours_1lag {
+					qui rename `var' `var'_x
 				}
 				* replace vars with rates (x 1000)
 				foreach var of varlist *_1lag {
-					replace `var' = (`var'/inspectionhours_1lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_1lag_x)*1000
 				}
 				foreach var of varlist *_c3lag {
-					replace `var' = (`var'/inspectionhours_c3lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c3lag_x)*1000
 				}
 				foreach var of varlist *_c4lag {
-					replace `var' = (`var'/inspectionhours_c4lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c4lag_x)*1000
 				}
 				foreach var of varlist *_c5lag {
-					replace `var' = (`var'/inspectionhours_c5lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c5lag_x)*1000
 				}
+				rename total_violations_hours_1lag_x total_violations_hours_1lag
+				rename dv_1lag_x dv_1lag
+				rename totalviolations_1lag_x totalviolations_1lag
 				pause "complete: rate variables formatted"
 			}
 
@@ -323,26 +326,32 @@ foreach inj_type in `injury_types' {
 				if "`targeting_algorithms'" != "off" {
 				
 				*+- run null models (on training set) to generate predictions (on test set) and store predictions in new variable
+					local null_1 ""
+					local null_2 ""
+					local null_3 ""
 				
 					* WEAK NULL MODEL (1) 
 						* PREFERRED SPECIFICATION, WITH NO SUBSECTION-SPECIFIC COVARIATES ON INTEREST
 					eststo clear
-					local null_1 "`model' `depvar' `covariates' if set == 0, vce(cl mineid) `suffix' iter(200)"
-					cap eststo: `null_1'			
+					local null_1 "`model' `depvar' `covariates' if set == 0, vce(cl mineid) `suffix' iter(500)"
+					noi di "`null_1'"
+					noi eststo: `null_1'			
 					qui predict `inj_type'_`outcome'_null_1 if set == 1
 					
 					* FIRST STRONG NULL MODEL (2) 
 						* THESE ALSO CONTAIN A TOTAL VIOLATIONS COVARIATE (LAGGED ONCE)
 					eststo clear
 					local null_2 "`model' `depvar' `covariates' totalviolations_1lag if set == 0, vce(cl mineid) `suffix' iter(500)"
-					cap eststo: `null_2'			
+					noi di "`null_2'"
+					noi eststo: `null_2'			
 					predict `inj_type'_`outcome'_null_2 if set == 1
 					
 					* SECOND STRONG NULL MODEL (3) 
 						* THESE ALSO CONTAIN A TOTAL VIOLATIONS/ONSITE INSPEC HOURS COVARIATE (LAGGED ONCE)
 					eststo clear
 					local null_3 "`model' `depvar' `covariates' total_violations_hours_1lag if set == 0, vce(cl mineid) `suffix' iter(500)"
-					cap eststo: `null_3'			
+					noi di "`null_3'"
+					noi eststo: `null_3'			
 					predict `inj_type'_`outcome'_null_3 if set == 1
 					pause "all `inj_type' `outcome' complete"	
 				
