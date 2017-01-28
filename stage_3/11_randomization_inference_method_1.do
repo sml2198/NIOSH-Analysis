@@ -115,7 +115,7 @@ foreach inj_type in `injury_types' {
 			*+- format dependent variable as a rate (violations per inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
-				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
+				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag totalviolations_1lag total_violations_hours_1lag {
 					qui rename `var' `var'_x
 				}
 				* replace vars with rates (x 1000)

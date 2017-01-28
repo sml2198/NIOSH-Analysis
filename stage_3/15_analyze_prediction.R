@@ -5,6 +5,10 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 15 - Analyze Predictions
+  # Analyzes predictions for 16 targeting algorithms and 12 null models,
+    # each using training/testing cutoff of 2010, 2011, 2012, 2013, and 2014
+    # (produced in 10_fit_models)
+  # Generates tables presenting predictive performance (in paper and in appendix)
 
 # Coded by: Julia Bodson, juliabodson@gmail.com
 
@@ -21,9 +25,17 @@ root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 results.in.path = paste0(root, "/results/csv", collapse = NULL) 
 results.out.path = paste0(root, "/results/csv/prediction", collapse = NULL) 
 
-# inputs
+# inputs - defined dynamically within file (see line 85)
+  # predictions for 16 targeting algorithms and 12 null models
+    # each using training/testing cutoff of 2010, 2011, 2012, 2013, and 2014
+    # produced in 10_fit_models
 
-# outputs
+# outputs - defined dynamically within file (see lines 303-317)
+  # tables presenting differences in predictive performance
+    # between 16 targeting algorithms and  8 corresponding null models
+    # each using training/testing cutoff of 2010, 2011, 2012, 2013, and 2014
+  # tables presenting predictive performance for for 16 targeting algorithms and 12 null models
+    # each using training/testing cutoff of 2010, 2011, 2012, 2013, and 2014
 
 # generate file paths
 dir.create(results.out.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -285,17 +297,24 @@ for (injury in c("MR", "PS")) {
     }
     
     ##############################################################################
-    
+
     # OUTPUT DATA
     
-    # 
-    write.csv(b.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    # output predictive performance for B models
+      # 12 rows; 5 columns
+    write.csv(b.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models", sep = " - "), ".csv", collapse = NULL), row.names = F)
     
-    write.csv(c.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    # ouput predictive performance for C models
+      # 24 rows; 5 columns
+    write.csv(c.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models", sep = " - "), ".csv", collapse = NULL), row.names = F)
     
-    write.csv(b.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models - Appendix", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    # ouput appendix predictive performance for B models
+      # 7 rows; 8 columns
+    write.csv(b.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models - Appendix", sep = " - "), ".csv", collapse = NULL), row.names = F)
     
-    write.csv(c.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models - Appendix", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    # output appendix predictive performance for C models
+      # 7 rows; 11 columns
+    write.csv(c.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models - Appendix", sep = " - "), ".csv", collapse = NULL), row.names = F)
     
   }
 }
