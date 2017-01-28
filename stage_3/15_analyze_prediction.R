@@ -19,7 +19,7 @@ root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
 results.in.path = paste0(root, "/results/csv", collapse = NULL) 
-results.out.path = paste0(root, "/results/csv", collapse = NULL) 
+results.out.path = paste0(root, "/results/csv/prediction", collapse = NULL) 
 
 # inputs
 
@@ -81,9 +81,11 @@ for (injury in c("MR", "PS")) {
       data = data[, c(names(data)[grepl(injury, names(data))], "dv", "dv_indicator")]
 
       # group data based on B or C model type
+        # 6253 rows; 6 columns; unique on mineid-year
       b.data = data[, c(names(data)[grepl("B", names(data))], "dv_indicator")]
+        # 6253 rows; 7 columns; unique on mineid-year
       c.data = data[, c(names(data)[grepl("C", names(data))], "dv", "dv_indicator")]
-    }}}
+
       # transform predictions
       b.data = data.frame(ifelse(b.data <= 0.5, 0, 1))
       c.as.b.data = data.frame(ifelse(c.data <= 0.5, 0, 1))
@@ -113,24 +115,26 @@ for (injury in c("MR", "PS")) {
       # PREPARE EMPTY DATAFRAME TO HOLD MEASURES OF INTEREST
       
       # B models
+        # 5 rows; 8 columns
       b.model.sum = data.frame(names(b.data)[grepl("B", names(b.data))])
       names(b.model.sum) = "Model"
       b.model.sum$Model = as.character(b.model.sum$Model)
       b.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR")] = NA
     
       # C models
+        # 5 rows; 11 columns
       c.model.sum = data.frame(names(c.data)[grepl("C", names(c.data))])
       names(c.model.sum) = "Model"
       c.model.sum$Model = as.character(c.model.sum$Model)
       c.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR", "SSD", "SSPD", "SSND")] = NA
-      
+  
       ############################################################################
       
-      # FILL IN MEASURES OF INTEREST
+      # CALCULATE MEASURES OF INTEREST
       
       for (type in c("B", "C")) {
         
-        # use the data for either B or C models
+        # use data for either B or C models
         if (type == "B") {
           data = b.data
           model.sum.data = b.model.sum
@@ -140,7 +144,7 @@ for (injury in c("MR", "PS")) {
           model.sum.data = c.model.sum
         }
         
-        # fill in measures of interest
+        # calculate measures of interest
         for (i in 1:nrow(model.sum.data)) {
           model = model.sum.data$Model[i]
           model.data = data[!is.na(data[, model]), c(model, "true_indicator")]
@@ -189,7 +193,7 @@ for (injury in c("MR", "PS")) {
       c.model.sum = c.model.sum[, !(names(c.model.sum) %in% drop)]
       rm(b.data, c.data, c.as.b.data, 
          model.data, model.sum.data, data, c.model.data, 
-         i, model, measure, f, D, PD, ND, drop)
+         i, model, measure, f, D, PD, ND, drop, type)
       
     }
   
@@ -197,11 +201,15 @@ for (injury in c("MR", "PS")) {
 
     # COMBINE B AND C DATA FOR VR AND VC MODELS
     
+      # 10 rows; 8 columns
     b.model.sum = rbind(VC.b.model.sum, VR.b.model.sum)
+      # 10 rows; 11 columns
     c.model.sum = rbind(VC.c.model.sum, VR.c.model.sum)  
-
+    
     # drop duplicates
+      # 7 rows; 8 columns
     b.model.sum = b.model.sum[!duplicated(b.model.sum$Model), ]
+      # 7 rows; 11 columns
     c.model.sum = c.model.sum[!duplicated(c.model.sum$Model), ]
     
     # sort
@@ -209,48 +217,53 @@ for (injury in c("MR", "PS")) {
     c.model.sum = c.model.sum[order(c.model.sum$Model), ]
     
     # bye
-    rm(VC.b.model.sum, VR.b.model.sum, VC.c.model.sum, VR.c.model.sum, data)
+    rm(VC.b.model.sum, VR.b.model.sum, VC.c.model.sum, VR.c.model.sum)
     
     ##############################################################################
     
-    # PREPARE EMPTY DATAFRAME TO HOLD PRESENTED RESULTS
+    # PREPARE EMPTY DATAFRAME TO HOLD DIFFERENCES OF INTEREST
     
     # get model names
-    bin.model.names = b.model.sum[!grepl("NULL",  b.model.sum$Model), "Model"]
-    bin.null.model.names = b.model.sum[grepl("NULL",  b.model.sum$Model), "Model"]
-    count.model.names = c.model.sum[!grepl("NULL",  c.model.sum$Model), "Model"]
-    count.null.model.names = c.model.sum[grepl("NULL",  c.model.sum$Model), "Model"]
+    b.model.names = b.model.sum[!grepl("NULL",  b.model.sum$Model), "Model"]
+    b.null.model.names = b.model.sum[grepl("NULL",  b.model.sum$Model), "Model"]
+    c.model.names = c.model.sum[!grepl("NULL",  c.model.sum$Model), "Model"]
+    c.null.model.names = c.model.sum[grepl("NULL",  c.model.sum$Model), "Model"]
     
     # B models
-    bin.out = data.frame(sort(rep(bin.model.names, 3)))
-    names(bin.out) = "Model"
-    bin.out$Model = as.character(bin.out$Model)
-    bin.out$Measure = rep(c("CCR", "FPR", "FNR"), length(bin.model.names))
-    bin.out[, bin.null.model.names] = NA
+      # 12 rows; 5 columns
+    b.out = data.frame(sort(rep(b.model.names, 3)))
+    names(b.out) = "Model"
+    b.out$Model = as.character(b.out$Model)
+    b.out$Measure = rep(c("CCR", "FPR", "FNR"), length(b.model.names))
+    b.out[, b.null.model.names] = NA
     
     # C models
-    count.out = data.frame(sort(rep(count.model.names, 6)))
-    names(count.out) = "Model"
-    count.out$Model = as.character(count.out$Model)
-    count.out$Measure = rep(c("CCR", "FPR", "FNR", "SSD", "SSPD", "SSND"), length(count.model.names))
-    count.out[, count.null.model.names] = NA
-    
+      # 24 rows; 5 columns
+    c.out = data.frame(sort(rep(c.model.names, 6)))
+    names(c.out) = "Model"
+    c.out$Model = as.character(c.out$Model)
+    c.out$Measure = rep(c("CCR", "FPR", "FNR", "SSD", "SSPD", "SSND"), length(c.model.names))
+    c.out[, c.null.model.names] = NA
+
     ##############################################################################
     
+    # CALCULATE DIFFERENCES OF INTEREST
     
     for (type in c("B", "C")) {
       
+      # use data for either B or C models
       if (type == "B") {
-        out.data = bin.out
+        out.data = b.out
         model.sum = b.model.sum
-        null.model.names = bin.null.model.names
+        null.model.names = b.null.model.names
       }
       if (type == "C") {
-        out.data = count.out
+        out.data = c.out
         model.sum = c.model.sum
-        null.model.names = count.null.model.names
+        null.model.names = c.null.model.names
       }
       
+      # calculate differences of interest
       for (null.model in null.model.names) {
         for (i in 1:nrow(out.data)) {
           model = out.data$Model[i]
@@ -261,11 +274,12 @@ for (injury in c("MR", "PS")) {
         }
       }
       
+      # save data for either B or C models
       if (type == "B") {
-        bin.out = out.data
+        b.out = out.data
       }
       if (type == "C") {
-        count.out = out.data
+        c.out = out.data
       }
       
     }
@@ -274,10 +288,14 @@ for (injury in c("MR", "PS")) {
     
     # OUTPUT DATA
     
-    write.csv(bin.out, paste0(results.out.path, "/", paste(injury, toString(year), "Binary Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
-    write.csv(count.out, paste0(results.out.path, "/", paste(injury, toString(year), "Count Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
-    write.csv(b.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Appendix Binary Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
-    write.csv(c.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Appendix COunt Diff Table", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    # 
+    write.csv(b.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    
+    write.csv(c.out, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    
+    write.csv(b.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for B Models - Appendix", sep = "_"), ".csv", collapse = NULL), row.names = F)
+    
+    write.csv(c.model.sum, paste0(results.out.path, "/", paste(injury, toString(year), "Predictive Performance for C Models - Appendix", sep = "_"), ".csv", collapse = NULL), row.names = F)
     
   }
 }

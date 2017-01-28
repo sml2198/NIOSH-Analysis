@@ -112,22 +112,25 @@ foreach inj_type in `injury_types' {
 			*+- format dependent variable as a rate (violations per inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
-				foreach var of varlist inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
-					rename `var' `var'_x
+				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
+					qui rename `var' `var'_x
 				}
-				* replace variables with rates (divided by inspection hours x 1000)
+				* replace vars with rates (x 1000)
 				foreach var of varlist *_1lag {
-					replace `var' = (`var'/inspectionhours_1lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_1lag_x)*1000
 				}
 				foreach var of varlist *_c3lag {
-					replace `var' = (`var'/inspectionhours_c3lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c3lag_x)*1000
 				}
 				foreach var of varlist *_c4lag {
-					replace `var' = (`var'/inspectionhours_c4lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c4lag_x)*1000
 				}
 				foreach var of varlist *_c5lag {
-					replace `var' = (`var'/inspectionhours_c5lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c5lag_x)*1000
 				}
+				rename total_violations_hours_1lag_x total_violations_hours_1lag
+				rename dv_1lag_x dv_1lag
+				rename totalviolations_1lag_x totalviolations_1lag
 				pause "complete: rate variables formatted"
 			}
 			

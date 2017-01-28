@@ -35,9 +35,9 @@ local lag_levels "1 4" // preferred models
 *local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
-local train_test_split "2010" // targeting algorithms robustness check 
+*local train_test_split "2010" // targeting algorithms robustness check 
 *local train_test_split "2011" // targeting algorithms robustness check 
-*local train_test_split "2012" // targeting algorithms
+local train_test_split "2012" // targeting algorithms
 *local train_test_split "2013" // targeting algorithms robustness check 
 *local train_test_split "2014" // targeting algorithms robustness check 
 
