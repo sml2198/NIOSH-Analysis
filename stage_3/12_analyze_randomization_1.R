@@ -27,8 +27,8 @@ csvroot = paste0(root, "/csv/", collapse = NULL)
 
 ################################################################################
 
-specification.test = "on" # analyze results from models with union & longwall indicators
-#specification.test = "off"
+#specification.test = "on" # analyze results from models with union & longwall indicators
+specification.test = "off"
 
 #lag_3 = "on" # cannot be on at same time as ulw specification test
 #lag_5 = "on" # cannot be on at same time as ulw specification test
@@ -37,8 +37,8 @@ lag_3 = "off"
 
 # WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
 
-# analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
+analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
+# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
 
 if (analyze.method.1 == "on") {
   append.models = "off"
@@ -74,7 +74,7 @@ csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
 # LOOP THROUGH MODELS
 
 for (injury in c("MR", "PS")) {
-  for (form in c("VR", "VC")) {
+  for (form in c("VR","VC")) {
   
   ################################################################################
   
@@ -123,7 +123,7 @@ for (injury in c("MR", "PS")) {
     all.out.file = paste0(csvroot, injury, "_", form, ulw.ext, ".csv",  collapse = NULL)
   }
   if (lag_3 == "on" | lag_5 == "on") {
-    B.4.out.file = paste0(csvroot3, injury, "_B_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
+    B.1.out.file = paste0(csvroot3, injury, "_B_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     B.4.out.file = paste0(csvroot5, injury, "_B_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     C.1.out.file = paste0(csvroot3, injury, "_C_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     C.4.out.file = paste0(csvroot5, injury, "_C_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
@@ -334,18 +334,11 @@ for (injury in c("MR", "PS")) {
     C.4.ri = C.4.ri[which(C.4.ri$p < 0.05) ,]
     
     # save lists of robustly significant subparts (if there are any)
-    if (nrow(B.1.ri) != 0) {
-      write.csv(B.1.ri, file = B.1.out.file, row.names = FALSE)
-    }
-    if (nrow(B.4.ri) != 0) {
-      write.csv(B.4.ri, file = B.4.out.file, row.names = FALSE)
-    }
-    if (nrow(C.1.ri) != 0) {
-      write.csv(C.1.ri, file = C.1.out.file, row.names = FALSE)
-    }
-    if (nrow(C.4.ri) != 0) {
-      write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
-    }
+      # if zero, we still want an empty csv so we can run method 2
+    write.csv(B.1.ri, file = B.1.out.file, row.names = FALSE)
+    write.csv(B.4.ri, file = B.4.out.file, row.names = FALSE)
+    write.csv(C.1.ri, file = C.1.out.file, row.names = FALSE)
+    write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
   } # end of loop of analyze method 1 = on
     
   ################################################################################

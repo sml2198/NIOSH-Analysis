@@ -39,8 +39,8 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "1 4" // preferred models 
-* local lag_levels "3 5" // robustness check
+*local lag_levels "1 4" // preferred models 
+local lag_levels "5" // robustness check
 
 /****** ITERATIONS ************************/
 local num_iterations = 500
@@ -112,25 +112,22 @@ foreach inj_type in `injury_types' {
 			*+- format dependent variable as a rate (violations per inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
-				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
-					qui rename `var' `var'_x
+				foreach var of varlist inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
+					rename `var' `var'_x
 				}
-				* replace vars with rates (x 1000)
+				* replace variables with rates (divided by inspection hours x 1000)
 				foreach var of varlist *_1lag {
-					qui replace `var' = (`var'/inspectionhours_1lag_x)*1000
+					replace `var' = (`var'/inspectionhours_1lag_x)*1000
 				}
 				foreach var of varlist *_c3lag {
-					qui replace `var' = (`var'/inspectionhours_c3lag_x)*1000
+					replace `var' = (`var'/inspectionhours_c3lag_x)*1000
 				}
 				foreach var of varlist *_c4lag {
-					qui replace `var' = (`var'/inspectionhours_c4lag_x)*1000
+					replace `var' = (`var'/inspectionhours_c4lag_x)*1000
 				}
 				foreach var of varlist *_c5lag {
-					qui replace `var' = (`var'/inspectionhours_c5lag_x)*1000
+					replace `var' = (`var'/inspectionhours_c5lag_x)*1000
 				}
-				rename total_violations_hours_1lag_x total_violations_hours_1lag
-				rename dv_1lag_x dv_1lag
-				rename totalviolations_1lag_x totalviolations_1lag
 				pause "complete: rate variables formatted"
 			}
 			
@@ -159,8 +156,13 @@ foreach inj_type in `injury_types' {
 				preserve
 				
 				*+- load in relevant results (produced in method 1)
-					*+- transpose data to make subpart/violation variable names the column names 
 				import delimited "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'method_2_input`ulw_ext'", clear 
+
+				*+- if there are zero observations (i.e. no significant subparts), go onto next item in loop
+				if _N == 0 restore
+				if _N == 0 continue
+				
+				*+- if not zero observations, transpose data to make subpart/violation variable names the column names 
 				rename subpart _varname
 				xpose, clear varname
 				drop _varname
