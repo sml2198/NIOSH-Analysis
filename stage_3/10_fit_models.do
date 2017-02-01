@@ -31,7 +31,7 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "1 4" // preferred models 
+local lag_levels "4" // preferred models 
 *local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
@@ -64,13 +64,13 @@ if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this wit
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "PS MR"
+local injury_types "PS"
 
 /****** OUTCOME FORMS *********************/
-local outcome_form "B C"
+local outcome_form "C"
 
 /****** RATE VS. COUNTS *******************/
-local violation_form "rate count"
+local violation_form "count"
 
 /****** COVARIATES ************************/
 * time not included here, added directly into models because it is excluded from predictions model
@@ -175,17 +175,17 @@ foreach inj_type in `injury_types' {
 			foreach outcome in `outcome_form' {	
 				foreach lag in `lag_levels' {
 							
-					*+- set locals for models, dependent variables, exposure terms, and irrs
+					*+- set locals for models, dependent variables, and exposure terms
 					if "`outcome'" == "C" {
 						local model "nbreg"
 						local depvar "dv"
-						local suffix "exposure(hours) irr"
+						local suffix "exposure(hours) irr" // exposure(var) = offset(ln(var)) 
 						local outcome_label "Count Outcome"
 					}
 					else {
 						local model "probit"
 						local depvar "dv_indicator"
-						local suffix "offset(lnhours)"
+						local suffix "offset(lnhours)" // exposure(var) = offset(ln(var)) 
 						local outcome_label "Binary Outcome"
 					}
 					
@@ -309,8 +309,12 @@ foreach inj_type in `injury_types' {
 					* run model again (just on training set) to generate predictions (just on test set) and store in new variable
 					if "`targeting_algorithms'" != "off" {
 						noi di "`cmd_pred'"
-						cap qui eststo: `cmd_pred'
+						qui eststo: `cmd_pred'
+						gen sam = e(sample)
 						qui predict `inj_type'_`outcome'_`lag'_pred if set == 1
+						
+						*qui predictnl `inj_type'_`outcome'_`lag'_pred = predict() if set == 1, se(`inj_type'_`outcome'_`lag'_pred_se)
+						pause on
 						pause "complete: `inj_type' `outcome' lag `lag' (`viol_form')"
 					}
 				
