@@ -72,9 +72,9 @@ calc.FNR = function(TP, TN, FP, FN) { # false negative rate
 ################################################################################
 
 for (injury in c("MR", "PS")) {
-  
+
   for (year in 2010:2014) {
-    
+
     for (var in c("VC", "VR")) {
       
       # READ DATA
@@ -143,7 +143,6 @@ for (injury in c("MR", "PS")) {
       ############################################################################
       
       # CALCULATE MEASURES OF INTEREST
-      
       for (type in c("B", "C")) {
         
         # use data for either B or C models
@@ -151,7 +150,7 @@ for (injury in c("MR", "PS")) {
           data = b.data
           model.sum.data = b.model.sum
         }
-        else if (type == "C") {
+        if (type == "C") {
           data = c.as.b.data
           model.sum.data = c.model.sum
         }
@@ -179,9 +178,9 @@ for (injury in c("MR", "PS")) {
             D = c.model.data[, model] - c.model.data$true_count
             PD = D[D > 0]
             ND = D[D < 0]
-            model.sum.data$SSD[i] = sum(D ^ 2) 
-            model.sum.data$SSPD[i] = sum(PD ^ 2)  
-            model.sum.data$SSND[i] = sum(ND ^ 2)
+            model.sum.data$SSD[i] = sum(D ^ 2, na.rm = TRUE) 
+            model.sum.data$SSPD[i] = sum(PD ^ 2, na.rm = TRUE)  
+            model.sum.data$SSND[i] = sum(ND ^ 2, na.rm = TRUE)
           }
         }
         

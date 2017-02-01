@@ -37,8 +37,8 @@ lag_3 = "off"
 
 # WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
 
-analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
+# analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
+analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
 
 if (analyze.method.1 == "on") {
   append.models = "off"
