@@ -39,12 +39,12 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-*local lag_levels "1 4" // preferred models 
-local lag_levels "5" // robustness check
+local lag_levels "1 4" // preferred models 
+*local lag_levels "3 5" // robustness check
 
 /****** ITERATIONS ************************/
 local num_iterations = 500
-local max_iterations = 600 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+local max_iterations = 700 // the file will keep running until it has # convergences equal to num_iterations, until this limit
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
 * local specification_check "on" // includes "longwall" and "union" indicators 
@@ -56,7 +56,7 @@ local specification_check "off"
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "MR PS"
+local injury_types "PS MR"
 
 /****** OUTCOME FORMS *********************/
 local outcome_forms "C B"
@@ -112,22 +112,25 @@ foreach inj_type in `injury_types' {
 			*+- format dependent variable as a rate (violations per inspection hour)
 			if "`viol_form'" == "rate"  {
 				* rename the denominator so that it isn't part of the loops below
-				foreach var of varlist inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag {
-					rename `var' `var'_x
+				foreach var of varlist dv_1lag inspectionhours_1lag inspectionhours_c3lag inspectionhours_c4lag inspectionhours_c5lag totalviolations_1lag total_violations_hours_1lag {
+					qui rename `var' `var'_x
 				}
-				* replace variables with rates (divided by inspection hours x 1000)
+				* replace vars with rates (x 1000)
 				foreach var of varlist *_1lag {
-					replace `var' = (`var'/inspectionhours_1lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_1lag_x)*1000
 				}
 				foreach var of varlist *_c3lag {
-					replace `var' = (`var'/inspectionhours_c3lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c3lag_x)*1000
 				}
 				foreach var of varlist *_c4lag {
-					replace `var' = (`var'/inspectionhours_c4lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c4lag_x)*1000
 				}
 				foreach var of varlist *_c5lag {
-					replace `var' = (`var'/inspectionhours_c5lag_x)*1000
+					qui replace `var' = (`var'/inspectionhours_c5lag_x)*1000
 				}
+				rename total_violations_hours_1lag_x total_violations_hours_1lag
+				rename dv_1lag_x dv_1lag
+				rename totalviolations_1lag_x totalviolations_1lag
 				pause "complete: rate variables formatted"
 			}
 			
@@ -245,7 +248,7 @@ foreach inj_type in `injury_types' {
 							
 						/****** THE MODEL! ********/	
 						
-						local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(200)"
+						local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(150)"
 						noi di "`cmd'"
 						cap noi `cmd'
 						pause "model number `x' run"
