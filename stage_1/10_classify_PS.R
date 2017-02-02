@@ -23,12 +23,12 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/dat
 
 # define file paths
 cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
-prepped.input.path = paste0(root, "/5_prepped", collapse = NULL) 
+prepped.input.path = paste0(root, "/5_prepared", collapse = NULL) 
 coded.output.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
   # prepped PS data for classification
-prepped.classify.in.file.name = paste0(prepped.input.path, "/prepped_PS_classify.rds", collapse = NULL)
+prepped.classify.in.file.name = paste0(prepped.input.path, "/prepared_PS_classify.rds", collapse = NULL)
   # clean accidents data
 accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
 

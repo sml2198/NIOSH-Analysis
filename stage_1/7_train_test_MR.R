@@ -10,8 +10,9 @@
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+      # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 1/31/17
+# Last edit 2/1/17
 
 ################################################################################
 
@@ -45,19 +46,22 @@ seed.1.file.name =  paste0(seed.path, "/train.test.MR.seed.1.txt", collapse = NU
 
 # outputs
   # CART Confusion Matrix
-table.d1a.file.name =  paste0(results.path, "/Table D1a.csv", collapse = NULL)
+table.d1a.file.name =  paste0(results.path, "/Table D1a - Confusion Matrix for CaRT Algorithm.csv", collapse = NULL)
   # Random Forest Confusion Matrix
-table.d1b.file.name =  paste0(results.path, "/Table D1b.csv", collapse = NULL)
-  # Random Forest, over-sampled with ROSE, Confusion Matrix
-table.d1c.file.name =  paste0(results.path, "/Table D1c.csv", collapse = NULL)
-  # Random Forest, over-sampled with SMOTE, Confusion Matrix
-table.d1d.file.name =  paste0(results.path, "/Table D1d.csv", collapse = NULL)
-  # Random Forest, under-sampled, Confusion Matrix
-table.d1e.file.name =  paste0(results.path, "/Table D1e.csv", collapse = NULL)
+table.d1b.file.name =  paste0(results.path, "/Table D1b - Confusion Matrix for Random Forest (Unbalanced) Algorithm.csv", collapse = NULL)
+  # Random Forest (ROSE Oversampled) Confusion Matrix
+table.d1c.file.name =  paste0(results.path, "/Table D1c - Confusion Matrix for Random Forest (ROSE Oversampled) Algorithm.csv", collapse = NULL)
+  # Random Forest (SMOTE Oversampled) Confusion Matrix
+table.d1d.file.name =  paste0(results.path, "/Table D1d - Confusion Matrix for Random Forest (SMOTE Oversampled) Algorithm.csv", collapse = NULL)
+  # Random Forest (Under-sampled) Confusion Matrix
+table.d1e.file.name =  paste0(results.path, "/Table D1e - Confusion Matrix for Random Forest (Under-sampled) Algorithm.csv", collapse = NULL)
   # Adaptive Boosting Confusion Matrix
-table.d1f.file.name =  paste0(results.path, "/Table D1f.csv", collapse = NULL)
+table.d1f.file.name =  paste0(results.path, "/Table D1f - Confusion Matrix for Adaptive Boosting Algorithm.csv", collapse = NULL)
   # Summary Statistics
 summary.file.name =  paste0(results.path, "/MR Classification Algorithm Summary.csv", collapse = NULL)
+
+# generate file paths
+dir.create(results.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
 
 # bye
 rm(root, prepared.path, seed.path, results.path)
@@ -77,12 +81,6 @@ summarize = function(tab) {
   TNR = round(100 * TN / (TN + FP), 2)
   FNR = round(100 * FN / (FN + TP), 2)
   PPV = round(100 * TP / (TP + FP), 2)
-  
-  print(paste("True Positive Rate:", TPR, sep = " "))
-  print(paste("False Positive Rate:", FPR, sep = " "))
-  print(paste("True Negative Rate:", TNR, sep = " "))
-  print(paste("False Negative Rate:", FNR, sep = " "))
-  print(paste("Positive Predictive Value:", PPV, sep = " "))
   
   return(c(TPR, FPR, TNR, FNR, PPV))
 }
@@ -104,7 +102,7 @@ rm(prepared.train.test.in.file.name, seed.1.file.name)
 
 ################################################################################
 
-# PREPARE EMPTY DATASET TO STORE SUMMARY
+# PREPARE EMPTY DATASET TO STORE SUMMARY STATISTICS
 
 Algorithm = c("CART", 
               "Random Forest", 
@@ -112,7 +110,9 @@ Algorithm = c("CART",
               "Random Forest - SMOTE", 
               "Random Forest - Undersampled", 
               "Adaptive Boosting")
+
 summary = data.frame(Algorithm)
+
 summary$TPR = 
   summary$FPR = 
   summary$TNR = 
@@ -127,115 +127,113 @@ rm(Algorithm)
 # SET SEED
 
 set.seed(seed1)
+
+# bye
 rm(seed1)
 
 ################################################################################
 
 # CART
-  # Creates Table D.1a: Confusion Matrix for CaRT Algorithm
 
+# run algorithm
 cart = rpart(MR ~ ., data = data[1:700, !(names(data) %in% c("documentno", "mineid"))], 
              method = "class")
 cart.predictions = predict(cart, data[701:1018, !(names(data) %in% c("documentno", "mineid"))], 
                            type = "class")
-table(data[701:1018, "MR"], predicted = cart.predictions)
-sum = summarize(table(data[701:1018, "MR"], predicted = cart.predictions))
 
-# output results
-write.csv(table(data[701:1018, "MR"], predicted = cart.predictions), cart.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1a = table(data[701:1018, "MR"], predicted = cart.predictions)
+sum = summarize(table.d1a)
 summary[summary$Algorithm == "CART", 2:6] = sum
 
-# True Positive Rate: 82.64
-# False Positive Rate: 4.06
-# True Negative Rate: 95.94
-# False Negative Rate: 17.36
-# Positive Predictive Value: 92.59
+# output confusion matrix
+table.d1a = data.frame(matrix(table.d1a, nrow = 2, ncol = 2))
+row.names(table.d1a) = c("observed non-MR", "observed MR")
+names(table.d1a) = c("classified non-MR", "classified MR")
+write.csv(table.d1a, table.d1a.file.name)
 
 # bye
-rm(cart, cart.predictions, sum, cart.cm.file.name)
+rm(cart, cart.predictions, sum, table.d1a, table.d1a.file.name)
 
 ################################################################################
 
-# RANDOM FOREST
-  # Creates Table D.1b: Confusion Matrix for Random Forest (Unbalanced) Algorithm
+# RANDOM FOREST (UNBALANCED)
 
+# run algorithm
 rf = randomForest(MR ~ ., data = data[1:700, !(names(data) %in% c("documentno", "mineid"))], 
                   mtry = 15, importance = TRUE, type = "class", ntree = 1000)
 rf.predictions = predict(rf, data[701:1018, !(names(data) %in% c("documentno", "mineid"))], 
                          type = "class")
-table(data[701:1018, "MR"], predicted = rf.predictions)
-sum = summarize(table(data[701:1018, "MR"], predicted = rf.predictions))
 
-# output results
-write.csv(table(data[701:1018, "MR"], predicted = rf.predictions), rf.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1b = table(data[701:1018, "MR"], predicted = rf.predictions)
+sum = summarize(table.d1b)
 summary[summary$Algorithm == "Random Forest", 2:6] = sum
 
-# True Positive Rate: 87.60
-# False Positive Rate: 4.06
-# True Negative Rate: 95.94
-# False Negative Rate: 12.40
-# Positive Predictive Value: 92.98
+# output confusion matrix
+table.d1b = data.frame(matrix(table.d1b, nrow = 2, ncol = 2))
+row.names(table.d1b) = c("observed non-MR", "observed MR")
+names(table.d1b) = c("classified non-MR", "classified MR")
+write.csv(table.d1b, table.d1b.file.name)
 
 # bye
-rm(rf, rf.predictions, sum, rf.cm.file.name)
+rm(rf, rf.predictions, sum, table.d1b, table.d1b.file.name)
 
 ################################################################################
 
-# RANDOM FOREST WITH ROSE
-  # Creates Table D.1c: Confusion Matrix for Random Forest (ROSE Oversampled) Algorithm
+# RANDOM FOREST (ROSE OVERSAMPLED)
 
+# run algorithm
 data.rosex = ROSE(MR ~ ., data = data[1:700, !(names(data) %in% c("documentno", "mineid"))])$data
 rand = runif(nrow(data.rosex))
 data.rose = data.rosex[order(rand), ]
 rf.rose = randomForest(MR ~ ., data = data.rose, mtry = 15, ntree = 1000)
 rf.rose.pred = predict(rf.rose, data[701:1018, !(names(data) %in% c("documentno", "mineid"))], type = "class")
-table(data[701:1018, "MR"], predicted = rf.rose.pred)
-sum = summarize(table(data[701:1018, "MR"], predicted = rf.rose.pred))
 
-# output results
-write.csv(table(data[701:1018, "MR"], predicted = rf.rose.pred), rf.rose.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1c = table(data[701:1018, "MR"], predicted = rf.rose.pred)
+sum = summarize(table.d1c)
 summary[summary$Algorithm == "Random Forest - ROSE", 2:6] = sum
 
-# True Positive Rate: 72.73
-# False Positive Rate: 3.55
-# True Negative Rate: 96.45
-# False Negative Rate: 27.27
-# Positive Predictive Value: 92.63
+# output confusion matrix
+table.d1c = data.frame(matrix(table.d1c, nrow = 2, ncol = 2))
+row.names(table.d1c) = c("observed non-MR", "observed MR")
+names(table.d1c) = c("classified non-MR", "classified MR")
+write.csv(table.d1c, table.d1c.file.name)
 
 # bye
-remove(data.rosex, rand, data.rose, rf.rose, rf.rose.pred, sum, rf.rose.cm.file.name)
+remove(data.rosex, rand, data.rose, rf.rose, rf.rose.pred, sum, table.d1c, table.d1c.file.name)
 
 ################################################################################
 
-# RANDOM FOREST WITH SMOTE
-  # See Table D.1d: Confusion Matrix for Random Forest (SMOTE Oversampled) Algorithm
+# RANDOM FOREST (SMOTE OVERSAMPLED)
 
+# run algorithm
 smote.trainx = data[1:700, !(names(data) %in% c("documentno", "mineid"))]
 smote.test = data[701:1018, !(names(data) %in% c("documentno", "mineid"))]
 smote = SMOTE(MR ~ ., smote.trainx, perc.over = 100, perc.under = 100)
 rf.smo = randomForest(MR ~ ., data = smote, mtry = 10, ntree = 800)
 rf.smo.pred = predict(rf.smo, smote.test, type = "class")
-table(data[701:1018, "MR"], predicted = rf.smo.pred)
-sum = summarize(table(data[701:1018, "MR"], predicted = rf.smo.pred))
 
-# output results
-write.csv(table(data[701:1018, "MR"], predicted = rf.smo.pred), rf.smote.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1d = table(data[701:1018, "MR"], predicted = rf.smo.pred)
+sum = summarize(table.d1d)
 summary[summary$Algorithm == "Random Forest - SMOTE", 2:6] = sum
 
-# True Positive Rate: 88.43
-# False Positive Rate: 5.08
-# True Negative Rate: 94.92
-# False Negative Rate: 11.57
-# Positive Predictive Value: 91.45
+# output confusion matrix
+table.d1d = data.frame(matrix(table.d1d, nrow = 2, ncol = 2))
+row.names(table.d1d) = c("observed non-MR", "observed MR")
+names(table.d1d) = c("classified non-MR", "classified MR")
+write.csv(table.d1d, table.d1d.file.name)
 
 # bye
-rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred, sum, rf.smote.cm.file.name)
+rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred, sum, table.d1d, table.d1d.file.name)
 
 ################################################################################
 
-# RANDOM FOREST WITH UNDER-SAMPLING
-# Creates Table D.1e: Confusion Matrix for Random Forest (Under-sampled) Algorithm
+# RANDOM FOREST (UNDER-SAMPLED)
 
+# run algorithm
 nmin = sum(data$MR == "YES")
 ctrl = trainControl(method = "cv", classProbs = TRUE, summaryFunction = twoClassSummary)
 rf.downsampled = train(MR ~ ., data = data[1:700, !(names(data) %in% c("documentno", "mineid"))], 
@@ -244,56 +242,49 @@ rf.downsampled = train(MR ~ ., data = data[1:700, !(names(data) %in% c("document
                        strata = data$MR, sampsize = rep(nmin, 2))
 down.prob = predict(rf.downsampled, data[701:1018, !(names(data) %in% c("documentno", "mineid"))], type = "prob")
 down.prob = ifelse(down.prob$YES > 0.50, 1, 0)
-table(data[701:1018, "MR"], predicted = down.prob)
-sum = summarize(table(data[701:1018, "MR"], predicted = down.prob))
 
-# output results
-write.csv(table(data[701:1018, "MR"], predicted = down.prob), rf.under.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1e = table(data[701:1018, "MR"], predicted = down.prob)
+sum = summarize(table.d1e)
 summary[summary$Algorithm == "Random Forest - Undersampled", 2:6] = sum
 
-# True Positive Rate: 91.74
-# False Positive Rate: 6.60
-# True Negative Rate: 93.40
-# False Negative Rate: 8.26
-# Positive Predictive Value: 89.52
+# output confusion matrix
+table.d1e = data.frame(matrix(table.d1e, nrow = 2, ncol = 2))
+row.names(table.d1e) = c("observed non-MR", "observed MR")
+names(table.d1e) = c("classified non-MR", "classified MR")
+write.csv(table.d1e, table.d1e.file.name)
 
 # bye
-rm(nmin, ctrl, down.prob, rf.downsampled, sum, rf.under.cm.file.name)
+rm(nmin, ctrl, down.prob, rf.downsampled, sum, table.d1e, table.d1e.file.name)
 
 ################################################################################
 
 # ADAPTIVE BOOSTING
-  # See Table D.1f: Confusion Matrix for Adaptive Boosting Algorithm
 
+# run algorithm
 mr.adaboost = boosting(MR ~ . , data = data[1:700, !(names(data) %in% c("documentno", "mineid"))], 
                        boos = T, mfinal = 300, coeflearn = "Freund")
 adaboost.pred = predict.boosting(mr.adaboost, newdata = data[701:1018, !(names(data) %in% c("documentno", "mineid"))])
-t(adaboost.pred$confusion)
-sum = summarize(t(adaboost.pred$confusion))
 
-# output results
-write.csv(t(adaboost.pred$confusion), adaboost.cm.file.name)
+# generate confusion matrix and summary statistics
+table.d1f = t(adaboost.pred$confusion)
+sum = summarize(table.d1f)
 summary[summary$Algorithm == "Adaptive Boosting", 2:6] = sum
 
-#            predicted
-# observed   NO    YES
-#       NO   190   7
-#      YES   16    105
-
-# True Positive Rate: 86.78
-# False Positive Rate: 3.55
-# True Negative Rate: 96.45
-# False Negative Rate: 13.22
-# Positive Predictive Value: 93.75
+# output confusion matrix
+table.d1f = data.frame(matrix(table.d1f, nrow = 2, ncol = 2))
+row.names(table.d1f) = c("observed non-MR", "observed MR")
+names(table.d1f) = c("classified non-MR", "classified MR")
+write.csv(table.d1f, table.d1f.file.name)
 
 # bye
-rm(adaboost.pred, mr.adaboost, sum, adaboost.cm.file.name)
+rm(adaboost.pred, mr.adaboost, sum, table.d1f, table.d1f.file.name)
 
 ################################################################################
 
-write.csv(summary, summary.file.name)
+# OUTPUT SUMMARY STATISTICS
 
-################################################################################
+write.csv(summary, summary.file.name, row.names = FALSE)
 
 # bye
 rm(list = ls())

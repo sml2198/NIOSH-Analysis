@@ -7,19 +7,21 @@
 # 10 - Classify MR (Maintenance and Repair) 
   # Classifies all accidents from MSHA open data portal as MR/non-MR
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/13/17
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+
+# Last edit 2/1/17
 
 ################################################################################
 
-library(adabag)
+#library(adabag)
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
@@ -34,12 +36,14 @@ accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", coll
 
 # outputs
   # accidents data, classified as MR/non-MR (R dataset)
-classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR.rds", collapse = NULL)
+classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR_JB_2_1.rds", collapse = NULL)
   # accidents data, classified as MR/non-MR (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR.csv", collapse = NULL)
+classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR_JB_2_1.csv", collapse = NULL)
 
 # generate file paths
-dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
+dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)  
+
+# bye
 
 ################################################################################
 
@@ -51,6 +55,13 @@ set.seed(625)
 # prepped MR data for classification
   # 75700 rows; 73 columns; unique on documentno 
 simple = readRDS(prepped.classify.in.file.name)
+#simple = readRDS("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/5_prepared/prepared_MR_classify_JB_2_1.rds")
+
+#names(simple)[names(simple) == "likely.activity"] = "likely.activy"
+#names(simple)[names(simple) == "maybe.activity"] = "maybe.activy"
+#for(var in names(simple)) {
+#  simple[, var] = as.factor(simple[, var])
+#}
 
 # print PS indicator column number - 2
 which(colnames(simple) == "MR") 
@@ -171,8 +182,11 @@ write.csv(accidents.data, file = classified.accidents.file.name.csv)
 # save R dataset
 saveRDS(accidents.data, file = classified.accidents.file.name)
 
+# non-MR     MR 
+# 60743   14273 
+
 ################################################################################
 
-rm(list = ls())
+#rm(list = ls())
 
 ################################################################################

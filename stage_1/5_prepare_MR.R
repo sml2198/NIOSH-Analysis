@@ -15,7 +15,7 @@
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 1/27/2017
+# Last edit 2/1/2017
 
 ################################################################################
 
@@ -42,9 +42,9 @@ seed.1.file.name =  paste0(seed.path, "/prepare.MR.seed.1.txt", collapse = NULL)
 
 # outputs
   # prepared MR training/testing set
-prepared.train.test.out.file.name = paste0(prepared.path, "/prepared_MR_train_test.rds", collapse = NULL)
+prepared.train.test.out.file.name = paste0(prepared.path, "/prepared_MR_train_test_JB_2_1.rds", collapse = NULL)
   # prepared merged MR accidents data
-prepared.classify.out.file.name = paste0(prepared.path, "/prepared_MR_classify.rds", collapse = NULL)
+prepared.classify.out.file.name = paste0(prepared.path, "/prepared_MR_classify_JB_2_1.rds", collapse = NULL)
 
 # generate file paths
 dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -53,7 +53,7 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 rm(root, cleaned.path, merged.path, prepared.path, seed.path)
 
 ################################################################################
-purpose = "train.test"
+purpose = "classify"
 #for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
   # READ DATA
@@ -75,8 +75,7 @@ purpose = "train.test"
   # read seeds
   seed1 = read.table(seed.1.file.name)
   seed1 = seed1[, 1]
-  rm(seed.1.file.name)
-
+  
   ##############################################################################
   
   # CLEAN DATA
@@ -342,47 +341,109 @@ purpose = "train.test"
     data$temp.23[1:655] = NA
     data$temp.24[1:1] = NA
     data$temp.25[1:424] = NA
-    
-    # make place-holder variables the right class
-    for (var in num.vars) {
-      data[, var] = as.numeric(data[, var])
-    }
-    for (var in charac.vars) {
-      data[, var] = as.character(data[, var])
-    }
-    
-    # standardize missing values
-    for (i in 1:length(charac.vars)) {
-      data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
-                                         data[,charac.vars[i]] == "unknown" | 
-                                         data[,charac.vars[i]] == "?" | 
-                                         data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
-      data[, charac.vars[i]] = factor(data[, charac.vars[i]])
-    }
   
-    # bye
-    rm(i, var)
   }
   
+  if (purpose == "classify") {
+    
+    # generate place-holder variables
+    num.vars = c(paste("temp", 1:9, sep = "."))
+    
+    charac.vars = c(paste("temp", 10:11, sep = "."), 
+                    "degreeofinjury", "accidentclassification", "accidenttype", 
+                    "sourceofinjury", "natureofinjury", 
+                    paste("temp", 12:16, sep = "."), 
+                    "mineractivity", "narrative", "occupation", 
+                    paste("temp", 17:21, sep = "."))
+    
+    data[, paste("temp", 1:21, sep = ".")] = NA
+    
+    # randomly populate place-holder variables
+    set.seed(100)
+    for (var in names(data)[grepl("temp", names(data))]) {
+      data[, var] = sample(1:100, nrow(data), replace = TRUE)
+    }
+    
+    # add specific number of missing values to place-holder variables 
+    data$temp.1[1:23051] = NA
+    data$temp.2[1:22295] = NA
+    data$temp.3[1:22825] = NA
+    data$temp.4[1:352] = NA
+    data$temp.5[1:23201] = NA
+    data$temp.6[1:12974] = NA
+    data$temp.7[1:23118] = NA
+    data$temp.8[1:10009] = NA
+    data$temp.9[1:11815] = NA
+    data$temp.10[1:71899] = NA
+    data$temp.11[1:3485] = NA
+    data$temp.12[1:21196] = NA
+    data$temp.13[1:48762] = NA
+    data$temp.14[1:61042] = NA
+    data$temp.15[1:65010] = NA
+    data$temp.16[1:55593] = NA
+    data$temp.17[1:10009] = NA
+    data$temp.18[1:114] = NA
+    data$temp.19[1:10009] = NA
+    data$temp.20[1:10009] = NA
+    data$temp.21[1:74682] = NA
+    
+  }
+  
+  # make place-holder variables the right class
+  for (var in num.vars) {
+    data[, var] = as.numeric(data[, var])
+  }
+  for (var in charac.vars) {
+    data[, var] = as.character(data[, var])
+  }
+  
+  # standardize missing values
+  for (i in 1:length(charac.vars)) {
+    data[, charac.vars[i]] = ifelse((data[,charac.vars[i]] == "no value found" | 
+                                       data[,charac.vars[i]] == "unknown" | 
+                                       data[,charac.vars[i]] == "?" | 
+                                       data[,charac.vars[i]] == ""), NA_character_, as.character(data[,charac.vars[i]]))
+    data[, charac.vars[i]] = factor(data[, charac.vars[i]])
+  }
   
   # impute missing variables
   set.seed(625)
+  j = 0
+  assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
   for (i in 1:length(num.vars)) {
-    i.rowsmissing = row.names(data)[is.na(data[, num.vars[i]])]
-    while (sum(!complete.cases(data[, num.vars[i]])) > 0) {
-      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-      data[i.rowsmissing, num.vars[i]] = data[replace.rows, num.vars[i]]
+    print(num.vars[i])
+    rows.missing = row.names(data)[is.na(data[, num.vars[i]])]
+    if (sum(!complete.cases(data[, num.vars[i]])) > 0) {
+      replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
+      print(j)
+      j = j + 1
+      print(paste("num to fill", length(rows.missing), sep = " "))
+      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+      data[rows.missing, num.vars[i]] = data[replace.rows, num.vars[i]]
     }
   }
   for (i in 1:length(charac.vars)) {
-    i.rowsmissing = row.names(data)[is.na(data[, charac.vars[i]])]
-    while (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
-      replace.rows = sample(setdiff(row.names(data), i.rowsmissing), length(i.rowsmissing), replace = T)
-      data[i.rowsmissing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
+    print(charac.vars[i])
+    rows.missing = row.names(data)[is.na(data[, charac.vars[i]])]
+    if (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
+      replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
+      print(j)
+      j = j + 1
+      print(paste("num to fill", length(rows.missing), sep = " "))
+      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
+      data[rows.missing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
     }
   }
   
-  rm(i, i.rowsmissing, num.vars, charac.vars, replace.rows)
+  
+  rows.missing = row.names(data)[is.na(data[, "degreeofinjury"])]
+  replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
+  data[rows.missing, "degreeofinjury"] = data[replace.rows, "degreeofinjury"]
+
+  
+  
+  # bye
+  rm(i, var, rows.missing, num.vars, charac.vars, replace.rows)
   
   ##############################################################################
   
@@ -398,18 +459,20 @@ purpose = "train.test"
                                   grepl("wet down working place", data$mineractivity) & 
                                   data$accident.only == 0, 1, 0)
   
-#  data$maybe.activity = ifelse(data$mineractivity == "handling supplies/materials" |
-#                                 data$mineractivity == "hand tools (not powered)" | 
-#                                 data$mineractivity == "no value found" | 
-#                                 data$mineractivity == "unknown" | 
-#                                 data$mineractivity == "clean up" | 
-#                                 data$mineractivity == "inspect equipment" & 
-#                                 data$accident.only == 0, 1, 0)
-  
-#  data$likely.class = ifelse(data$accidentclassification == "handtools (nonpowered)" |
-#                               data$accidentclassification == "machinery" |
-#                               data$accidentclassification == "electrical" & 
-#                               data$accident.only == 0, 1, 0)
+  if (purpose == "classify") {
+    data$maybe.activity = ifelse(data$mineractivity == "handling supplies/materials" |
+                                   data$mineractivity == "hand tools (not powered)" | 
+                                   data$mineractivity == "no value found" | 
+                                   data$mineractivity == "unknown" | 
+                                   data$mineractivity == "clean up" | 
+                                   data$mineractivity == "inspect equipment" & 
+                                   data$accident.only == 0, 1, 0)
+    
+    data$likely.class = ifelse(data$accidentclassification == "handtools (nonpowered)" |
+                                 data$accidentclassification == "machinery" |
+                                 data$accidentclassification == "electrical" & 
+                                 data$accident.only == 0, 1, 0)
+  }
   
   data$likely.source = ifelse((data$sourceofinjury == "wrench" | 
                                  data$sourceofinjury == "knife" |
@@ -549,7 +612,7 @@ purpose = "train.test"
            "surgery", "tests", "tighten", 
            "tire", "toolbox", "trash", 
            "type", "washingdown", "welding", 
-           "wrench")
+           "wrench", "maybe.activity", "likely.class")
   
   if (purpose == "train.test") {
       # 1018 rows; 55 columns; unique on documentno
