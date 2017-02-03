@@ -20,8 +20,8 @@
 
 # define root directory
 # root = "/NIOSH-Analysis"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
 cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
@@ -51,6 +51,9 @@ rm(root, cleaned.path, merged.path, prepared.path)
 ################################################################################
 
 # DEFINE LOOP THAT WILL ITERATE THROUGH PURPOSES
+
+# set seed to enable reproducible results
+set.seed(625)
 
 for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
@@ -839,7 +842,6 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   }
   
   # randomly sort data (in case it was ordered)
-  set.seed(625)
   rand = runif(nrow(data))
   data = data[order(rand), ]
   

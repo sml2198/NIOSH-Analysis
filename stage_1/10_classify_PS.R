@@ -60,14 +60,16 @@ rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
 
 ################################################################################
 
+classify.vars = names(simple.ps)
+
 # run boosting on master dataset
 ps.adaboost = boosting(PS ~ ., 
-                       data = simple.ps[simple.ps$type == "classified", !(names(simple.ps) %in% c("documentno", "type"))], 
+                       data = simple.ps[simple.ps$type == "classified", !(names(simple.ps) %in% c("documentno", "type",  "accidentdate", "mineid"))], 
                        boos = T, mfinal = 300, coeflearn = "Freund")
 
 # predict PS for unclassified accidetns
 adaboost.pred = predict.boosting(ps.adaboost, 
-                                 newdata = simple.ps[simple.ps$type == "unclassified", !(names(simple.ps) %in% c("documentno", "type"))])
+                                 newdata = simple.ps[simple.ps$type == "unclassified", !(names(simple.ps) %in% c("documentno", "type",  "accidentdate"))])
 
 # generate variable with predictions
 adaboost.pred$class = as.factor(adaboost.pred$class)

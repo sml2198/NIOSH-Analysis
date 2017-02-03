@@ -39,12 +39,13 @@ train.test.set.in.file.name = paste0(cleaned.path, "/clean_MR_train_test_set.rds
 merged.data.in.file.name =  paste0(merged.path, "/merged_MR_accidents.rds", collapse = NULL)
   # seeds
 seed.1.file.name =  paste0(seed.path, "/prepare.MR.seed.1.txt", collapse = NULL)
+doc.no.order.file.name = paste0(seed.path, "/doc.no.order.txt", collapse = NULL)
 
 # outputs
   # prepared MR training/testing set
-prepared.train.test.out.file.name = paste0(prepared.path, "/prepared_MR_train_test_JB_2_1.rds", collapse = NULL)
+prepared.train.test.out.file.name = paste0(prepared.path, "/prepared_MR_train_test.rds", collapse = NULL)
   # prepared merged MR accidents data
-prepared.classify.out.file.name = paste0(prepared.path, "/prepared_MR_classify_JB_2_1.rds", collapse = NULL)
+prepared.classify.out.file.name = paste0(prepared.path, "/prepared_MR_classify.rds", collapse = NULL)
 
 # generate file paths
 dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
@@ -62,6 +63,8 @@ purpose = "classify"
     # read cleaned MR training/testing set
       # 1018 rows; 18 columns; unique on documentno 
     data = readRDS(train.test.set.in.file.name)
+    
+    # bye
     rm(train.test.set.in.file.name)
   }
   
@@ -69,9 +72,15 @@ purpose = "classify"
     # read merged MR accidents data 
       # 75700 rows; 19 columns; unique on documentno 
     data = readRDS(merged.data.in.file.name)
-    rm(merged.data.in.file.name)
+
+    # read data ordering
+    doc.no.order = read.table(doc.no.order.file.name)
+    doc.no.order = doc.no.order[, 1]
+    
+    # bye
+    rm(merged.data.in.file.name, doc.no.order.file.name)
   }
-  
+
   # read seeds
   seed1 = read.table(seed.1.file.name)
   seed1 = seed1[, 1]
@@ -346,6 +355,9 @@ purpose = "classify"
   
   if (purpose == "classify") {
     
+    # order data
+    data = data[match(doc.no.order, data$documentno), ]
+    
     # generate place-holder variables
     num.vars = c(paste("temp", 1:9, sep = "."))
     
@@ -411,36 +423,19 @@ purpose = "classify"
   j = 0
   assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
   for (i in 1:length(num.vars)) {
-    print(num.vars[i])
     rows.missing = row.names(data)[is.na(data[, num.vars[i]])]
     if (sum(!complete.cases(data[, num.vars[i]])) > 0) {
       replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
-      print(j)
-      j = j + 1
-      print(paste("num to fill", length(rows.missing), sep = " "))
-      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
       data[rows.missing, num.vars[i]] = data[replace.rows, num.vars[i]]
     }
   }
   for (i in 1:length(charac.vars)) {
-    print(charac.vars[i])
     rows.missing = row.names(data)[is.na(data[, charac.vars[i]])]
     if (sum(!complete.cases(data[, charac.vars[i]])) > 0) {
       replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
-      print(j)
-      j = j + 1
-      print(paste("num to fill", length(rows.missing), sep = " "))
-      assign(paste0("new.seed", j), get(".Random.seed", .GlobalEnv))
       data[rows.missing, charac.vars[i]] = data[replace.rows, charac.vars[i]]
     }
   }
-  
-  
-  rows.missing = row.names(data)[is.na(data[, "degreeofinjury"])]
-  replace.rows = sample(setdiff(row.names(data), rows.missing), length(rows.missing), replace = T)
-  data[rows.missing, "degreeofinjury"] = data[replace.rows, "degreeofinjury"]
-
-  
   
   # bye
   rm(i, var, rows.missing, num.vars, charac.vars, replace.rows)
@@ -458,22 +453,7 @@ purpose = "classify"
   data$likely.activity = ifelse(grepl("maintenance", data$mineractivity) | 
                                   grepl("wet down working place", data$mineractivity) & 
                                   data$accident.only == 0, 1, 0)
-  
-  if (purpose == "classify") {
-    data$maybe.activity = ifelse(data$mineractivity == "handling supplies/materials" |
-                                   data$mineractivity == "hand tools (not powered)" | 
-                                   data$mineractivity == "no value found" | 
-                                   data$mineractivity == "unknown" | 
-                                   data$mineractivity == "clean up" | 
-                                   data$mineractivity == "inspect equipment" & 
-                                   data$accident.only == 0, 1, 0)
-    
-    data$likely.class = ifelse(data$accidentclassification == "handtools (nonpowered)" |
-                                 data$accidentclassification == "machinery" |
-                                 data$accidentclassification == "electrical" & 
-                                 data$accident.only == 0, 1, 0)
-  }
-  
+
   data$likely.source = ifelse((data$sourceofinjury == "wrench" | 
                                  data$sourceofinjury == "knife" |
                                  data$sourceofinjury == "power saw" | 
@@ -612,23 +592,23 @@ purpose = "classify"
            "surgery", "tests", "tighten", 
            "tire", "toolbox", "trash", 
            "type", "washingdown", "welding", 
-           "wrench", "maybe.activity", "likely.class")
+           "wrench")
   
   if (purpose == "train.test") {
       # 1018 rows; 55 columns; unique on documentno
     data = data[, (names(data) %in% keep)]
     data$accidentdate = NULL
     data$mineid = as.numeric(as.character(data$mineid))
-    .Random.seed = seed1
   }
   
   if (purpose == "classify") {
-      # 75700 rows; 73 columns; unique on documentno
+      # 75700 rows; 69 columns; unique on documentno
     keep = c(keep, post.classification)
     data = data[, (names(data) %in% keep)]
   }
 
   # randomly sort data (in case it was ordered)
+  .Random.seed = seed1
   rand = runif(nrow(data))
   data = data[order(rand),]
   
@@ -653,11 +633,11 @@ purpose = "classify"
     rm(prepared.classify.out.file.name)
   }
     
-# }
+}
 
 ################################################################################
 
 # bye
-# rm(list = ls())
+rm(list = ls())
 
 ################################################################################

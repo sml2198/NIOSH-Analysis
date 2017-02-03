@@ -61,12 +61,38 @@ rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
 
 ################################################################################
 
-# USE BOOSTING TO CLASSIFY REAL ACCIDENTS DATA WITH UNKNOWN "MR" STATUS
+doc.target = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.doc.target.txt")
+names.target = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.names.target.txt")
+
+#doc.target = read.table("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.doc.target.txt")
+#names.target = read.table("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.names.target.txt")
+
+doc.target = doc.target[, 1]
+names.target = names.target[, 1]
+
+doc.target = as.character(doc.target)
+names.target = as.character(names.target)
+
+simple = simple[match(doc.target, simple$documentno), ]
+
+simple$maybe.activity = 1
+simple$likely.class = 1
+simple$narrative = "hi"
+
+save = simple
 
 post.algorithm = c("flashburn", "carpal.tunnel", "cumulative", 
                    "hearingloss", "exposure", "heartattack", 
                    "unrelated", "working.on", "barring",
                    "otherverb", "othernoun", "other.keyword")
+simple = simple[, !(names(simple) %in% post.algorithm)]
+simple$accidentdate = NULL
+
+simple = simple[, match(names.target, names(simple))]
+simple[, post.algorithm] = save[, post.algorithm]
+simple$accidentdate = save$accidentdate
+
+# USE BOOSTING TO CLASSIFY REAL ACCIDENTS DATA WITH UNKNOWN "MR" STATUS
 
 # implement Adaptive Boosting
 mr.adaboost = boosting(MR ~ . , data = simple[simple$type!="unclassified", 
@@ -84,6 +110,8 @@ names(accidents.data)[names(accidents.data) == 'adaboost.pred$class'] = 'adaboos
 ################################################################################
 
 # POST-PROCESSING
+
+
 
 # now manually weed out false positives and negatives that could not have been foreseen in the training data 
 accidents.data$manual.predict = ifelse(((accidents.data$likely.activity == 1 & 
@@ -111,16 +139,16 @@ accidents.data$false.pos = ifelse((accidents.data$carpal.tunnel == 1 |
                                   accidents.data$exposure == 1 |
                                   accidents.data$unrelated == 1 | 
                                   accidents.data$accident.only == 1) & 
-                                  accidents.data$adaboos == "YES", 1, 0)
-accidents.data$false.pos = ifelse(accidents.data$adaboos == "YES" & 
+                                  accidents.data$adaboost == "YES", 1, 0)
+accidents.data$false.pos = ifelse(accidents.data$adaboost == "YES" & 
                              accidents.data$likely.keyword == 0 &
                              accidents.data$maybe.keyword == 0 & 
                              accidents.data$other.keyword == 0, 1, accidents.data$false.pos)  
 
 # format classifications
-accidents.data$MR  = ifelse((accidents.data$adaboost == "YES" & 
-                               accidents.data$false.pos == 0) | 
-                              accidents.data$false.neg == 1, 1, 0)
+accidents.data$adaboost = ifelse((accidents.data$adaboost == "YES" & 
+                                    accidents.data$false.pos == 0) | 
+                                   accidents.data$false.neg == 1, 1, 0)
 
 # remove unessential variables
 accidents.data = accidents.data[, c(match("adaboost", names(accidents.data)),
@@ -128,11 +156,15 @@ accidents.data = accidents.data[, c(match("adaboost", names(accidents.data)),
 
 # merge on predictions from training obs
 accidents.data = merge(simple[, c("documentno", "MR")], accidents.data, by = "documentno", all = TRUE)
-accidents.data$MR = ifelse(accidents.data$MR == "YES", "1", "0")
-accidents.data$MR = ifelse(!is.na(accidents.data$adaboost) & accidents.data$adaboost == "YES", 1, accidents.data$MR)
+accidents.data$MR = ifelse(accidents.data$MR == "YES", 1, 0)
+accidents.data$MR = ifelse(!is.na(accidents.data$adaboost) & accidents.data$adaboost == 1, 1, accidents.data$MR)
 
 # remove unessential variables
 accidents.data = accidents.data[, c(-grep("adaboost", names(accidents.data)))]
+
+# table(accidents.data$MR)
+# 0     1 
+# 60250 15450 
 
 ################################################################################
 
