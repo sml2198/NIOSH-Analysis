@@ -83,13 +83,13 @@ inspections = inspections[inspections$coal_metal_ind == "C", ]
 mine.types = readRDS(mine.types.in.file.name)
 
 # merge inspections with mine types & drop non-merged observations 
-  # 327775 rows; 48 columns; unique on eventno
+  # 327775 rows; 47 columns; unique on eventno
 inspections = merge(inspections, mine.types, by = c("mineid"), all = T)
 inspections = inspections[!is.na(inspections$eventno), ]
 rm(mine.types)
 
 # drop observations from environments not of interest
-  # 195732 rows; 48 columns; unique on eventno
+  # 195732 rows; 47 columns; unique on eventno
 inspections = inspections[inspections$minetype == "Underground", ]
 
 # drop observations from time periods not of interest
@@ -104,7 +104,7 @@ inspections = inspections[complete.cases(inspections$eventno),]
 ################################################################################
 
 # keep only useful variables
-  # 192652 rows; 10 columns; unique on eventno
+  # 192141 rows; 10 columns; unique on eventno
 keep = c("mineid", "eventno", "beginningdate",
          "endingdate", "year", "quarter", 
          "inspactycode", "inspectionhours", "onsitehours",

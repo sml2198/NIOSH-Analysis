@@ -131,7 +131,7 @@ violations$quarter = as.yearqtr(violations$dateissued)
 violations$year = as.numeric(format(violations$quarter, "%Y"))
 
 # drop data before study period
-  # 843787 rows; 34 columns; unique on violationno-mineid
+  # 843760 rows; 34 columns; unique on violationno-mineid
 violations = violations[(violations$year > "1999"), ]
 
 ################################################################################
@@ -150,7 +150,7 @@ violations = violations[(violations$year > "1999"), ]
 ################################################################################
 
 # output violations-level data
-  # 843787 rows; 34 columns; unique on violationno-mineid
+  # 843760 rows; 34 columns; unique on violationno-mineid
 saveRDS(violations, file = violations.out.file.name)
 
 ################################################################################
