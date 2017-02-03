@@ -19,8 +19,8 @@ library(stringr)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+#root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
 originals.path = paste0(root, "/0_originals", collapse = NULL) 
@@ -32,7 +32,7 @@ cleaned.path = paste0(root, "/1_cleaned", collapse = NULL)
 assessments.in.file.name = paste0(originals.path, "/AssessedViolations.txt", collapse = NULL)
   # mine type data
     # produced in 1_clean_mines
-mine.type.in.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
+mine.types.in.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
 
 # outputs
   # clean assessments data
@@ -54,7 +54,7 @@ assessments = read.table(assessments.in.file.name, header = T, sep = "|", na.str
 
 # read mine types data (assessments data does NOT contain "minetype" field so we need
 # to merge on mine type information by mineid)
-# 86362 rows; 3 columns; unique on mineid
+  # 86362 rows; 3 columns; unique on mineid
 mine.types = readRDS(mine.types.in.file.name)
 
 ################################################################################
@@ -91,8 +91,6 @@ assessments$mineid = str_pad(assessments$mineid, 7, pad = "0")
 # drop data from environments not of interest
   # 1160380 rows; 58 columns; unique on violation_no
 assessments = assessments[assessments$coalcormetalm == "C", ] 
-
-
 
 # merge assessments with mine types & drop non-merged observations
   # 1160380 rows; 60 columns; unique on violationno

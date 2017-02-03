@@ -36,9 +36,9 @@ accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", coll
 
 # outputs
   # accidents data, classified as MR/non-MR (R dataset)
-classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR_JB_2_1.rds", collapse = NULL)
+classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR_JB.rds", collapse = NULL)
   # accidents data, classified as MR/non-MR (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR_JB_2_1.csv", collapse = NULL)
+classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR_JB.csv", collapse = NULL)
 
 # generate file paths
 dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)  
@@ -55,16 +55,6 @@ set.seed(625)
 # prepped MR data for classification
   # 75700 rows; 73 columns; unique on documentno 
 simple = readRDS(prepped.classify.in.file.name)
-#simple = readRDS("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/5_prepared/prepared_MR_classify_JB_2_1.rds")
-
-#names(simple)[names(simple) == "likely.activity"] = "likely.activy"
-#names(simple)[names(simple) == "maybe.activity"] = "maybe.activy"
-#for(var in names(simple)) {
-#  simple[, var] = as.factor(simple[, var])
-#}
-
-# print PS indicator column number - 2
-which(colnames(simple) == "MR") 
 
 # bye
 rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
@@ -96,25 +86,17 @@ names(accidents.data)[names(accidents.data) == 'adaboost.pred$class'] = 'adaboos
 # POST-PROCESSING
 
 # now manually weed out false positives and negatives that could not have been foreseen in the training data 
-accidents.data$manual.predict = ifelse(((accidents.data$likely.activy == 1 & 
-                                           accidents.data$likely.class == 1 & 
+accidents.data$manual.predict = ifelse(((accidents.data$likely.activity == 1 & 
                                            accidents.data$false.keyword == 0) |
                                           (accidents.data$likely.occup == 1 & 
-                                             (accidents.data$maybe.activy == 1 | 
-                                                accidents.data$likely.activy == 1 | 
-                                                accidents.data$likely.class == 1 | 
+                                             (accidents.data$likely.activity == 1 | 
                                                 accidents.data$maybe.keyword == 1)) |
-                                          (accidents.data$likely.activy == 1 & 
+                                          (accidents.data$likely.activity == 1 & 
                                              (accidents.data$maybe.occup == 1 | 
-                                                accidents.data$likely.class == 1 | 
                                                 accidents.data$maybe.keyword == 1)) |
                                           (accidents.data$maybe.occup == 1 & 
-                                             ((accidents.data$maybe.activy == 1 & 
-                                                 accidents.data$likely.class == 1) | 
-                                                (accidents.data$likely.class == 1 & 
-                                                   accidents.data$maybe.keyword == 1) | 
-                                                (accidents.data$maybe.activy == 1 & 
-                                                   accidents.data$maybe.keyword == 1))) |
+                                             ((accidents.data$maybe.keyword == 1) | 
+                                                (accidents.data$maybe.keyword == 1))) |
                                           accidents.data$likely.keyword == 1) & 
                                          accidents.data$accident.only == 0, 1, 0)
 

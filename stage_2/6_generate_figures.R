@@ -18,11 +18,11 @@ library(plyr)
 
 # define root directory
 # root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-input.path = paste0(root, "/data/5_prepped", collapse = NULL)
+input.path = paste0(root, "/data/5_prepared", collapse = NULL)
 output.path = paste0(root, "/figures", collapse = NULL)
 
 # inputs

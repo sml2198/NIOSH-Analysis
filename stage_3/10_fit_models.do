@@ -31,7 +31,7 @@ set matsize 11000, perm
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
-local lag_levels "4" // preferred models 
+local lag_levels "1 4" // preferred models 
 *local lag_levels "3 5" //  preferred model robustness check 
 
 /****** TRAIN/TEST SPLIT ******************/
@@ -64,13 +64,13 @@ if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this wit
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "PS"
+local injury_types "MR PS"
 
 /****** OUTCOME FORMS *********************/
-local outcome_form "C"
+local outcome_form "B C"
 
 /****** RATE VS. COUNTS *******************/
-local violation_form "count"
+local violation_form "rate count"
 
 /****** COVARIATES ************************/
 * time not included here, added directly into models because it is excluded from predictions model
@@ -306,15 +306,19 @@ foreach inj_type in `injury_types' {
 						}
 					} // converge == 1 
 					
-					* run model again (just on training set) to generate predictions (just on test set) and store in new variable
+					*+-  run model again (just on training set) to generate predictions (just on test set) and store in new variable
 					if "`targeting_algorithms'" != "off" {
 						noi di "`cmd_pred'"
 						qui eststo: `cmd_pred'
-						gen sam = e(sample)
 						qui predict `inj_type'_`outcome'_`lag'_pred if set == 1
 						
-						*qui predictnl `inj_type'_`outcome'_`lag'_pred = predict() if set == 1, se(`inj_type'_`outcome'_`lag'_pred_se)
-						pause on
+						*+- if a count model, capture the max number of injuries in the training period, and enforce that predictions cannot be larger than this 
+						if "`outcome'" == "C" {
+							qui summ dv if set == 0
+							local prediction_maximum = `r(max)'
+							pause "prediction maximum = `prediction_maximum'"
+							replace `inj_type'_`outcome'_`lag'_pred = `prediction_maximum' if `inj_type'_`outcome'_`lag'_pred > `prediction_maximum' & !missing(`inj_type'_`outcome'_`lag'_pred)
+						}
 						pause "complete: `inj_type' `outcome' lag `lag' (`viol_form')"
 					}
 				
@@ -341,6 +345,9 @@ foreach inj_type in `injury_types' {
 					noi di "`null_1'"
 					noi eststo: `null_1'			
 					qui predict `inj_type'_`outcome'_null_1 if set == 1
+					if "`outcome'" == "C" {
+						replace `inj_type'_`outcome'_null_1 = `prediction_maximum' if `inj_type'_`outcome'_null_1 > `prediction_maximum' & !missing(`inj_type'_`outcome'_null_1)
+					}
 					
 					* FIRST STRONG NULL MODEL (2) 
 						* THESE ALSO CONTAIN A TOTAL VIOLATIONS COVARIATE (LAGGED ONCE)
@@ -349,6 +356,9 @@ foreach inj_type in `injury_types' {
 					noi di "`null_2'"
 					noi eststo: `null_2'			
 					predict `inj_type'_`outcome'_null_2 if set == 1
+						if "`outcome'" == "C" {
+						replace `inj_type'_`outcome'_null_2 = `prediction_maximum' if `inj_type'_`outcome'_null_2 > `prediction_maximum' & !missing(`inj_type'_`outcome'_null_2)
+					}
 					
 					* SECOND STRONG NULL MODEL (3) 
 						* THESE ALSO CONTAIN A TOTAL VIOLATIONS/ONSITE INSPEC HOURS COVARIATE (LAGGED ONCE)
@@ -357,6 +367,9 @@ foreach inj_type in `injury_types' {
 					noi di "`null_3'"
 					noi eststo: `null_3'			
 					predict `inj_type'_`outcome'_null_3 if set == 1
+					if "`outcome'" == "C" {
+						replace `inj_type'_`outcome'_null_3 = `prediction_maximum' if `inj_type'_`outcome'_null_3 > `prediction_maximum' & !missing(`inj_type'_`outcome'_null_3)
+					}
 					pause "all `inj_type' `outcome' complete"	
 				
 				} // targeting_algoritghms
@@ -394,6 +407,7 @@ foreach inj_type in `injury_types' {
 	local sp_count_lag_3_vars ""
 	local sp_count_lag_4_vars ""
 	local sp_count_lag_5_vars ""
+	local prediction_maximum ""
 	
 } // inj type
 
