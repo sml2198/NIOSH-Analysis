@@ -15,7 +15,7 @@
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 2/1/2017
+# Last edit 2/3/2017
 
 ################################################################################
 
@@ -37,9 +37,11 @@ train.test.set.in.file.name = paste0(cleaned.path, "/clean_MR_train_test_set.rds
   # merged MR accidents data
     # produced in 4_merge_accidents
 merged.data.in.file.name =  paste0(merged.path, "/merged_MR_accidents.rds", collapse = NULL)
-  # seeds
-seed.1.file.name =  paste0(seed.path, "/prepare.MR.seed.1.txt", collapse = NULL)
-doc.no.order.file.name = paste0(seed.path, "/doc.no.order.txt", collapse = NULL)
+  # seeds/data ordering
+seed.file.name =  paste0(seed.path, "/prepare.MR.seed.txt", collapse = NULL)
+doc.no.order.1.file.name = paste0(seed.path, "/prepare.MR.doc.no.order.1.txt", collapse = NULL)
+doc.no.order.2.file.name = paste0(seed.path, "/prepare.MR.doc.no.order.2.txt", collapse = NULL)
+names.order.file.name = paste0(seed.path, "/prepare.MR.names.order.txt", collapse = NULL)
 
 # outputs
   # prepared MR training/testing set
@@ -54,8 +56,8 @@ dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE creates file str
 rm(root, cleaned.path, merged.path, prepared.path, seed.path)
 
 ################################################################################
-purpose = "classify"
-#for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
+
+for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
   # READ DATA
   
@@ -64,8 +66,12 @@ purpose = "classify"
       # 1018 rows; 18 columns; unique on documentno 
     data = readRDS(train.test.set.in.file.name)
     
+    # read seeds
+    seed = read.table(seed.file.name)
+    seed = seed[, 1]
+    
     # bye
-    rm(train.test.set.in.file.name)
+    rm(train.test.set.in.file.name, seed.file.name)
   }
   
   if (purpose == "classify") {
@@ -74,16 +80,22 @@ purpose = "classify"
     data = readRDS(merged.data.in.file.name)
 
     # read data ordering
-    doc.no.order = read.table(doc.no.order.file.name)
-    doc.no.order = doc.no.order[, 1]
+    doc.no.order.1 = read.table(doc.no.order.1.file.name)
+    doc.no.order.2 = read.table(doc.no.order.2.file.name)
+    names.order = read.table(names.order.file.name)
+    
+    doc.no.order.1 = doc.no.order.1[, 1]
+    doc.no.order.2 = doc.no.order.2[, 1]
+    names.order = names.order[, 1]
+
+    doc.no.order.1 = as.character(doc.no.order.1)
+    doc.no.order.2 = as.character(doc.no.order.2)
+    names.order = as.character(names.order)
     
     # bye
-    rm(merged.data.in.file.name, doc.no.order.file.name)
+    rm(merged.data.in.file.name, 
+       doc.no.order.1.file.name, doc.no.order.2.file.name, names.order.file.name)
   }
-
-  # read seeds
-  seed1 = read.table(seed.1.file.name)
-  seed1 = seed1[, 1]
   
   ##############################################################################
   
@@ -356,7 +368,7 @@ purpose = "classify"
   if (purpose == "classify") {
     
     # order data
-    data = data[match(doc.no.order, data$documentno), ]
+    data = data[match(doc.no.order.1, data$documentno), ]
     
     # generate place-holder variables
     num.vars = c(paste("temp", 1:9, sep = "."))
@@ -563,10 +575,10 @@ purpose = "classify"
                                  data$barring == 1) &
                                 data$accident.only == 0, 1, 0)
   
-  post.classification = c("flashburn", "carpal.tunnel", "cumulative", 
-                          "hearingloss", "exposure", "heartattack", 
-                          "unrelated", "working.on", "barring",
-                          "otherverb", "othernoun", "other.keyword")
+  post.classification = c("barring", "carpal.tunnel", "cumulative",
+                          "exposure", "flashburn", "hearingloss", 
+                          "heartattack", "other.keyword", "othernoun",
+                          "otherverb", "unrelated", "working.on")
   
   ##############################################################################
   
@@ -599,21 +611,49 @@ purpose = "classify"
     data = data[, (names(data) %in% keep)]
     data$accidentdate = NULL
     data$mineid = as.numeric(as.character(data$mineid))
+    
+    # randomly sort data (in case it was ordered)
+    .Random.seed = seed
+    rand = runif(nrow(data))
+    data = data[order(rand),]
+    
+    # bye
+    rm(rand, seed)
   }
   
   if (purpose == "classify") {
       # 75700 rows; 69 columns; unique on documentno
     keep = c(keep, post.classification)
     data = data[, (names(data) %in% keep)]
+    
+    # order data
+      # rows
+    data = data[match(doc.no.order.2, data$documentno), ]
+    
+      # columns
+    data$maybe.activity = 1
+    data$likely.class = 1
+    data$narrative = "temp"
+    
+    save = data
+    
+    data = data[, !(names(data) %in% post.classification)]
+    data$accidentdate = NULL
+    
+    data = data[, match(names.order, names(data))]
+    
+    data[, post.classification] = save[, post.classification]
+    data$accidentdate = save$accidentdate
+    
+    # bye
+    rm(save)
+    data$narrative = 
+      data$maybe.activity = 
+      data$likely.class = NULL
   }
-
-  # randomly sort data (in case it was ordered)
-  .Random.seed = seed1
-  rand = runif(nrow(data))
-  data = data[order(rand),]
   
   # bye
-  rm(keep, rand, post.classification, seed1)
+  rm(keep, post.classification)
   
   ##############################################################################
   

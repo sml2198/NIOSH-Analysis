@@ -75,6 +75,7 @@ adaboost.pred = predict.boosting(ps.adaboost,
 adaboost.pred$class = as.factor(adaboost.pred$class)
 accidents = cbind(simple.ps[simple.ps$type == "unclassified", ], adaboost.pred$class)
 names(accidents)[names(accidents) == "adaboost.pred$class"] = "prediction"
+accidents$prediction = ifelse(!is.na(accidents$prediction) & accidents$prediction == "YES", 2, 1)
 accidents$PS = NULL
 
 # re-code common false positives
@@ -102,7 +103,7 @@ accidents = accidents[, c("PS", "documentno")]
 # MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
 
 # load cleaned accidents
-  # 75016 rows; 56 columns; unique on documentno
+  # 75016 rows; 17 columns; unique on documentno
 clean.accidents = readRDS(accidents.in.file.name)
 
 # merge
@@ -113,6 +114,9 @@ accidents = merge(clean.accidents[, c("documentno", "accidentdate", "mineid")],
 # format PS
 accidents$PS = ifelse(accidents$PS == 2, 1, 0)
 accidents$PS = factor(accidents$PS)
+
+# non-PS   PS 
+# 73131  1885 
 
 ################################################################################
 

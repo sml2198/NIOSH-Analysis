@@ -10,11 +10,11 @@
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 
-# Last edit 2/1/17
+# Last edit 2/3/2017
 
 ################################################################################
 
-#library(adabag)
+library(adabag)
 
 ################################################################################
 
@@ -24,166 +24,145 @@
 root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
-prepped.input.path = paste0(root, "/5_prepared", collapse = NULL) 
-coded.output.path = paste0(root, "/3_coded", collapse = NULL)
+cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+prepared.path = paste0(root, "/5_prepared", collapse = NULL) 
+classified.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # prepped MR data for classification
-prepped.classify.in.file.name = paste0(prepped.input.path, "/prepared_MR_classify.rds", collapse = NULL)
-  # clean accidents data
-accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
+  # prepared merged MR accidents data
+    # produced in 7_train_test_MR
+prepared.classify.in.file.name = paste0(prepared.path, "/prepared_MR_classify.rds", collapse = NULL)
+  # cleaned accidents data
+    # produced in 1_clean_accidents
+accidents.in.file.name = paste0(cleaned.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
-  # accidents data, classified as MR/non-MR (R dataset)
-classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_MR_JB.rds", collapse = NULL)
+  # accidents data, classified as MR/non-MR (rds)
+classified.accidents.file.name = paste0(classified.path, "/classified_accidents_MR.rds", collapse = NULL)
   # accidents data, classified as MR/non-MR (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_MR_JB.csv", collapse = NULL)
+classified.accidents.file.name.csv = paste0(classified.path, "/classified_accidents_MR.csv", collapse = NULL)
 
 # generate file paths
-dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)  
+dir.create(classified.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)  
 
 # bye
+rm(root, cleaned.path, prepared.path, classified.path)
 
 ################################################################################
 
 # READ DATA
 
-# set seed to enable reproducible results
-set.seed(625)
+# read prepared merged MR accidents data
+  # 75700 rows; 69 columns; unique on documentno 
+pre.classify = readRDS(prepared.classify.in.file.name)
 
-# prepped MR data for classification
-  # 75700 rows; 73 columns; unique on documentno 
-simple = readRDS(prepped.classify.in.file.name)
+# read prepared merged MR accidents data
+  # 75016 rows; 17 columns; unique on documentno
+all.accidents = readRDS(accidents.in.file.name)
 
 # bye
-rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
+rm(prepared.classify.in.file.name, accidents.in.file.name)
 
 ################################################################################
 
-doc.target = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.doc.target.txt")
-names.target = read.table("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.names.target.txt")
+# TRAIN ADAPTIVE BOOSTING ALGORITHM AND USE TO CLASSIFY ACCIDENTS
 
-#doc.target = read.table("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.doc.target.txt")
-#names.target = read.table("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data/6_seeds/classify.MR.names.target.txt")
+# set seed
+set.seed(625)
 
-doc.target = doc.target[, 1]
-names.target = names.target[, 1]
+# define post-classification variables (to exclude from algorithm)
+post.classification = c("barring", "carpal.tunnel", "cumulative",
+                        "exposure", "flashburn", "hearingloss", 
+                        "heartattack", "other.keyword", "othernoun",
+                        "otherverb", "unrelated", "working.on")
 
-doc.target = as.character(doc.target)
-names.target = as.character(names.target)
+# train algorithm
+mr.adaboost = boosting(MR ~ . , data = pre.classify[pre.classify$type != "unclassified", 
+                                            !(names(pre.classify) %in% c("documentno", "type", "mineid", "accidentdate", post.classification))], 
+                       boos = TRUE, mfinal = 300, coeflearn = "Freund")
 
-simple = simple[match(doc.target, simple$documentno), ]
-
-simple$maybe.activity = 1
-simple$likely.class = 1
-simple$narrative = "hi"
-
-save = simple
-
-post.algorithm = c("flashburn", "carpal.tunnel", "cumulative", 
-                   "hearingloss", "exposure", "heartattack", 
-                   "unrelated", "working.on", "barring",
-                   "otherverb", "othernoun", "other.keyword")
-simple = simple[, !(names(simple) %in% post.algorithm)]
-simple$accidentdate = NULL
-
-simple = simple[, match(names.target, names(simple))]
-simple[, post.algorithm] = save[, post.algorithm]
-simple$accidentdate = save$accidentdate
-
-# USE BOOSTING TO CLASSIFY REAL ACCIDENTS DATA WITH UNKNOWN "MR" STATUS
-
-# implement Adaptive Boosting
-mr.adaboost = boosting(MR ~ . , data = simple[simple$type!="unclassified", 
-                                              !(names(simple) %in% c('documentno','type', 'mineid', 'accidentdate', post.algorithm))], 
-                       boos = T, mfinal = 300, coeflearn = 'Freund')
-
-# generate predictions
-adaboost.pred = predict.boosting(mr.adaboost, newdata = simple[simple$type == "unclassified", 
-                                                               !(names(simple) %in% c('documentno','type', 'mineid', 'accidentdate', post.algorithm))])
+# generate classifications
+adaboost.pred = predict.boosting(mr.adaboost, newdata = pre.classify[pre.classify$type == "unclassified", 
+                                                               !(names(pre.classify) %in% c("documentno", "type", "mineid", "accidentdate", post.classification))])
 
 # apply predictions to unclassified injuries
-accidents.data = cbind(simple[simple$type == "unclassified",], adaboost.pred$class)
-names(accidents.data)[names(accidents.data) == 'adaboost.pred$class'] = 'adaboost'
+classified = cbind(pre.classify[pre.classify$type == "unclassified", ], adaboost.pred$class)
+names(classified)[names(classified) == "adaboost.pred$class"] = "adaboost"
+
+# bye
+rm(post.classification)
 
 ################################################################################
 
 # POST-PROCESSING
 
+# remove false positives/negatives that could not have been forseen in training
+classified$manual.predict = ifelse(((classified$likely.activity == 1 & classified$false.keyword == 0) |
+                                      (classified$likely.occup == 1 & 
+                                         (classified$likely.activity == 1 | classified$maybe.keyword == 1)) |
+                                          (classified$likely.activity == 1 & 
+                                             (classified$maybe.occup == 1 | classified$maybe.keyword == 1)) |
+                                      (classified$maybe.occup == 1 & 
+                                         ((classified$maybe.keyword == 1) | (classified$maybe.keyword == 1))) |
+                                          classified$likely.keyword == 1) & 
+                                     classified$accident.only == 0, 1, 0)
 
+classified$false.neg = ifelse(classified$flashburn == 1 & classified$adaboost == "NO", 1, 0)
 
-# now manually weed out false positives and negatives that could not have been foreseen in the training data 
-accidents.data$manual.predict = ifelse(((accidents.data$likely.activity == 1 & 
-                                           accidents.data$false.keyword == 0) |
-                                          (accidents.data$likely.occup == 1 & 
-                                             (accidents.data$likely.activity == 1 | 
-                                                accidents.data$maybe.keyword == 1)) |
-                                          (accidents.data$likely.activity == 1 & 
-                                             (accidents.data$maybe.occup == 1 | 
-                                                accidents.data$maybe.keyword == 1)) |
-                                          (accidents.data$maybe.occup == 1 & 
-                                             ((accidents.data$maybe.keyword == 1) | 
-                                                (accidents.data$maybe.keyword == 1))) |
-                                          accidents.data$likely.keyword == 1) & 
-                                         accidents.data$accident.only == 0, 1, 0)
+classified$false.pos = ifelse((classified$carpal.tunnel == 1 | 
+                                 classified$cumulative == 1 | 
+                                 classified$heartattack == 1 |
+                                 classified$hearingloss == 1 | 
+                                 classified$exposure == 1 |
+                                 classified$unrelated == 1 | 
+                                 classified$accident.only == 1) & 
+                                classified$adaboost == "YES", 1, 0)
 
-# flag false negatives
-accidents.data$false.neg = ifelse(accidents.data$flashburn == 1 & accidents.data$adaboost == "NO", 1, 0)
+classified$false.pos = ifelse(classified$adaboost == "YES" & 
+                                classified$likely.keyword == 0 &
+                                classified$maybe.keyword == 0 & 
+                                classified$other.keyword == 0, 1, classified$false.pos)  
 
-# flag definitely and likely false positives (including accident-only observations)
-accidents.data$false.pos = ifelse((accidents.data$carpal.tunnel == 1 | 
-                                     accidents.data$cumulative == 1 | 
-                                     accidents.data$heartattack == 1 |
-                                accidents.data$hearingloss == 1 | 
-                                  accidents.data$exposure == 1 |
-                                  accidents.data$unrelated == 1 | 
-                                  accidents.data$accident.only == 1) & 
-                                  accidents.data$adaboost == "YES", 1, 0)
-accidents.data$false.pos = ifelse(accidents.data$adaboost == "YES" & 
-                             accidents.data$likely.keyword == 0 &
-                             accidents.data$maybe.keyword == 0 & 
-                             accidents.data$other.keyword == 0, 1, accidents.data$false.pos)  
+################################################################################
+
+# EDIT DATA
 
 # format classifications
-accidents.data$adaboost = ifelse((accidents.data$adaboost == "YES" & 
-                                    accidents.data$false.pos == 0) | 
-                                   accidents.data$false.neg == 1, 1, 0)
+classified$adaboost = ifelse((classified$adaboost == "YES" & 
+                                classified$false.pos == 0) | 
+                               classified$false.neg == 1, 1, 0)
 
-# remove unessential variables
-accidents.data = accidents.data[, c(match("adaboost", names(accidents.data)),
-                                    match("documentno", names(accidents.data)))]
+# drop unnecessary variables
+classified = classified[, c("adaboost", "documentno")]
 
-# merge on predictions from training obs
-accidents.data = merge(simple[, c("documentno", "MR")], accidents.data, by = "documentno", all = TRUE)
-accidents.data$MR = ifelse(accidents.data$MR == "YES", 1, 0)
-accidents.data$MR = ifelse(!is.na(accidents.data$adaboost) & accidents.data$adaboost == 1, 1, accidents.data$MR)
+# merge on training observations
+classified = merge(pre.classify[, c("documentno", "MR")], classified, by = "documentno", all = TRUE)
+classified$MR = ifelse(classified$MR == "YES", 1, 0)
+classified$MR = ifelse(!is.na(classified$adaboost) & classified$adaboost == 1, 1, classified$MR)
 
-# remove unessential variables
-accidents.data = accidents.data[, c(-grep("adaboost", names(accidents.data)))]
+# check
+table(classified$MR)
+# non-MR    MR 
+# 61231     14469 
 
-# table(accidents.data$MR)
-# 0     1 
-# 60250 15450 
+# bye
+classified$adaboost = NULL
 
 ################################################################################
 
 # MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
 
-# load cleaned accidents
-  # 75016 rows; 56 columns; unique on documentno
-accidents = readRDS(accidents.in.file.name)
 
 # merge
   # 75016 rows; 4 columns; unique on documentno
-accidents.data = merge(accidents[, c("documentno", "accidentdate", "mineid")], 
-                       accidents.data, by = "documentno", all = F)
+classified = merge(all.accidents[, c("documentno", "accidentdate", "mineid")], 
+                       classified, by = "documentno", all = F)
 
 # format MR
-accidents.data$MR = factor(accidents.data$MR)
+classified$MR = factor(classified$MR)
 
 # bye
-rm(simple, accidents)
+rm(data, all.accidents)
 
 ################################################################################
 
@@ -191,16 +170,17 @@ rm(simple, accidents)
 
 # save a CSV file
   # 75016 rows; 4 columns; unique on documentno 
-write.csv(accidents.data, file = classified.accidents.file.name.csv)
+write.csv(classified, file = classified.accidents.file.name.csv)
 
 # save R dataset
-saveRDS(accidents.data, file = classified.accidents.file.name)
+saveRDS(classified, file = classified.accidents.file.name)
 
-# non-MR     MR 
-# 60743   14273 
+table(classified$MR)
+# non-MR   MR 
+# 60815 14201 
 
 ################################################################################
 
-#rm(list = ls())
+rm(list = ls())
 
 ################################################################################

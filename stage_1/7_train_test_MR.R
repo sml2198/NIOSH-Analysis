@@ -12,7 +12,7 @@
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 2/1/17
+# Last edit 2/3/2017
 
 ################################################################################
 
@@ -42,7 +42,7 @@ results.path = paste0(root, "/results/stage 1", collapse = NULL)
   # prepared MR training/testing set
 prepared.train.test.in.file.name = paste0(prepared.path, "/prepared_MR_train_test.rds", collapse = NULL)
   # seeds
-seed.1.file.name =  paste0(seed.path, "/train.test.MR.seed.1.txt", collapse = NULL)
+seed.file.name =  paste0(seed.path, "/train.test.MR.seed.txt", collapse = NULL)
 
 # outputs
   # CART Confusion Matrix
@@ -94,11 +94,11 @@ summarize = function(tab) {
 data = readRDS(prepared.train.test.in.file.name)
 
 # read seeds
-seed1 = read.table(seed.1.file.name)
-seed1 = seed1[, 1]
+seed = read.table(seed.file.name)
+seed = seed[, 1]
 
 # bye
-rm(prepared.train.test.in.file.name, seed.1.file.name)
+rm(prepared.train.test.in.file.name, seed.file.name)
 
 ################################################################################
 
@@ -126,10 +126,10 @@ rm(Algorithm)
 
 # SET SEED
 
-set.seed(seed1)
+set.seed(seed)
 
 # bye
-rm(seed1)
+rm(seed)
 
 ################################################################################
 
@@ -263,7 +263,7 @@ rm(nmin, ctrl, down.prob, rf.downsampled, sum, table.d1e, table.d1e.file.name)
 
 # run algorithm
 mr.adaboost = boosting(MR ~ . , data = data[1:700, !(names(data) %in% c("documentno", "mineid"))], 
-                       boos = T, mfinal = 300, coeflearn = "Freund")
+                       boos = TRUE, mfinal = 300, coeflearn = "Freund")
 adaboost.pred = predict.boosting(mr.adaboost, newdata = data[701:1018, !(names(data) %in% c("documentno", "mineid"))])
 
 # generate confusion matrix and summary statistics
@@ -284,6 +284,7 @@ rm(adaboost.pred, mr.adaboost, sum, table.d1f, table.d1f.file.name)
 
 # OUTPUT SUMMARY STATISTICS
 
+# output summary statistics
 write.csv(summary, summary.file.name, row.names = FALSE)
 
 # bye
