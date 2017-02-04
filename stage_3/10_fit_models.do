@@ -45,8 +45,8 @@ local train_test_split "2012" // targeting algorithms
 /* Includes "longwall" and "union" indicators  - you MUST  have access to EIA and
  NIOSH data for this test to work! This will also turn off the option to run the
  targeting algorithms, since we don't do this robustness assessment on those analyses. */
-*local specification_check "on" 
-local specification_check "off"
+local specification_check "on" 
+* local specification_check "off"
 
 /* PRODUCE TABLES WITH ADDITIONAL COVARIATES? */
 local report_add_covars "off" // preferred models
@@ -64,7 +64,7 @@ if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this wit
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "MR PS"
+local injury_types "MR"
 
 /****** OUTCOME FORMS *********************/
 local outcome_form "B C"

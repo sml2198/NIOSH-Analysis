@@ -90,7 +90,7 @@ for (injury in c("MR", "PS")) { # collapse data for MR and PS injuries
   # FORMAT DATA
   
   # format MR/PS (0 = no, 1 = yes)
-  mines.accidents.coded[, injury] = as.numeric(mines.accidents.coded[, injury])
+  mines.accidents.coded[, injury] = as.numeric(as.character(mines.accidents.coded[, injury]))
   
   # drop unnecessary variable
   mines.accidents.coded$documentno = NULL
