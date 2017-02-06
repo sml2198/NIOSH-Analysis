@@ -14,14 +14,14 @@
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 
-# Last edit 1/25/2017
+# Last edit 2/6/2017
 
 ################################################################################
 
 # define root directory
 # root = "/NIOSH-Analysis"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
 cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
@@ -50,11 +50,6 @@ rm(root, cleaned.path, merged.path, prepared.path)
 
 ################################################################################
 
-# DEFINE LOOP THAT WILL ITERATE THROUGH PURPOSES
-
-# set seed to enable reproducible results
-set.seed(625)
-
 for (purpose in c("train.test", "classify")) { # prepare datasets for both training/testing and classification purposes
   
   # READ DATA
@@ -63,6 +58,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     # read cleaned PS training/testing set
       # 1000 rows; 18 columns; unique on documentno 
     data = readRDS(train.test.set.in.file.name)
+    
+    # bye
     rm(train.test.set.in.file.name)
   }
   
@@ -70,6 +67,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     # read merged PS accidents data 
       # 75743 rows; 19 columns; unique on documentno 
     data = readRDS(merged.data.in.file.name)
+    
+    # bye
     rm(merged.data.in.file.name)
   }
   
@@ -93,8 +92,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   data$narrative = gsub("ag(a)*( )*(in)*st", "against", data$narrative)
   
   # clean "not-found" values
-  data$accidenttype = ifelse(data$accidenttype == "not elsewhereclassified", "NO VALUE FOUND", data$accidenttype)
-  data$natureofinjury = ifelse(data$natureofinjury == "unclassified,not determed", "NO VALUE FOUND", data$natureofinjury)
+  data$accidenttype = ifelse(data$accidenttype == "not elsewhereclassified", "no value found", data$accidenttype)
+  data$natureofinjury = ifelse(data$natureofinjury == "unclassified,not determed", "no value found", data$natureofinjury)
   
   # format accident type codes
   data$accidenttypecode = as.factor(data$accidenttypecode)
@@ -409,7 +408,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   ##############################################################################
   
-  # COUNT CERTAIN WORDS IN EACH NARRATIVE
+  # COUNT UPPERCASE WORDS IN EACH NARRATIVE
   
   # count uppercase words
   data$num.vehicles = str_count(data$narrative, "VEHICLE")
@@ -576,7 +575,7 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   ##############################################################################
   
-  # CREATE LIKELY/MAYBE LIKELY/UNLIKELY GROUPS FROM CATEGORICAL VARIABLES
+  # GENERATE LIKELY/MAYBE LIKELY/UNLIKELY GROUPS FROM CATEGORICAL VARIABLES
 
   data$likely.class = ifelse(data$accidentclassification == "powered haulage" | 
                                data$accidentclassification == "machinery", 1, 0)
@@ -683,9 +682,9 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                    data$natureofinjury == "concussion-brain,cerebral" |
                                    data$natureofinjury == "joint,tendon,muscl inflam", 1, 0)
   
-  data$likely.actvity = ifelse(grepl("operate", data$mineractivity) | grepl("roof", data$mineractivity), 1, 0)
+  data$likely.activity = ifelse(grepl("operate", data$mineractivity) | grepl("roof", data$mineractivity), 1, 0)
   
-  data$maybe.likely.actvity = ifelse(grepl("move/reel", data$mineractivity) | 
+  data$maybe.likely.activity = ifelse(grepl("move/reel", data$mineractivity) | 
                                       grepl("handling supplies/materials", data$mineractivity), 1, 0)
   
   data$unlikely.activity = ifelse(data$activitycode %in% c("009", "016", "020", "022", "025", 
@@ -693,8 +692,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
                                                            "034", "036", "075", "066", "065",
                                                            "056"), 1, 0)
   
-  data$uncertain.activity = ifelse(data$likely.actvity == 0 & 
-                                     data$maybe.likely.actvity == 0 & 
+  data$uncertain.activity = ifelse(data$likely.activity == 0 & 
+                                     data$maybe.likely.activity == 0 & 
                                      data$unlikely.activity == 0, 1, 0)
   
   data$likely.occup = ifelse(data$occupcode3digit %in% c("050", "046", "028", "016", "036"), 1, 0)
@@ -752,8 +751,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   data$holistic = ifelse((((data$likely.type == 1) | 
                              (data$maybe.type == 1)) & 
-                            (data$likely.actvity == 1 | 
-                               data$maybe.likely.actvity == 1) & 
+                            (data$likely.activity == 1 | 
+                               data$maybe.likely.activity == 1) & 
                             (data$likely.class == 1) & 
                             data$moving.vehcl == 1), 1, 0)
   
@@ -801,10 +800,10 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
            "headcanopy", "headroof", "hit", 
            "hole", "in.vehicle", "int.obj.strike", 
            "jarring", "keyword", "keyword.pts", 
-           "likely.actvity", "likely.class", "likely.equip", 
+           "likely.activity", "likely.class", "likely.equip", 
            "likely.nature", "likely.occup", "likely.ps", 
            "likely.source", "likely.type", "loose", 
-           "loose.rbolting", "maybe.false.keyword", "maybe.likely.actvity", 
+           "loose.rbolting", "maybe.false.keyword", "maybe.likely.activity", 
            "maybe.type", "mineid", "moving.vehcl", 
            "mult.vehcl", "neg.keyword.pts", "neg.pts", 
            "neg.roofbolt", "neg.wrench", "no.vehcl", 
@@ -838,10 +837,11 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
   
   # enforce factor storage
   for (var in names(data)) {
-    data[, var] = factor(data[, var])
+    data[, var] = as.factor(as.character(data[, var]))
   }
   
   # randomly sort data (in case it was ordered)
+  set.seed(625)
   rand = runif(nrow(data))
   data = data[order(rand), ]
   
@@ -856,6 +856,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     # output prepared PS training/testing set
       # 1000 rows; 101 columns; unique on documentno 
     saveRDS(data, file = prepared.train.test.out.file.name)
+    
+    # bye
     rm(prepared.train.test.out.file.name)
   }
   
@@ -863,6 +865,8 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
     # output prepared merged PS accidents data
       # 75743 rows; 103 columns; unique on documentno 
     saveRDS(data, file = prepared.classify.out.file.name)
+    
+    # bye
     rm(prepared.classify.out.file.name)
   }
   
@@ -871,6 +875,6 @@ for (purpose in c("train.test", "classify")) { # prepare datasets for both train
 ################################################################################
 
 # bye
-rm(list = ls())
+# rm(list = ls())
 
 ################################################################################

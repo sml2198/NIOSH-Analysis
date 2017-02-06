@@ -12,7 +12,7 @@
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
 
-# Last edit 2/3/2017
+# Last edit 2/6/2017
 
 ################################################################################
 
@@ -40,6 +40,7 @@ results.path = paste0(root, "/results/stage 1", collapse = NULL)
 
 # inputs
   # prepared MR training/testing set
+    # produced in 5_prepare_MR
 prepared.train.test.in.file.name = paste0(prepared.path, "/prepared_MR_train_test.rds", collapse = NULL)
   # seeds
 seed.file.name =  paste0(seed.path, "/train.test.MR.seed.txt", collapse = NULL)

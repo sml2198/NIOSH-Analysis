@@ -22,3 +22,15 @@ library(ROSE)
 library(rpart)
 library(stringr)
 
+# setwd("/NIOSH-Analysis/programs/stage_1/")
+# setwd("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_1/")
+setwd("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_1/")
+
+source("1_clean_accidents.R")
+source("2_clean_MR_train_test_set.R")
+source("3_clean_PS_train_test_set.R")
+source("4_merge_accidents.R")
+source("5_prepare_MR.R")
+source("7_train_test_MR.R")
+source("9_classify_MR.R")
+

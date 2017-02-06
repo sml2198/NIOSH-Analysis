@@ -90,7 +90,7 @@ classified = cbind(pre.classify[pre.classify$type == "unclassified", ], adaboost
 names(classified)[names(classified) == "adaboost.pred$class"] = "adaboost"
 
 # bye
-rm(post.classification)
+rm(post.classification, adaboost.pred, mr.adaboost)
 
 ################################################################################
 
@@ -133,9 +133,11 @@ classified$adaboost = ifelse((classified$adaboost == "YES" &
                                classified$false.neg == 1, 1, 0)
 
 # drop unnecessary variables
+  # 74682 rows; 2 columns; unique on documentno
 classified = classified[, c("adaboost", "documentno")]
 
 # merge on training observations
+  # 75700 rows; 3 columns; unique on documentno
 classified = merge(pre.classify[, c("documentno", "MR")], classified, by = "documentno", all = TRUE)
 classified$MR = ifelse(classified$MR == "YES", 1, 0)
 classified$MR = ifelse(!is.na(classified$adaboost) & classified$adaboost == 1, 1, classified$MR)
@@ -147,40 +149,41 @@ table(classified$MR)
 
 # bye
 classified$adaboost = NULL
+rm(pre.classify)
 
 ################################################################################
 
-# MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
-
+# MERGE PREDICTIONS ONTO ACCIDENTS DATA
 
 # merge
   # 75016 rows; 4 columns; unique on documentno
-classified = merge(all.accidents[, c("documentno", "accidentdate", "mineid")], 
-                       classified, by = "documentno", all = F)
+accidents = merge(all.accidents[, c("documentno", "accidentdate", "mineid")], 
+                       classified, by = "documentno", all = FALSE)
 
-# format MR
-classified$MR = factor(classified$MR)
+# format variables
+accidents$MR = factor(accidents$MR)
 
-# bye
-rm(data, all.accidents)
-
-################################################################################
-
-# OUTPUT CLASSIFIED DATA
-
-# save a CSV file
-  # 75016 rows; 4 columns; unique on documentno 
-write.csv(classified, file = classified.accidents.file.name.csv)
-
-# save R dataset
-saveRDS(classified, file = classified.accidents.file.name)
-
-table(classified$MR)
+# check
+table(accidents$MR)
 # non-MR   MR 
 # 60815 14201 
 
+# bye
+rm(all.accidents, classified)
+
 ################################################################################
 
+# OUTPUT CLASSIFIED ACCIDENTS DATA
+
+# output classified accidents data (csv)
+  # 75016 rows; 4 columns; unique on documentno 
+write.csv(accidents, file = classified.accidents.file.name.csv)
+
+# output classified accidents data (rds)
+  # 75016 rows; 4 columns; unique on documentno 
+saveRDS(accidents, file = classified.accidents.file.name)
+
+# bye
 rm(list = ls())
 
 ################################################################################
