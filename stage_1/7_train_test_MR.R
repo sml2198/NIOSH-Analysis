@@ -203,7 +203,7 @@ names(table.d1c) = c("classified non-MR", "classified MR")
 write.csv(table.d1c, table.d1c.file.name)
 
 # bye
-remove(data.rosex, rand, data.rose, rf.rose, rf.rose.pred, sum, table.d1c, table.d1c.file.name)
+rm(data.rosex, rand, data.rose, rf.rose, rf.rose.pred, sum, table.d1c, table.d1c.file.name)
 
 ################################################################################
 
@@ -241,7 +241,8 @@ rf.downsampled = train(MR ~ ., data = data[1:700, !(names(data) %in% c("document
                        method = "rf", ntree = 800, 
                        tuneLength = 10, metric = "ROC", trControl = ctrl, 
                        strata = data$MR, sampsize = rep(nmin, 2))
-down.prob = predict(rf.downsampled, data[701:1018, !(names(data) %in% c("documentno", "mineid"))], type = "prob")
+down.prob = predict(rf.downsampled, 
+                    data[701:1018, !(names(data) %in% c("documentno", "mineid"))], type = "prob")
 down.prob = ifelse(down.prob$YES > 0.50, 1, 0)
 
 # generate confusion matrix and summary statistics

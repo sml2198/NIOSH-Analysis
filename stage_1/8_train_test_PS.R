@@ -29,13 +29,13 @@ library(rpart)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-prepared.path = paste0(root, "/5_prepared", collapse = NULL) 
-seed.path = paste0(root, "/6_seeds", collapse = NULL) 
+prepared.path = paste0(root, "/data/5_prepared", collapse = NULL) 
+seed.path = paste0(root, "/data/6_seeds", collapse = NULL) 
 results.path = paste0(root, "/results/stage 1", collapse = NULL) 
 
 # inputs
@@ -137,10 +137,10 @@ rm(seed)
 # CART
 
 # run algorithm
-cart = rpart(PS ~ ., data = data[1:700, 
-                                 !(names(data) %in% c("documentno"))], method = "class")
-cart.predictions = predict(cart, data[701:1000, 
-                                      !(names(data) %in% c("documentno"))], type = "class")
+cart = rpart(PS ~ ., data = data[1:700, !(names(data) %in% c("documentno"))], 
+             method = "class")
+cart.predictions = predict(cart, data[701:1000, !(names(data) %in% c("documentno"))], 
+                           type = "class")
 
 # generate confusion matrix and summary statistics
 table.d2a = table(data[701:1000, "PS"], predicted = cart.predictions)
@@ -158,100 +158,138 @@ rm(cart, cart.predictions, sum, table.d2a, table.d2a.file.name)
 
 ################################################################################
 
-# RANDOM FOREST
-  # See Table D.2b: Confusion Matrix for Random Forest (Unbalanced) Algorithm
+# RANDOM FOREST (UNBALANCED)
 
-rf = randomForest(PS ~ . -documentno, data = data[1:700,], mtry = 3, importance = TRUE, type = "class", ntree = 800)
-rf.predictions = predict(rf, data[701:1000,], type = "class")
-table(data[701:1000, 2], predicted = rf.predictions)
+# run algorithm
+rf = randomForest(PS ~ ., data = data[1:700, !(names(data) %in% c("documentno"))], 
+                  mtry = 3, importance = TRUE, type = "class", ntree = 800)
+rf.predictions = predict(rf, data[701:1000, !(names(data) %in% c("documentno"))], 
+                         type = "class")
 
-rm(rf, rf.predictions)
+# generate confusion matrix and summary statistics
+table.d2b = table(data[701:1000, "PS"], predicted = rf.predictions)
+sum = summarize(table.d2b)
+summary[summary$Algorithm == "Random Forest", 2:6] = sum
+
+# output confusion matrix
+table.d2b = data.frame(matrix(table.d2b, nrow = 2, ncol = 2))
+row.names(table.d2b) = c("observed non-PS", "observed PS")
+names(table.d2b) = c("classified non-PS", "classified PS")
+write.csv(table.d2b, table.d2b.file.name)
+
+# bye
+rm(rf, rf.predictions, sum, table.d2b, table.d2b.file.name)
 
 ################################################################################
 
-# RANDOM FOREST WITH ROSE
-  # See Table D.2c: Confusion Matrix for Random Forest (ROSE Oversampled) Algorithm
+# RANDOM FOREST (ROSE OVERSAMPLED)
 
-simple.rosex = ROSE(PS ~ ., data = data[1:700, ])$data
-rand3 = runif(nrow(simple.rosex))
-simple.rose = simple.rosex[order(rand3), ]
-rf.rose = randomForest(PS ~ . -documentno, data = simple.rose, mtry = 15, ntree = 1000)
-rf.rose.pred = predict(rf.rose, data[701:1000, ], type = "class")
-table(data[701:1000, 2], predicted = rf.rose.pred)
+# run algorithm
+data.rosex = ROSE(PS ~ ., data = data[1:700, !(names(data) %in% c("documentno"))])$data
+rand = runif(nrow(data.rosex))
+data.rose = data.rosex[order(rand), ]
+rf.rose = randomForest(PS ~ . , data = data.rose, mtry = 15, ntree = 1000)
+rf.rose.pred = predict(rf.rose, data[701:1000, !(names(data) %in% c("documentno"))], type = "class")
 
-remove(simple.rosex, rand, simple.rose, rf.rose, rf.rose.pred)
+# generate confusion matrix and summary statistics
+table.d2c = table(data[701:1000, "PS"], predicted = rf.rose.pred)
+sum = summarize(table.d2c)
+summary[summary$Algorithm == "Random Forest - ROSE", 2:6] = sum
+
+# output confusion matrix
+table.d2c = data.frame(matrix(table.d2c, nrow = 2, ncol = 2))
+row.names(table.d2c) = c("observed non-PS", "observed PS")
+names(table.d2c) = c("classified non-PS", "classified PS")
+write.csv(table.d2c, table.d2c.file.name)
+
+# bye
+rm(data.rosex, rand, data.rose, rf.rose, rf.rose.pred, sum, table.d2c, table.d2c.file.name)
 
 ################################################################################
 
-# RANDOM FOREST WITH SMOTE
-  # See Table D.2d: Confusion Matrix for Random Forest (SMOTE Oversampled) Algorithm
+# RANDOM FOREST (SMOTE OVERSAMPLED)
 
-smote.trainx = data[1:700, ]
-smote.test = data[701:1000, ]
+# run algorithm
+smote.trainx = data[1:700, !(names(data) %in% c("documentno"))]
+smote.test = data[701:1000, !(names(data) %in% c("documentno"))]
 smote = SMOTE(PS ~ ., smote.trainx, perc.over = 100, perc.under = 100)
-rf.smo = randomForest(PS ~ . -documentno, data = smote, mtry = 10, ntree = 800)
+rf.smo = randomForest(PS ~ ., data = smote, mtry = 10, ntree = 800)
 rf.smo.pred = predict(rf.smo, smote.test, type = "class")
-table(data[701:1000, 2], predicted = rf.smo.pred)
 
-rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred)
+# generate confusion matrix and summary statistics
+table.d2d = table(data[701:1000, "PS"], predicted = rf.smo.pred)
+sum = summarize(table.d2d)
+summary[summary$Algorithm == "Random Forest - SMOTE", 2:6] = sum
+
+# output confusion matrix
+table.d2d = data.frame(matrix(table.d2d, nrow = 2, ncol = 2))
+row.names(table.d2d) = c("observed non-PS", "observed PS")
+names(table.d2d) = c("classified non-PS", "classified PS")
+write.csv(table.d2d, table.d2d.file.name)
+
+# bye
+rm(smote.trainx, smote.test, smote, rf.smo, rf.smo.pred, sum, table.d2d, table.d2d.file.name)
 
 ################################################################################
 
-# DOWNSAMPLE NEGATIVE OUTCOMES FOR RANDOM FOREST
-  # See Table D.2e: Confusion Matrix for Random Forest (Under-sampled) Algorithm
+# RANDOM FOREST (UNDER-SAMPLED)
 
+# run algorithm
 nmin = sum(data$PS == "YES")
-nmin
 ctrl = trainControl(method = "cv", classProbs = TRUE, summaryFunction = twoClassSummary)
-rf.downsampled = train(PS ~ ., data = data[1:700,!(names(data) %in% c("documentno", "narrative"))], 
+rf.downsampled = train(PS ~ ., data = data[1:700,!(names(data) %in% c("documentno"))], 
                        method = "rf", ntree = 800,
                        tuneLength = 10, metric = "ROC", trControl = ctrl, 
                        strata = data$PS, sampsize = rep(nmin, 2))
 down.prob = predict(rf.downsampled, 
-                    data[701:1000,!(names(data) %in% c("documentno", "narrative"))], type = "prob")[,1]
+                    data[701:1000, !(names(data) %in% c("documentno"))], type = "prob")
 down.prob = ifelse(down.prob$YES > 0.50, 1, 0)
-table(data[701:1000, 2], predicted = down.prob)
 
-rm(nmin, ctrl, down.prob, rf.downsampled)
+# generate confusion matrix and summary statistics
+table.d2e = table(data[701:1000, "PS"], predicted = down.prob)
+sum = summarize(table.d2e)
+summary[summary$Algorithm == "Random Forest - Undersampled", 2:6] = sum
+
+# output confusion matrix
+table.d2e = data.frame(matrix(table.d2e, nrow = 2, ncol = 2))
+row.names(table.d2e) = c("observed non-PS", "observed PS")
+names(table.d2e) = c("classified non-PS", "classified PS")
+write.csv(table.d2e, table.d2e.file.name)
+
+# bye
+rm(nmin, ctrl, down.prob, rf.downsampled, sum, table.d2e, table.d2e.file.name)
 
 ################################################################################
 
 # ADAPTIVE BOOSTING
-  # See Table D.2f: Confusion Matrix for Adaptive Boosting Algorithm
 
-ps.adaboost = boosting(PS ~ ., 
-                       data = data[1:700, !(names(data) %in% c("documentno"))], 
-                       boos = T, mfinal = 800, coeflearn = "Freund")
-simple.adaboost.pred = predict.boosting(ps.adaboost, newdata = data[701:1000,])
-simple.adaboost.pred$confusion
+# run algorithm
+ps.adaboost = boosting(PS ~ ., data = data[1:700, !(names(data) %in% c("documentno"))], 
+                       boos = TRUE, mfinal = 800, coeflearn = "Freund")
+adaboost.pred = predict.boosting(ps.adaboost, newdata = data[701:1000, !(names(data) %in% c("documentno"))])
 
-# generate variable with boosting predictions
-simple.adaboost.pred$class = as.factor(simple.adaboost.pred$class)
-predictions = data[701:1000, ]
-predictions = cbind(predictions, simple.adaboost.pred$class)
-names(predictions)[names(predictions) == "simple.adaboost.pred$class"] = "prediction"
+# generate confusion matrix and summary statistics
+table.d2f = t(adaboost.pred$confusion)
+sum = summarize(table.d2f)
+summary[summary$Algorithm == "Adaptive Boosting", 2:6] = sum
 
-# re-code common false positives
-predictions$accidents = ifelse(predictions$entrapment == 1, 1, predictions$prediction) 
-predictions$prediction = ifelse(predictions$brokensteel == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$headroof == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$headcanopy == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$hole == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$jarring == 1 |
-                                  predictions$bounced == 1 |
-                                  predictions$rock == 1 |
-                                  predictions$bodyseat == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$accident.only == 1, 1, predictions$prediction)
-predictions$prediction = ifelse(predictions$falling.accident == 1, 1, predictions$prediction)
-predictions$prediction = as.factor(predictions$prediction)
+# output confusion matrix
+table.d2f = data.frame(matrix(table.d2f, nrow = 2, ncol = 2))
+row.names(table.d2f) = c("observed non-PS", "observed PS")
+names(table.d2f) = c("classified non-PS", "classified PS")
+write.csv(table.d2f, table.d2f.file.name)
 
-# now report final predictive accuracy
-table(predictions$prediction, predictions$PS)
-
-rm(ps.adaboost, simple.adaboost.pred, predictions)
+# bye
+rm(adaboost.pred, ps.adaboost, sum, table.d2f, table.d2f.file.name)
 
 ################################################################################
 
+# OUTPUT SUMMARY STATISTICS
+
+# output summary statistics
+write.csv(summary, summary.file.name, row.names = FALSE)
+
+# bye
 rm(list = ls())
 
 ################################################################################
