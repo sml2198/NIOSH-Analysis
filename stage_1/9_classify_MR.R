@@ -4,13 +4,13 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 10 - Classify MR (Maintenance and Repair) 
+# 10 - Classify MR (Maintenance and Repair) Accidents
   # Classifies all accidents from MSHA open data portal as MR/non-MR
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
 
-# Last edit 2/3/2017
+# Last edit 2/7/2017
 
 ################################################################################
 
@@ -30,7 +30,7 @@ classified.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
   # prepared merged MR accidents data
-    # produced in 7_train_test_MR
+    # produced in 5_prepare_MR
 prepared.classify.in.file.name = paste0(prepared.path, "/prepared_MR_classify.rds", collapse = NULL)
   # cleaned accidents data
     # produced in 1_clean_accidents
@@ -137,10 +137,12 @@ classified$adaboost = ifelse((classified$adaboost == "YES" &
 classified = classified[, c("adaboost", "documentno")]
 
 # merge on training observations
-  # 75700 rows; 3 columns; unique on documentno
-classified = merge(pre.classify[, c("documentno", "MR")], classified, by = "documentno", all = TRUE)
-classified$MR = ifelse(classified$MR == "YES", 1, 0)
-classified$MR = ifelse(!is.na(classified$adaboost) & classified$adaboost == 1, 1, classified$MR)
+  # 75700 rows; 4 columns; unique on documentno
+classified = merge(pre.classify[, c("documentno", "MR", "type")], classified, by = "documentno", all = TRUE)
+classified$MR = ifelse(classified$type == "classified" & classified$MR == "YES", 1, 
+                       ifelse(classified$type == "classified" & classified$MR == "NO", 0, NA))
+classified$MR = ifelse(classified$type == "unclassified" & classified$adaboost == 1, 1, 
+                       ifelse(classified$type == "unclassified" & classified$adaboost == 0, 0, classified$MR))
 
 # check
 table(classified$MR)
@@ -148,7 +150,7 @@ table(classified$MR)
 # 61231     14469 
 
 # bye
-classified$adaboost = NULL
+classified$adaboost = classified$type = NULL
 rm(pre.classify)
 
 ################################################################################

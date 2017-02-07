@@ -4,11 +4,13 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 11 - Classify PS (Pinning and Striking) 
+# 11 - Classify PS (Pinning and Striking) Accidents
   # Classifies all accidents from MSHA open data portal as PS/non-PS
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/13/17
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+
+# Last edit 2/7/2017
 
 ################################################################################
 
@@ -22,115 +24,144 @@ library(adabag)
 root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
 
 # define file paths
-cleaned.input.path = paste0(root, "/1_cleaned", collapse = NULL) 
-prepped.input.path = paste0(root, "/5_prepared", collapse = NULL) 
-coded.output.path = paste0(root, "/3_coded", collapse = NULL)
+cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+prepared.path = paste0(root, "/5_prepared", collapse = NULL) 
+classified.path = paste0(root, "/3_coded", collapse = NULL)
 
 # inputs
-  # prepped PS data for classification
-prepped.classify.in.file.name = paste0(prepped.input.path, "/prepared_PS_classify.rds", collapse = NULL)
-  # clean accidents data
-accidents.in.file.name = paste0(cleaned.input.path, "/clean_accidents.rds", collapse = NULL)
+  # prepared merged PS accidents data
+    # produced in 6_prepare_PS
+prepared.classify.in.file.name = paste0(prepared.path, "/prepared_PS_classify.rds", collapse = NULL)
+  # cleaned accidents data
+    # produced in 1_clean_accidents
+accidents.in.file.name = paste0(cleaned.path, "/clean_accidents.rds", collapse = NULL)
 
 # outputs
-  # accidents data, classified as PS/non-PS (R dataset)
-classified.accidents.file.name = paste0(coded.output.path, "/classified_accidents_PS.rds", collapse = NULL)
+  # accidents data, classified as PS/non-PS (rds)
+classified.accidents.file.name = paste0(classified.path, "/classified_accidents_PS.rds", collapse = NULL)
   # accidents data, classified as PS/non-PS (csv)
-classified.accidents.file.name.csv = paste0(coded.output.path, "/classified_accidents_PS.csv", collapse = NULL)
+classified.accidents.file.name.csv = paste0(classified.path, "/classified_accidents_PS.csv", collapse = NULL)
 
 # generate file paths
-dir.create(coded.output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
+dir.create(classified.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist) 
+
+# bye
+rm(root, cleaned.path, prepared.path, classified.path)
 
 ################################################################################
 
 # READ DATA
 
-# set seed to enable reproducible results
-set.seed(625)
-
-# prepped PS data for classification
+# read prepared merged PS accidents data
   # 75743 rows; 103 columns; unique on documentno 
-simple.ps = readRDS(prepped.classify.in.file.name)
+pre.classify = readRDS(prepared.classify.in.file.name)
 
-# print PS indicator column number
-which(colnames(simple.ps) == "PS") 
+# read prepared merged MR accidents data
+  # 75016 rows; 17 columns; unique on documentno
+all.accidents = readRDS(accidents.in.file.name)
 
 # bye
-rm(root, prepped.input.path, coded.output.path, prepped.classify.in.file.name)
+rm(prepared.classify.in.file.name, accidents.in.file.name)
 
 ################################################################################
 
-classify.vars = names(simple.ps)
+# TRAIN ADAPTIVE BOOSTING ALGORITHM AND USE TO CLASSIFY ACCIDENTS
 
-# run boosting on master dataset
-ps.adaboost = boosting(PS ~ ., 
-                       data = simple.ps[simple.ps$type == "classified", !(names(simple.ps) %in% c("documentno", "type",  "accidentdate", "mineid"))], 
-                       boos = T, mfinal = 300, coeflearn = "Freund")
+# set seed
+set.seed(625)
 
-# predict PS for unclassified accidetns
-adaboost.pred = predict.boosting(ps.adaboost, 
-                                 newdata = simple.ps[simple.ps$type == "unclassified", !(names(simple.ps) %in% c("documentno", "type",  "accidentdate"))])
+# train algorithm
+ps.adaboost = boosting(PS ~ ., data = pre.classify[pre.classify$type != "unclassified", 
+                                                   !(names(pre.classify) %in% c("documentno", "type", "mineid", "accidentdate"))], 
+                       boos = TRUE, mfinal = 300, coeflearn = "Freund")
 
-# generate variable with predictions
-adaboost.pred$class = as.factor(adaboost.pred$class)
-accidents = cbind(simple.ps[simple.ps$type == "unclassified", ], adaboost.pred$class)
-names(accidents)[names(accidents) == "adaboost.pred$class"] = "prediction"
-accidents$prediction = ifelse(!is.na(accidents$prediction) & accidents$prediction == "YES", 2, 1)
-accidents$PS = NULL
+# generate classifications
+adaboost.pred = predict.boosting(ps.adaboost, newdata = pre.classify[pre.classify$type == "unclassified", 
+                                                                     !(names(pre.classify) %in% c("documentno", "type", "mineid", "accidentdate"))])
 
-# re-code common false positives
-accidents$prediction = ifelse(accidents$entrapment == 1, 1, accidents$prediction) 
-accidents$prediction = ifelse(accidents$brokensteel == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$headroof == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$headcanopy == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$hole == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$jarring == 1 |
-                                accidents$rock == 1 |
-                                accidents$bodyseat == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$accident.only == 1, 1, accidents$prediction)
-accidents$prediction = ifelse(accidents$falling.accident == 1, 1, accidents$prediction)
-accidents$prediction = as.factor(accidents$prediction)
 
-# merge NIOSH-classified accidents onto data
-accidents = accidents[, c("prediction", "documentno")]
-accidents = merge(simple.ps, accidents, by = "documentno", all = T)
-accidents$PS = ifelse(accidents$PS == "YES", 2, accidents$prediction)
-accidents$PS = ifelse(is.na(accidents$PS), 1, accidents$PS)
-accidents = accidents[, c("PS", "documentno")]
+# apply predictions to unclassified injuries
+classified = cbind(pre.classify[pre.classify$type == "unclassified", ], adaboost.pred$class)
+names(classified)[names(classified) == "adaboost.pred$class"] = "adaboost"
+classified$adaboost = ifelse(!is.na(classified$adaboost) & classified$adaboost == "YES", 1, 0)
+
+# bye
+rm(adaboost.pred, ps.adaboost)
 
 ################################################################################
 
-# MERGE BACK ON ALL ACCIDENTS TO SELECT SAMPLE (AND GRAB MINEID/ACCIDENTDATE)
+# POST-PROCESSING
 
-# load cleaned accidents
-  # 75016 rows; 17 columns; unique on documentno
-clean.accidents = readRDS(accidents.in.file.name)
+# remove false positives
+classified$adaboost = ifelse(classified$entrapment == 1, 0, classified$adaboost) 
+classified$adaboost = ifelse(classified$brokensteel == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$headroof == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$headcanopy == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$hole == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$jarring == 1 |
+                                classified$rock == 1 |
+                                classified$bodyseat == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$accident.only == 1, 0, classified$adaboost)
+classified$adaboost = ifelse(classified$falling.accident == 1, 0, classified$adaboost)
+
+################################################################################
+
+# EDIT DATA
+
+# drop unnecessary variables
+  # 74743 rows; 2 columns; unique on documentno
+classified = classified[, c("adaboost", "documentno")]
+
+# merge on training observations
+  # 75743 rows; 4 columns; unique on documentno
+classified = merge(pre.classify[, c("documentno", "PS", "type")], classified, by = "documentno", all = TRUE)
+classified$PS = ifelse(classified$type == "classified" & classified$PS == "YES", 1, 
+                       ifelse(classified$type == "classified" & classified$PS == "NO", 0, NA))
+classified$PS = ifelse(classified$type == "unclassified" & classified$adaboost == 1, 1, 
+                       ifelse(classified$type == "unclassified" & classified$adaboost == 0, 0, classified$PS))
+
+# check
+table(classified$PS)
+# non-PS    PS
+# 73541     2202 
+
+# bye
+classified$adaboost = classified$type = NULL
+rm(pre.classify)
+
+################################################################################
+
+# MERGE PREDICTIONS ONTO ACCIDENTS DATA
 
 # merge
   # 75016 rows; 4 columns; unique on documentno
-accidents = merge(clean.accidents[, c("documentno", "accidentdate", "mineid")], 
-                       accidents, by = "documentno", all = F)
+accidents = merge(all.accidents[, c("documentno", "accidentdate", "mineid")], 
+                  classified, by = "documentno", all = FALSE)
 
-# format PS
-accidents$PS = ifelse(accidents$PS == 2, 1, 0)
+# format variables
 accidents$PS = factor(accidents$PS)
 
+# check
+table(accidents$PS)
 # non-PS   PS 
-# 73131  1885 
+# 73006  2010 
+
+# bye
+rm(all.accidents, classified)
 
 ################################################################################
 
 # OUTPUT CLASSIFIED DATA
 
-# output CSV
+# output classified accidents data (csv)
   # 75016 rows; 4 columns; unique on documentno 
 write.csv(accidents, file = classified.accidents.file.name.csv)
 
-# output R dataset
+# output classified accidents data (rds)
+  # 75016 rows; 4 columns; unique on documentno 
 saveRDS(accidents, file = classified.accidents.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################
