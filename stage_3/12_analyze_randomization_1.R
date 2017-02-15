@@ -5,12 +5,14 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 12 - Analyze Randomization Inference Method 1
-  # Takes in results from first randomization inference procedure
-  # Outputs data taken into second randomizaiton inference procedure
+  # Takes in results from first randomization inference procedure:
+    # 11_randomization_inference_method_1.
+  # Outputs data taken into second randomizaiton inference procedure:
+    # 13_randomization_inference_method_2.
 
 # Coded by: Julia Bodson, juliabodson@gmail.com
 
-# Last edit 2/9/2017
+# Last edit 2/14/2017
 
 ################################################################################
 
@@ -22,10 +24,6 @@ library(foreign)
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
-
-# define file paths 
-dtaroot = paste0(root, "/dta/", collapse = NULL)
-csvroot = paste0(root, "/csv/", collapse = NULL)
 
 # inputs
   # defined dynamically within file (see lines 62-125)
@@ -43,18 +41,20 @@ csvroot = paste0(root, "/csv/", collapse = NULL)
 
 ################################################################################
 
-#specification.test = "on" # analyze results from models with union & longwall indicators
+# PREFERENCES
+
+# analyze results from models with union & longwall indicators? (default is "off")
 specification.test = "off"
 
-#lag_3 = "on" # cannot be on at same time as ulw specification test
-#lag_5 = "on" # cannot be on at same time as ulw specification test
-lag_5 = "off"
-lag_3 = "off"
+# analyze results from lag 3 and 5 robustness tests? (default is "off")
+lag.3 = "off"
+lag.5 = "off"
 
-# WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
-
-analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
+# The default action of this file is to analyze RI method 1 as described above.
+  # However, this file can also be used to spit out csvs of robustly significant 
+  # violations (p < 0.05) from the preferred models, in order to assemble tables 
+  # in LaTeX. To do this, set "analyze.method.1" to "off".
+analyze.method.1 = "on"
 
 if (analyze.method.1 == "on") {
   append.models = "off"
@@ -66,6 +66,10 @@ if (analyze.method.1 == "off") {
 ################################################################################
 
 # DEFINE DTA AND CSV ROOTS FOR SPECIFICATION TESTS
+
+# define file paths 
+dtaroot = paste0(root, "/dta/", collapse = NULL)
+csvroot = paste0(root, "/csv/", collapse = NULL)
 
 if (specification.test == "on") {
   ulw.ext = "_ulw"

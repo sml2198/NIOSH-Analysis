@@ -5,11 +5,13 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 14 - Analyze Randomization Inference Method 2
-  # Takes in results from second randomization inference procedure
-  # Outputs lists of robustly significant subparts
+  # Takes in results from second randomization inference procedure:
+    # 13_randomization_inference_method_2.
+  # Outputs lists of robustly significant subparts.
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 2/2/17
+# Coded by: Julia Bodson, juliabodson@gmail.com
+
+# Last edit 2/14/17
 
 ################################################################################
 
@@ -21,10 +23,6 @@ library(foreign)
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
-
-# define file paths
-dtaroot = paste0(root, "/dta/", collapse = NULL)
-csvroot = paste0(root, "/csv/", collapse = NULL)
 
 # inputs
   # defined dynamically within file (see lines 57-118)
@@ -42,15 +40,18 @@ csvroot = paste0(root, "/csv/", collapse = NULL)
 
 # PREFERENCES
 
-#specification.test = "on" # analyze results from models with union & longwall indicators
+# analyze results from models with union & longwall indicators? (default is "off")
 specification.test = "off"
 
-#lag.3 = "on" # cannot be on at same time as ulw specification test. will also run lag 5
-#lag.5 = "on" 
+# analyze results from lag 3 and 5 robustness tests? (default is "off")
 lag.3 = "off"
 lag.5 = "off"
 
 ################################################################################
+
+# define file paths
+dtaroot = paste0(root, "/dta/", collapse = NULL)
+csvroot = paste0(root, "/csv/", collapse = NULL)
 
 # define file names
 if (lag.3 == "off" & lag.5 == "off" & specification.test != "on") {
