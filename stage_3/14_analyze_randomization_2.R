@@ -26,15 +26,15 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/res
 
 # inputs
   # defined dynamically within file (see lines 57-118)
-    # csv lists of significant subparts from preferred models, 
-    # produced in 10_fit_models, and .dta results of the second
+    # csv lists of significant violations from preferred models, 
+    # produced in 10_fit_models.do, and .dta results of the second
     # randomization inference procedure, produced in
-    # 13_randomization_inference_method_2.
+    # 13_randomization_inference_method_2.do.
 
 # outputs
   # defined dynamically within file (see lines 122-134)
-    # csv lists of robustly significant subparts from the
-    # second randomization ifnerence procedure.
+    # csv lists of robustly significant violations from the
+    # second randomization inference procedure.
 
 ################################################################################
 

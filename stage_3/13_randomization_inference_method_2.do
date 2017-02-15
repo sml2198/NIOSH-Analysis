@@ -9,21 +9,35 @@ of New Mine Safety Technologies and Technological Applications
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 13 - Randomization Inference Method 2
+	* inputs
+		* defined dynamically in file 
+			* injury-specific datasets (line 126)
+			* csv results from RI method 1 containing violations to test in method 2:
+				* produced in 12_analyze_randomization_1.R (line 188)
+	* outputs
+		* defined dynamically in file (line 261) 
+			* model-specific datasets containing one variable for each violation and 
+			* one row for each iteration of the RI procedure, with each observation 
+			* representing the coefficient attained for that variable on that iteration
+	* helper file
+		* 13_helper_file_RI_method_2.do, called on line 75 
+		* enables parallelization, as this file sends that .do file
+		* ("the job") to multiple clusters on the machine			
 	
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
-Last edit 2/9/17
+
+Last edit 2/15/17
 
 ********************************************************************************
 ********************************************************************************/
 
 *+- seed note
-* the seed needs to be set INSIDE all loops that define the preferred models
-* this way, if you run several models at once, they will produce the same
-* output as if you ran one at a time
+	* the seed needs to be set INSIDE all loops that define the preferred models
+	* this way, if you run several models at once, they will produce the same
+	* output as if you ran one at a time
 
-* a further seed is set INSIDE the parallel "job" - equal to the parent seed
-* plus the number of the iteration (so that no matter what cluster the job is
-* on, it will produce the same output
+	* a further seed is set for each parallel "job", so that no matter what cluster 
+	* the job is on, it will produce the same output)
 
 *+- preferences
 clear all
