@@ -9,7 +9,8 @@
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
-# Last edit 1/11/17
+
+# Last edit 2/8/2017
 
 ################################################################################
 
@@ -18,13 +19,13 @@ library(stringr)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL) 
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
   # violations data from the MSHA open data portal
@@ -32,7 +33,7 @@ cleaned.path = paste0(root, "/1_cleaned", collapse = NULL)
 violations.in.file.name = paste0(originals.path, "/Violations.txt", collapse = NULL)
 
 # outputs
-  # clean violations data
+  # cleaned violations data
 violations.out.file.name = paste0(cleaned.path, "/clean_violations.rds", collapse = NULL)
 
 # generate file paths 
@@ -46,7 +47,7 @@ rm(root, originals.path, cleaned.path)
 # READ DATA
 
 # read violations data
-  # 2193591 rows; 61 columns; unique on ???
+  # 2193591 rows; 61 columns
 violations = read.table(violations.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
 
 # bye 
@@ -57,7 +58,7 @@ rm(violations.in.file.name)
 # CLEAN DATA
 
 # drop data from environments not of interest
-  # 868757 rows; 61 columns; unique on ???
+  # 868757 rows; 61 columns
 violations = violations[which(violations$COAL_METAL_IND == "C" &
                                 violations$MINE_TYPE == "Underground"), ]
 
@@ -66,12 +67,10 @@ violations = violations[which(violations$COAL_METAL_IND == "C" &
 violations = violations[!duplicated(violations$VIOLATION_NO), ]
 
 # drop unnecessary variables
-  # 868757 rows; 14 columns; violationno
+  # 868757 rows; 9 columns; violationno
 violations = violations[, c("CAL_QTR", "CAL_YR", "EVENT_NO", 
                             "MINE_ID", "PART_SECTION", "SECTION_OF_ACT", 
-                            "SECTION_OF_ACT_1", "SECTION_OF_ACT_2", "SIG_SUB", 
-                            "TERMINATION_DT", "VACATE_DT", "VIOLATION_ISSUE_DT", 
-                            "VIOLATION_NO", "VIOLATOR_TYPE_CD")]
+                            "SIG_SUB", "VIOLATION_ISSUE_DT", "VIOLATION_NO")]
 
 # rename variables
 names(violations)[names(violations) == "CAL_QTR"] = "quarter"
@@ -80,14 +79,9 @@ names(violations)[names(violations) == "EVENT_NO"] = "eventno"
 names(violations)[names(violations) == "MINE_ID"] = "mineid"
 names(violations)[names(violations) == "PART_SECTION"] = "partsection"
 names(violations)[names(violations) == "SECTION_OF_ACT"] = "sectionofact"
-names(violations)[names(violations) == "SECTION_OF_ACT_1"] = "typeaction1"
-names(violations)[names(violations) == "SECTION_OF_ACT_2"] = "typeaction2"
 names(violations)[names(violations) == "SIG_SUB"] = "sigandsubdesignation"
-names(violations)[names(violations) == "TERMINATION_DT"] = "dateterminated"
-names(violations)[names(violations) == "VACATE_DT"] = "datevacated"
 names(violations)[names(violations) == "VIOLATION_ISSUE_DT"] = "dateissued"
 names(violations)[names(violations) == "VIOLATION_NO"] = "violationno"
-names(violations)[names(violations) == "VIOLATOR_TYPE_CD"] = "violatortypecode"
 
 # format variables
 violations$eventno = str_pad(violations$eventno, 7, pad = "0")
@@ -98,8 +92,8 @@ violations$violationno = str_pad(violations$violationno, 7, pad = "0")
 
 # OUTPUT DATA
 
-# output violations data
-  # 868722 rows; 14 columns; unique on violationno
+# output cleaned violations data
+  # 868722 rows; 9 columns; unique on violationno
 saveRDS(violations, file = violations.out.file.name)
 
 # bye

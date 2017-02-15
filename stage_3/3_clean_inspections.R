@@ -5,142 +5,159 @@
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 # 3 - Clean Inspections
-  # Cleans inspections
+  # Cleans inspections data from the MSHA open data portal
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/11/17
+# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+
+# Last edit 2/8/2017
 
 ################################################################################
 
 library(stringr)
+library(zoo)
 
 ################################################################################
 
-# set root directory
-# root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# define root directory
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL) 
-clean.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
-  # inspections data
+  # inspections data from the MSHA open data portal
+    # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
 inspections.in.file.name = paste0(originals.path, "/Inspections.txt", collapse = NULL)
-  # mine types data (used to remove underground observations)
-mine.types.in.file.name = paste0(clean.path, "/clean_mine_types.rds", collapse = NULL)
+  # mine type data
+    # produced in 1_clean_mines
+mine.types.in.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
 
 # outputs
   # cleaned inspections data
-inspections.out.file.name = paste0(clean.path, "/clean_inspections.rds", collapse = NULL)
+inspections.out.file.name = paste0(cleaned.path, "/clean_inspections.rds", collapse = NULL)
 
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(clean.path, recursive = TRUE)
+# generate file paths
+dir.create(cleaned.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
+
+# bye
+rm(root, originals.path, cleaned.path)
 
 ################################################################################
 
-# load data
-  # 790234 rows; 45 columns; unique on event_no
-inspections = read.table(inspections.in.file.name, header = T, sep = "|", na.strings = c("", "NA"))
+# READ DATA
+
+# read inspections data
+  # 790234 rows; 45 columns
+inspections = read.table(inspections.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
+
+# read cleaned mine types data
+  # 86362 rows; 3 columns; unique on mineid
+mine.types = readRDS(mine.types.in.file.name)
+
+# bye
+rm(inspections.in.file.name, mine.types.in.file.name)
+
+################################################################################
+
+# EDIT DATA
+
+# drop duplicated data
+  # 790232 rows; 45 columns; unique on eventno
+inspections = inspections[inspections$EVENT_NO != 4165469, ]
+
+# drop unnecessary variables
+  # 790232 rows; 8 columns; unique on eventno
+inspections = inspections[, c("CAL_QTR", "CAL_YR", "COAL_METAL_IND", 
+                              "EVENT_NO", "INSPECTION_BEGIN_DT", "INSPECTION_END_DT", 
+                              "MINE_ID", "SUM.TOTAL_INSP_HOURS.")]
 
 # rename variables
+names(inspections)[names(inspections) == "CAL_QTR"] = "quarter"
+names(inspections)[names(inspections) == "CAL_YR"] = "year"
+names(inspections)[names(inspections) == "COAL_METAL_IND"] = "coal_metal_ind"
 names(inspections)[names(inspections) == "EVENT_NO"] = "eventno"
-names(inspections)[names(inspections) == "MINE_ID"] = "mineid"
 names(inspections)[names(inspections) == "INSPECTION_BEGIN_DT"] = "beginningdate"
 names(inspections)[names(inspections) == "INSPECTION_END_DT"] = "endingdate"
-names(inspections)[names(inspections) == "CAL_YR"] = "year"
-names(inspections)[names(inspections) == "CAL_QTR"] = "quarter"
-names(inspections)[names(inspections) == "ACTIVITY_CODE"] = "inspactycode"
-names(inspections)[names(inspections) == "ACTIVITY"] = "inspacty"
+names(inspections)[names(inspections) == "MINE_ID"] = "mineid"
 names(inspections)[names(inspections) == "SUM.TOTAL_INSP_HOURS."] = "inspectionhours"
-names(inspections)[names(inspections) == "SUM.TOTAL_ON_SITE_HOURS."] = "onsitehours"
-names(inspections)[names(inspections) == "OPERATOR_ID"] = "operatorid"
-names(inspections) = tolower(names(inspections))
 
 # format variables
-inspections$eventno = as.character(inspections$eventno)
-inspections$beginningdate = as.character(inspections$beginningdate)
-inspections$endingdate = as.character(inspections$endingdate)
 inspections$mineid = str_pad(inspections$mineid, 7, pad = "0")
 inspections$eventno = str_pad(inspections$eventno, 7, pad = "0")
 
-# one obs is not unique on eventno - remove these two rows (with the same eventno)
-  # 790232 rows; 45 columns; unique on eventno
-inspections = inspections[inspections$eventno != 4165469,]
+# drop observations from environments not of interest
+  # 327775 rows; 8 columns; unique on eventno
+inspections = inspections[inspections$coal_metal_ind == "C", ]
+
+# bye
+  # 327775 rows; 7 columns; unique on eventno
+inspections$coal_metal_ind = NULL
 
 ################################################################################
 
-# REMOVE DATA FROM ENVIRONMENTS NOT OF INTEREST
+# MERGE INSPECTIONS AND MINE TYPE
+  # inspections data does not include information about mine type, which we need
+    # to drop data from environments not of interest
 
-# drop observations for environments not of interest
-  # 327775 rows; 45 columns; unique on eventno
-inspections = inspections[inspections$coal_metal_ind == "C", ]
+# merge inspections and mine type data
+  # 408375 rows; 9 columns
+inspections = merge(inspections, mine.types, by = c("mineid"), all = TRUE)
 
-# read mine types data (assessments data does NOT contain "minetype" field so we need
-# to merge on mine type information by mineid)
-  # 86362 rows; 3 columns; unique on eventno
-mine.types = readRDS(mine.types.in.file.name)
-
-# merge inspections with mine types & drop non-merged observations 
-  # 327775 rows; 47 columns; unique on eventno
-inspections = merge(inspections, mine.types, by = c("mineid"), all = T)
+# drop non-merging observations
+  # 327775 rows; 9 columns; unique on eventno
 inspections = inspections[!is.na(inspections$eventno), ]
+
+# bye
 rm(mine.types)
 
+################################################################################
+
+# EDIT DATA
+
 # drop observations from environments not of interest
-  # 195732 rows; 47 columns; unique on eventno
+  # 195732 rows; 9 columns; unique on eventno
 inspections = inspections[inspections$minetype == "Underground", ]
 
 # drop observations from time periods not of interest
-  # 192652 rows; 48 columns; unique on eventno
-inspections$too_new = ifelse(inspections$year == 2016 & inspections$quarter > 1, 1, 0)
-inspections = inspections[inspections$too_new == 0,]
+  # 192652 rows; 9 columns; unique on eventno
+inspections$too.new = ifelse(inspections$year == 2016 & inspections$quarter > 1, 1, 0)
+inspections = inspections[inspections$too.new == 0,]
+inspections$too.new = NULL
 
-# remove observations missing eventno
-  # 192141 rows; 48 columns; unique on eventno
-inspections = inspections[complete.cases(inspections$eventno),]
+# drop observations missing eventno
+  # 192141 rows; 9 columns; unique on eventno
+inspections = inspections[complete.cases(inspections$eventno), ]
 
-################################################################################
+# drop unnecessary variables
+  # 192141 rows; 7 columns; unique on eventno
+inspections$coalcormetalmmine = 
+  inspections$minetype = NULL
 
-# keep only useful variables
-  # 192141 rows; 10 columns; unique on eventno
-keep = c("mineid", "eventno", "beginningdate",
-         "endingdate", "year", "quarter", 
-         "inspactycode", "inspectionhours", "onsitehours",
-         "operatorid")
-inspections = inspections[, (names(inspections) %in% keep)] 
-
-################################################################################
-
-# create an indicator for inspections, so we can sum inspections per year
-  # in the prepare_stage_3
+# create an indicator for inspections
 inspections$numinspections = 1
 
-# While in theory inspections are quarterly, they do not always happen once per quarter or even 
-# four times per year, and some inspections might even last a whole year. As a check, we not only 
-# count the total number of inspections per year, but we also confirm that there are no inspections 
-# that begin in one calendar year and end in another calendar year. Fortunately, there are none.
-# See lines 133 and 134.
-
-# create and format endyear variable
-datevars = names(inspections)[grep("date", names(inspections))]
-for (i in 1:length(datevars)) {
-  inspections[, datevars[i]] = as.Date(as.character(inspections[, datevars[i]]), "%m/%d/%Y")
-}
-inspections$endyear = as.numeric(format(inspections$endingdate, "%Y"))
-
-# count number of inspections lasting more than one calendar year - all zero, good!
-# sum((inspections$endyear - inspections$year) != 0)
+# check that there are no inspections that begin in one year and end in another year
+#datevars = names(inspections)[grep("date", names(inspections))]
+#for (i in 1:length(datevars)) {
+#  inspections[, datevars[i]] = as.Date(as.character(inspections[, datevars[i]]), "%m/%d/%Y")
+#}
+#inspections$endyear = as.numeric(format(inspections$endingdate, "%Y"))
+#sum((inspections$endyear - inspections$year) != 0) # 0
+#rm(datevars, i)
 
 ################################################################################
 
-# output inspection-level data
-  # 192141 rows; 12 columns; unique on eventno
+# OUTPUT DATA
+
+# output cleaned inspections data
+  # 192141 rows; 8 columns; unique on eventno
 saveRDS(inspections, file = inspections.out.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################

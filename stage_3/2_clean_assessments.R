@@ -9,7 +9,8 @@
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Nikhil Saifullah, nikhil.saifullah@gmail.com
-# Last edit 1/11/17
+
+# Last edit 2/8/2017
 
 ################################################################################
 
@@ -18,13 +19,13 @@ library(stringr)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
- root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-#root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-originals.path = paste0(root, "/0_originals", collapse = NULL) 
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
   # assessments data from the MSHA open data portal
@@ -35,7 +36,7 @@ assessments.in.file.name = paste0(originals.path, "/AssessedViolations.txt", col
 mine.types.in.file.name = paste0(cleaned.path, "/clean_mine_types.rds", collapse = NULL)
 
 # outputs
-  # clean assessments data
+  # cleaned assessments data
 assessments.out.file.name = paste0(cleaned.path, "/clean_assessments.rds", collapse = NULL)
 
 # generate file paths 
@@ -48,78 +49,88 @@ rm(root, originals.path, cleaned.path)
 
 # READ DATA
 
-# load data
-  # 2137348 rows; 58 columns; unique on violation_no
-assessments = read.table(assessments.in.file.name, header = T, sep = "|", na.strings = c("", "NA"))
+# read assessments data
+  # 2137348 rows; 58 columns; unique on violationno
+assessments = read.table(assessments.in.file.name, header = TRUE, sep = "|", na.strings = c("", "NA"))
 
-# read mine types data (assessments data does NOT contain "minetype" field so we need
-# to merge on mine type information by mineid)
+# read cleaned mine types data
   # 86362 rows; 3 columns; unique on mineid
 mine.types = readRDS(mine.types.in.file.name)
+
+# bye
+rm(assessments.in.file.name, mine.types.in.file.name)
 
 ################################################################################
 
 # CLEAN DATA
 
+# drop unnecessary variables
+  # 2137348 rows; 7 columns; unique on violationno
+assessments = assessments[, c("CFR_STANDARD_CD", "COAL_METAL_IND", "EVENT_NO",
+                              "MINE_ACT_SECTION_CD", "MINE_ID", "PENALTY_POINTS",
+                              "VIOLATION_NO")]
+
 # rename variables
-names(assessments)[names(assessments) == "VIOLATION_NO"] = "violationno"
-names(assessments)[names(assessments) == "MINE_ID"] = "mineid"
-names(assessments)[names(assessments) == "EVENT_NO"] = "eventno"
-names(assessments)[names(assessments) == "ASSESS_CASE_NO"] = "assesscaseno"
-names(assessments)[names(assessments) == "SIG_SUB_IND"] = "sigandsubindicator"
-names(assessments)[names(assessments) == "MINE_ACT_SECTION_CD"] = "mineactsectioncode"
 names(assessments)[names(assessments) == "CFR_STANDARD_CD"] = "subsectioncode"
-names(assessments)[names(assessments) == "CITATION_TYPE_CD"] = "violationtypecode"
 names(assessments)[names(assessments) == "COAL_METAL_IND"] = "coalcormetalm"
-names(assessments)[names(assessments) == "VIOLATOR_TYPE_CD"] = "violatortypecode"
-names(assessments)[names(assessments) == "PROPOSED_PENALTY_AMT"] = "proposedpenaltyamount"
-names(assessments)[names(assessments) == "CURRENT_ASSESSMENT_AMT"] = "currentassessmentamount"
+names(assessments)[names(assessments) == "EVENT_NO"] = "eventno"
+names(assessments)[names(assessments) == "MINE_ACT_SECTION_CD"] = "mineactsectioncode"
+names(assessments)[names(assessments) == "MINE_ID"] = "mineid"
 names(assessments)[names(assessments) == "PENALTY_POINTS"] = "penaltypoints"
-names(assessments)[names(assessments) == "ISSUE_DT"] = "issuedate"
-names(assessments) = tolower(names(assessments))
+names(assessments)[names(assessments) == "VIOLATION_NO"] = "violationno"
 
 # format variables
-assessments$violationno = as.character(assessments$violationno)
 assessments$violationno = str_pad(assessments$violationno, 7, pad = "0")
-assessments$mineid = as.character(assessments$mineid)
 assessments$mineid = str_pad(assessments$mineid, 7, pad = "0")
 
-################################################################################
-
-# REMOVE DATA FROM ENVIRONMENTS NOT OF INTEREST
-
 # drop data from environments not of interest
-  # 1160380 rows; 58 columns; unique on violation_no
+  # 1160380 rows; 7 columns; unique on violationno
 assessments = assessments[assessments$coalcormetalm == "C", ] 
 
-# merge assessments with mine types & drop non-merged observations
-  # 1160380 rows; 60 columns; unique on violationno
-assessments = merge(assessments, mine.types, by = c("mineid"), all = T)
+# bye
+  # 1160380 rows; 6 columns; unique on violationno
+assessments$coalcormetalm = NULL
+
+################################################################################
+
+# MERGE ASSESSMENTS AND MINE TYPE
+  # assessments data does not include information about mine type, which we need
+    # to drop data from environments not of interest
+
+# merge assessments and mine type data
+  # 1241904 rows; 8 columns
+assessments = merge(assessments, mine.types, by = c("mineid"), all = TRUE)
+
+# drop non-merging observations
+  # 1160380 rows; 8 columns
 assessments = assessments[!is.na(assessments$eventno), ]
+
+# bye
 rm(mine.types)
 
+################################################################################
+
+# CLEAN DATA
+
 # drop data from environments not of interest
-  # 843818 rows; 60 columns; unique on violationno
+  # 843818 rows; 8 columns; unique on violationno
 assessments = assessments[assessments$minetype == "Underground", ]
 
-################################################################################
-
-# keep only useful variables
-  # 843818 rows; 11 columns; unique on violationno
-keep = c("violationno", "mineid", "assesscaseno", 
-         "sigandsubindicator", "mineactsectioncode", "subsectioncode", 
-         "violationtypecode", "proposedpenaltyamount", "currentassessmentamount", 
-         "penaltypoints", "issuedate")
-assessments = assessments[, (names(assessments) %in% keep)] 
+# drop unnecessary variables
+  # 843818 rows; 5 columns; unique on violationno
+assessments$coalcormetalmmine = 
+  assessments$eventno = 
+  assessments$minetype = NULL
 
 ################################################################################
 
-# output assessment-level data
-  # 843818 rows; 11 columns; unique on violationno
+# OUTPUT DATA
+
+# output cleaned assessment data
+  # 843818 rows; 5 columns; unique on violationno
 saveRDS(assessments, file = assessments.out.file.name)
 
-################################################################################
-
+# bye
 rm(list = ls())
 
 ################################################################################

@@ -12,7 +12,7 @@
 
 # Coded by: Julia Bodson, juliabodson@gmail.com
 
-# Last edit 1/27/2017
+# Last edit 2/7/2017
 
 ################################################################################
 
@@ -138,11 +138,13 @@ for (injury in c("MR", "PS")) {
       c.model.sum = data.frame(names(c.data)[grepl("C", names(c.data))])
       names(c.model.sum) = "Model"
       c.model.sum$Model = as.character(c.model.sum$Model)
-      c.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR", "SSD", "SSPD", "SSND")] = NA
+      c.model.sum[, c("TP", "TN", "FP", "FN", "CCR", "FPR", "FNR", 
+                      "MSD", "MSPD", "MSND", "RAT")] = NA
   
       ############################################################################
       
       # CALCULATE MEASURES OF INTEREST
+      
       for (type in c("B", "C")) {
         
         # use data for either B or C models
@@ -173,14 +175,19 @@ for (injury in c("MR", "PS")) {
                                            model.sum.data[i, "FN"])
           }
         
-          if (type == "C") { # for C models, calculate SSD, SSPD, and SSND
+          if (type == "C") { # for C models, calculate MSD, MSPD, and MSND
             c.model.data = c.data[!is.na(c.data[, model]), c(model, "true_count")]
+            
             D = c.model.data[, model] - c.model.data$true_count
             PD = D[D > 0]
             ND = D[D < 0]
-            model.sum.data$SSD[i] = sum(D ^ 2, na.rm = TRUE) 
-            model.sum.data$SSPD[i] = sum(PD ^ 2, na.rm = TRUE)  
-            model.sum.data$SSND[i] = sum(ND ^ 2, na.rm = TRUE)
+            model.sum.data$MSD[i] = sum(D ^ 2) / length(D)
+            model.sum.data$MSPD[i] = sum(PD ^ 2) / length(PD)
+            model.sum.data$MSND[i] = sum(ND ^ 2) / length(ND)
+            
+            R = c.model.data[, model] / (c.model.data$true_count + 1)
+            model.sum.data$RAT[i] = sum(R) / length(R)
+            
           }
         }
         
@@ -250,10 +257,10 @@ for (injury in c("MR", "PS")) {
     
     # C models
       # 24 rows; 5 columns
-    c.out = data.frame(sort(rep(c.model.names, 6)))
+    c.out = data.frame(sort(rep(c.model.names, 7)))
     names(c.out) = "Model"
     c.out$Model = as.character(c.out$Model)
-    c.out$Measure = rep(c("CCR", "FPR", "FNR", "SSD", "SSPD", "SSND"), length(c.model.names))
+    c.out$Measure = rep(c("CCR", "FPR", "FNR", "MSD", "MSPD", "MSND", "RAT"), length(c.model.names))
     c.out[, c.null.model.names] = NA
 
     ##############################################################################
