@@ -19,6 +19,7 @@ Last edit 1/19/17
 set more off
 set maxiter 1000, permanently
 
+* global PROJECT_ROOT "/NIOSH-Analysis/data"
 * global PROJECT_ROOT "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 global PROJECT_ROOT "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
