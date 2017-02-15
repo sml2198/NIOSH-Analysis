@@ -4,15 +4,26 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# Stage 1
-# Runs all R files 
+# 0 - Run Stage 1
+  # Runs files to complete analyses for Stage 1:
+    # 1_clean_accidents
+    # 2_clean_MR_train_test_set
+    # 3_clean_PS_train_test_set
+    # 4_merge_accidents
+    # 5_prepare_MR
+    # 6_prepare_PS
+    # 7_train_test_MR
+    # 8_train_test_PS
+    # 9_classify_MR
+    # 10_classify_PS
 
-# Coded by: Sarah Levine, sarah.michael.levine@gmail.com
-# and Nikhil Saifullah, nikhil.saifullah@gmail.com
+# Coded by: Julia Bodson, juliabodson@gmail.com
 
-# Last edit 2/3/2017
+# Last edit 2/7/2017
 
-# STAGE 1
+################################################################################
+
+# LOAD PACKAGES
 
 install.packages("adabag")
 install.packages("caret")
@@ -36,9 +47,15 @@ library(ROSE)
 library(rpart)
 library(stringr)
 
+################################################################################
+
 # setwd("/NIOSH-Analysis/programs/stage_1/")
 # setwd("C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_1/")
 setwd("C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_1/")
+
+################################################################################
+
+# RUN FILES
 
 source("1_clean_accidents.R")
 source("2_clean_MR_train_test_set.R")
@@ -50,3 +67,5 @@ source("7_train_test_MR.R")
 source("8_train_test_PS.R")
 source("9_classify_MR.R")
 source("10_classify_PS.R")
+
+################################################################################

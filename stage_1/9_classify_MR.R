@@ -19,14 +19,14 @@ library(adabag)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
-prepared.path = paste0(root, "/5_prepared", collapse = NULL) 
-classified.path = paste0(root, "/3_coded", collapse = NULL)
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
+prepared.path = paste0(root, "/data/5_prepared", collapse = NULL) 
+classified.path = paste0(root, "/data/3_coded", collapse = NULL)
 
 # inputs
   # prepared merged MR accidents data
