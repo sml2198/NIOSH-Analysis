@@ -44,8 +44,8 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/res
 specification.test = "off"
 
 # analyze results from lag 3 and 5 robustness tests? (default is "off")
-lag.3 = "off"
-lag.5 = "off"
+lag.3 = "on"
+lag.5 = "on"
 
 ################################################################################
 
@@ -79,7 +79,7 @@ rm(root)
 
 # LOOP THROUGH MODELS
 
-for (injury in c("MR","PS")) {
+for (injury in c("PS", "MR")) {
  for (form in c("VR","VC")) {
   
   ################################################################################
@@ -203,68 +203,77 @@ for (injury in c("MR","PS")) {
   # CALCULATE P VALUES FOR EACH SUBPART FROM METHOD 2
   
   names = "fake.coef"
-  B.1.ri$new.p = NA
-  for (a in B.1.ri.list) {
-    if (lag.3 == "on") {
-      data = read.dta(paste0(dtaroot3, injury, "_B_3_", form, "_", a, ".dta", collapse = NULL))
+  
+  if (nrow(B.1.ri) != 0) {
+    B.1.ri$new.p = NA
+    for (a in B.1.ri.list) {
+      if (lag.3 == "on") {
+        data = read.dta(paste0(dtaroot3, injury, "_B_3_", form, "_", a, ".dta", collapse = NULL))
+      }
+      if (lag.3 == "off") {
+        data = read.dta(paste0(dtaroot, injury, "_B_1_", form, "_", a, ".dta", collapse = NULL))
+      }  
+      names(data) = names
+      data$fake.coef = as.numeric(as.character(data$fake.coef))
+      fake.coefs = data$fake.coef
+      true.coef = B.1[B.1$subpart == a, "b"]
+      p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
+      B.1.ri[B.1.ri$subpart == a, "new.p"] = p
     }
-    if (lag.3 == "off") {
-      data = read.dta(paste0(dtaroot, injury, "_B_1_", form, "_", a, ".dta", collapse = NULL))
-    }  
-    names(data) = names
-    data$fake.coef = as.numeric(as.character(data$fake.coef))
-    fake.coefs = data$fake.coef
-    true.coef = B.1[B.1$subpart == a, "b"]
-    p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
-    B.1.ri[B.1.ri$subpart == a, "new.p"] = p
   }
   
-  B.4.ri$new.p = NA
-  for (a in B.4.ri.list) {
-    if (lag.5 == "on") {
-      data = read.dta(paste0(dtaroot5, injury, "_B_5_", form, "_", a, ".dta", collapse = NULL))
+  if (nrow(B.4.ri) != 0) {
+    B.4.ri$new.p = NA
+    for (a in B.4.ri.list) {
+      if (lag.5 == "on") {
+        data = read.dta(paste0(dtaroot5, injury, "_B_5_", form, "_", a, ".dta", collapse = NULL))
+      }
+      if (lag.5 == "off") {
+        data = read.dta(paste0(dtaroot, injury, "_B_4_", form, "_", a, ".dta", collapse = NULL))
+      }  
+      names(data) = names
+      data$fake.coef = as.numeric(as.character(data$fake.coef))
+      fake.coefs = data$fake.coef
+      true.coef = B.4[B.4$subpart == a, "b"]
+      p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
+      B.4.ri[B.4.ri$subpart == a, "new.p"] = p
     }
-    if (lag.5 == "off") {
-      data = read.dta(paste0(dtaroot, injury, "_B_4_", form, "_", a, ".dta", collapse = NULL))
-    }  
-    names(data) = names
-    data$fake.coef = as.numeric(as.character(data$fake.coef))
-    fake.coefs = data$fake.coef
-    true.coef = B.4[B.4$subpart == a, "b"]
-    p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
-    B.4.ri[B.4.ri$subpart == a, "new.p"] = p
   }
   
-  C.1.ri$new.p = NA
-  for (a in C.1.ri.list) {
-    if (lag.3 == "on") {
-      data = read.dta(paste0(dtaroot3, injury, "_C_3_", form, "_", a, ".dta", collapse = NULL))
+  if (nrow(C.1.ri) != 0) {
+    C.1.ri$new.p = NA
+    for (a in C.1.ri.list) {
+      if (lag.3 == "on") {
+        data = read.dta(paste0(dtaroot3, injury, "_C_3_", form, "_", a, ".dta", collapse = NULL))
+      }
+      if (lag.3 == "off") {
+        data = read.dta(paste0(dtaroot, injury, "_C_1_", form, "_", a, ".dta", collapse = NULL))
+      }  
+      names(data) = names
+      data$fake.coef = as.numeric(as.character(data$fake.coef))
+      fake.coefs = data$fake.coef
+      true.coef = C.1[C.1$subpart == a, "b"]
+      p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
+      C.1.ri[C.1.ri$subpart == a, "new.p"] = p
     }
-    if (lag.3 == "off") {
-      data = read.dta(paste0(dtaroot, injury, "_C_1_", form, "_", a, ".dta", collapse = NULL))
-    }  
-    names(data) = names
-    data$fake.coef = as.numeric(as.character(data$fake.coef))
-    fake.coefs = data$fake.coef
-    true.coef = C.1[C.1$subpart == a, "b"]
-    p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
-    C.1.ri[C.1.ri$subpart == a, "new.p"] = p
   }
   
-  C.4.ri$new.p = NA
-  for (a in C.4.ri.list) {
-    if (lag.5 == "on") {
-      data = read.dta(paste0(dtaroot5, injury, "_C_5_", form, "_", a, ".dta", collapse = NULL))
+  if (nrow(C.4.ri) != 0) {
+    C.4.ri$new.p = NA
+    for (a in C.4.ri.list) {
+      if (lag.5 == "on") {
+        data = read.dta(paste0(dtaroot5, injury, "_C_5_", form, "_", a, ".dta", collapse = NULL))
+      }
+      if (lag.5 == "off") {
+        data = read.dta(paste0(dtaroot, injury, "_C_4_", form, "_", a, ".dta", collapse = NULL))
+      }  
+      names(data) = names
+      data$fake.coef = as.numeric(as.character(data$fake.coef))
+      fake.coefs = data$fake.coef
+      true.coef = C.4[C.4$subpart == a, "b"]
+      p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
+      C.4.ri[C.4.ri$subpart == a, "new.p"] = p
     }
-    if (lag.5 == "off") {
-      data = read.dta(paste0(dtaroot, injury, "_C_4_", form, "_", a, ".dta", collapse = NULL))
-    }  
-    names(data) = names
-    data$fake.coef = as.numeric(as.character(data$fake.coef))
-    fake.coefs = data$fake.coef
-    true.coef = C.4[C.4$subpart == a, "b"]
-    p = sum(fake.coefs >= true.coef, na.rm = TRUE) / sum(!is.na(fake.coefs))
-    C.4.ri[C.4.ri$subpart == a, "new.p"] = p
   }
   
   # bye

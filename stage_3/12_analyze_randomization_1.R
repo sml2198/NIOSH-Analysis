@@ -47,8 +47,8 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/res
 specification.test = "off"
 
 # analyze results from lag 3 and 5 robustness tests? (default is "off")
-lag.3 = "off"
-lag.5 = "off"
+lag.3 = "on"
+lag.5 = "on"
 
 # The default action of this file is to analyze RI method 1 as described above.
   # However, this file can also be used to spit out csvs of robustly significant 
@@ -99,13 +99,13 @@ for (injury in c("PS", "MR")) {
   
   # CSVS WITH LISTS OF SIGNIFICANT VARIABLES FROM PREFERRED MODELS
   
-  if (lag_3 == "off" & lag_5 == "off") {
+  if (lag.3 == "off" & lag.5 == "off") {
     B.1.sig.in.file = paste0(csvroot, injury, "_B_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
     B.4.sig.in.file = paste0(csvroot, injury, "_B_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
     C.1.sig.in.file = paste0(csvroot, injury, "_C_1_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)
     C.4.sig.in.file = paste0(csvroot, injury, "_C_4_", form, "_sig_2012", ulw.ext, ".csv", collapse = NULL)  
   }
-  if (lag_3 == "on" | lag_5 == "on") {
+  if (lag.3 == "on" | lag.5 == "on") {
       # never going to be true at same time as union-longwall test
     B.1.sig.in.file = paste0(csvroot3, injury, "_B_3_", form, "_sig_2012.csv", collapse = NULL)
     B.4.sig.in.file = paste0(csvroot5, injury, "_B_5_", form, "_sig_2012.csv", collapse = NULL)
@@ -115,13 +115,13 @@ for (injury in c("PS", "MR")) {
     
   # RESULTS OF RANDOMIZATION PROCEDURE METHOD 1 (must be Stata 12 .dtas)
   
-  if (lag_3 == "off" & lag_5 == "off") {
+  if (lag.3 == "off" & lag.5 == "off") {
     B.1.ri.in.file = paste0(dtaroot, injury, "_B_1_", form, "_ri.dta", collapse = NULL)
     B.4.ri.in.file = paste0(dtaroot, injury, "_B_4_", form, "_ri.dta", collapse = NULL)
     C.1.ri.in.file = paste0(dtaroot, injury, "_C_1_", form, "_ri.dta", collapse = NULL)
     C.4.ri.in.file = paste0(dtaroot, injury, "_C_4_", form, "_ri.dta", collapse = NULL)
   }
-  if (lag_3 == "on" | lag_5 == "on") {
+  if (lag.3 == "on" | lag.5 == "on") {
     B.1.ri.in.file = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
     B.4.ri.in.file = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
     C.1.ri.in.file = paste0(dtaroot3, injury, "_B_3_", form, "_ri.dta", collapse = NULL)
@@ -132,7 +132,7 @@ for (injury in c("PS", "MR")) {
   
   # NAME OUTPUT FILES: CSVS OF SUBPARTS THAT ARE ROBUSTLY SIGNIFICANT AFTER RANDOMZIATION INFERENCE METHOD 1
   
-  if (lag_3 == "off" & lag_5 == "off") {
+  if (lag.3 == "off" & lag.5 == "off") {
     B.1.out.file = paste0(csvroot, injury, "_B_1_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     B.4.out.file = paste0(csvroot, injury, "_B_4_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     C.1.out.file = paste0(csvroot, injury, "_C_1_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
@@ -141,7 +141,7 @@ for (injury in c("PS", "MR")) {
     # final csv with results from all 4 models  
     all.out.file = paste0(csvroot, injury, "_", form, ulw.ext, ".csv",  collapse = NULL)
   }
-  if (lag_3 == "on" | lag_5 == "on") {
+  if (lag.3 == "on" | lag.5 == "on") {
     B.1.out.file = paste0(csvroot3, injury, "_B_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     B.4.out.file = paste0(csvroot5, injury, "_B_5_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
     C.1.out.file = paste0(csvroot3, injury, "_C_3_", form, "_method_2_input", ulw.ext, ".csv", collapse = NULL)
@@ -212,10 +212,10 @@ for (injury in c("PS", "MR")) {
     # for each file, create a "strip" of the length necessary to extract the prefix from 
       # violation subpart variable names, so that only the subpart name goes into the table
     for (d in c("B.1", "B.4", "C.1", "C.4")) {
-      if ((d == "B.1" | d == "C.1") & (lag_3 != "on" & lag_5 != "on")) {
+      if ((d == "B.1" | d == "C.1") & (lag.3 != "on" & lag.5 != "on")) {
         strip = 5
       }
-      if ((d == "B.4" | d == "C.4") | ((lag_3 == "on" | lag_5 == "on") & (d == "B.1" | d == "C.1"))) {
+      if ((d == "B.4" | d == "C.4") | ((lag.3 == "on" | lag.5 == "on") & (d == "B.1" | d == "C.1"))) {
         strip = 6
       }
       data = eval(parse(text = paste(d, "sig", sep = ".")))
@@ -306,9 +306,9 @@ for (injury in c("PS", "MR")) {
     
     # if lags 3 and 5 are being run, we imported "3" as "1" and "5" as "4" (because this file we coded before 3 and 5 were
     # being used as a robustness test), so rename the variables appropriately now before outputting
-    if (lag_3 == "on" | lag_5 == "on") {
-      names_3_and_5 = c("subpart", "c.B_3_sig", "c.B_5_sig", "c.C_3_sig", "c.C_5_sig")
-      names(data) = names_3_and_5
+    if (lag.3 == "on" | lag.5 == "on") {
+      names.3.and.5 = c("subpart", "c.B_3_sig", "c.B_5_sig", "c.C_3_sig", "c.C_5_sig")
+      names(data) = names.3.and.5
     }
     
     write.csv(data, file = all.out.file, row.names = FALSE, na = "")
