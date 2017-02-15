@@ -4,7 +4,7 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 14 - Analyze RI Method 2
+# 14 - Analyze Randomization Inference Method 2
   # Takes in results from second randomization inference procedure
   # Outputs lists of robustly significant subparts
 
@@ -22,8 +22,21 @@ library(foreign)
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 
+# define file paths
 dtaroot = paste0(root, "/dta/", collapse = NULL)
 csvroot = paste0(root, "/csv/", collapse = NULL)
+
+# inputs
+  # defined dynamically within file (see lines 57-118)
+    # csv lists of significant subparts from preferred models, 
+    # produced in 10_fit_models, and .dta results of the second
+    # randomization inference procedure, produced in
+    # 13_randomization_inference_method_2.
+
+# outputs
+  # defined dynamically within file (see lines 122-134)
+    # csv lists of robustly significant subparts from the
+    # second randomization ifnerence procedure.
 
 ################################################################################
 
@@ -65,9 +78,7 @@ rm(root)
 
 # LOOP THROUGH MODELS
 
-injury = "PS"
-
-#for (injury in c("MR", "PS")) {
+for (injury in c("MR","PS")) {
  for (form in c("VR","VC")) {
   
   ################################################################################
@@ -164,7 +175,7 @@ injury = "PS"
   
   ################################################################################
   
-  # format coefficients and subparts
+  # format coefficients and p values
   names = c("subpart", "b", "p")
   
   # remove whitespace in tables
@@ -268,15 +279,12 @@ injury = "PS"
   for (d in c("B.1", "B.4", "C.1", "C.4")) {
     data = eval(parse(text = paste(d, "ri", sep = ".")))
     data = data[which(data$new.p < 0.05) ,]
-      if (nrow(data) != 0) {
-        file.name = eval(parse(text = paste(d, "out.file.name", sep = ".")))
-        write.csv(data, file = file.name, row.names = FALSE)
-      }
+    file.name = eval(parse(text = paste(d, "out.file.name", sep = ".")))
+    write.csv(data, file = file.name, row.names = FALSE)
     assign(paste(d, "ri", sep = "."), data)
   }
   
   #############################################################################
-
   } # end of injury loop
 } # end of VC/VR loop
 

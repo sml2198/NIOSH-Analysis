@@ -18,6 +18,7 @@ Last edit 1/19/17
 ********************************************************************************
 ********************************************************************************/
 
+* include "/NIOSH-Analysis/data"
 * include "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_3/header.do"
 include "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_3/header.do"
 
@@ -27,7 +28,7 @@ set matsize 11000, perm
 
 /********************************************************************************
 ********************************************************************************/
-
+	
 *+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
 
 /****** LAG FORMS *************************/
@@ -45,8 +46,8 @@ local train_test_split "2012" // targeting algorithms
 /* Includes "longwall" and "union" indicators  - you MUST  have access to EIA and
  NIOSH data for this test to work! This will also turn off the option to run the
  targeting algorithms, since we don't do this robustness assessment on those analyses. */
-local specification_check "on" 
-* local specification_check "off"
+* local specification_check "on" 
+local specification_check "off"
 
 /* PRODUCE TABLES WITH ADDITIONAL COVARIATES? */
 local report_add_covars "off" // preferred models
@@ -64,7 +65,7 @@ if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this wit
 *+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
 
 /****** INJURY TYPES **********************/
-local injury_types "MR"
+local injury_types "PS MR"
 
 /****** OUTCOME FORMS *********************/
 local outcome_form "B C"

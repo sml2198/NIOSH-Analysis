@@ -4,12 +4,13 @@
 
 # Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-# 12 - Analyze RI Method 1
+# 12 - Analyze Randomization Inference Method 1
   # Takes in results from first randomization inference procedure
   # Outputs data taken into second randomizaiton inference procedure
 
-# Coded by Sarah Levine, sarah.michael.levine@gmail.com
-  # Last edit 1/26/17
+# Coded by: Julia Bodson, juliabodson@gmail.com
+
+# Last edit 2/9/2017
 
 ################################################################################
 
@@ -17,13 +18,28 @@ library(foreign)
 
 ################################################################################
 
-# set root directory
+# define root directory
 # root = "/NIOSH-Analysis/data"
 root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 # root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
 
+# define file paths 
 dtaroot = paste0(root, "/dta/", collapse = NULL)
 csvroot = paste0(root, "/csv/", collapse = NULL)
+
+# inputs
+  # defined dynamically within file (see lines 62-125)
+    # csv lists of significant subparts from preferred models, 
+    # produced in 10_fit_models, and .dta results of the first
+    # randomization inference procedure, produced in
+    # 11_randomization_inference_method_1.
+
+# outputs
+  # defined dynamically within file (see lines 131-148)
+    # csv lists of robustly significant subparts from the
+    # first randomization ifnerence procedure, to be fed 
+    # into the second randomiaziton inference procedure in
+    # 13_randomization_inference_method_2.
 
 ################################################################################
 
@@ -37,8 +53,8 @@ lag_3 = "off"
 
 # WHAT DO YOU WANT TO DO WITH THIS SAMPLE?
 
-# analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
-analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
+analyze.method.1 = "on" # analyze method 1, spit out csvs of robustly significant subparts (p < 0.05)
+# analyze.method.1 = "off" # make a csv of each model set appended - cannot be done if analyzing method 1 
 
 if (analyze.method.1 == "on") {
   append.models = "off"
@@ -46,7 +62,6 @@ if (analyze.method.1 == "on") {
 if (analyze.method.1 == "off") {
   append.models = "on"
 }
-
 
 ################################################################################
 
@@ -73,10 +88,10 @@ csvroot5 = paste0(csvroot, "lag_5/", collapse = NULL)
 
 # LOOP THROUGH MODELS
 
-for (injury in c("MR", "PS")) {
+for (injury in c("PS", "MR")) {
   for (form in c("VR","VC")) {
   
-  ################################################################################
+  ##############################################################################
   
   # CSVS WITH LISTS OF SIGNIFICANT VARIABLES FROM PREFERRED MODELS
   
@@ -109,7 +124,7 @@ for (injury in c("MR", "PS")) {
     C.4.ri.in.file = paste0(dtaroot5, injury, "_B_5_", form, "_ri.dta", collapse = NULL)
   }
   
-  ################################################################################
+    ############################################################################
   
   # NAME OUTPUT FILES: CSVS OF SUBPARTS THAT ARE ROBUSTLY SIGNIFICANT AFTER RANDOMZIATION INFERENCE METHOD 1
   
@@ -132,7 +147,7 @@ for (injury in c("MR", "PS")) {
     all.out.file = paste0(csvroot, injury, "_", form, "_3-5", ulw.ext, ".csv",  collapse = NULL)
   }
   
-  ################################################################################
+    ############################################################################
   
   # LOAD DATA FROM PREFERRED MODELS
   
@@ -166,7 +181,7 @@ for (injury in c("MR", "PS")) {
   C.4.sig$pvalue = as.numeric(as.character(C.4.sig$pvalue))
   C.4.sig$coefficient = gsub("\\*", "", C.4.sig$coefficient)
   
-  ################################################################################
+  ############################################################################
   
   # FORMAT DATA FROM PREFERRED MODELS
   
@@ -184,7 +199,7 @@ for (injury in c("MR", "PS")) {
     assign(paste(d, "ri", sep = "."), temp)
   }
   
-  ################################################################################
+  ############################################################################
   
   # APPEND RESULTS FROM PREFERRED MODELS - FOR MAKING LATEX TABLES
   
@@ -295,7 +310,7 @@ for (injury in c("MR", "PS")) {
     write.csv(data, file = all.out.file, row.names = FALSE, na = "")
   } # end appending models
   
-  ################################################################################
+  ############################################################################
   
   if (analyze.method.1 == "on")  {
   
@@ -323,7 +338,7 @@ for (injury in c("MR", "PS")) {
       }
     }
     
-    ################################################################################
+    ############################################################################
     
     # OUTPUT METHOD 1 RESULTS/METHOD 2 INPUT
     
@@ -341,7 +356,7 @@ for (injury in c("MR", "PS")) {
     write.csv(C.4.ri, file = C.4.out.file, row.names = FALSE)
   } # end of loop of analyze method 1 = on
     
-  ################################################################################
+  ##############################################################################
 
   } # end of rate/not-a-rate loop
 } # end of MR/PS injury loop

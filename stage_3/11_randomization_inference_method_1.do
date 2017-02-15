@@ -1,3 +1,4 @@
+
 /********************************************************************************
 ********************************************************************************
 
@@ -8,86 +9,94 @@ of New Mine Safety Technologies and Technological Applications
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 11 - Randomization Inference Method 1
-	This file applies a randomization inference techniques to our data at the 
-	mine-year level. Here, we randomize ALL subparts and then re-estimate all
-	models 1000 times (method 1) to derive a distribution of coefficients on
-	each randomized violation subpart.
 	
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
-Last edit 1/19/17
+Last edit 2/9/17
 
 ********************************************************************************
 ********************************************************************************/
 
+*+- seed note
+* the seed needs to be set INSIDE all loops that define the preferred models
+* this way, if you run several models at once, they will produce the same
+* output as if you ran one at a time
+
+* a further seed is set INSIDE the parallel "job" - equal to the parent seed
+* plus the number of the iteration (so that no matter what cluster the job is
+* on, it will produce the same output
+
+*+- preferences
+clear all
+set more off
+timer clear
+pause off
+set matsize 11000, perm
+set trace off
+
+*+- header
+* include "/NIOSH-Analysis/data"
 * include "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_3/header.do"
 include "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/programs/stage_3/header.do"
 
-* check for/install packages if missing 
+*+- check for/install packages if missing 
 capture which shufflevar
 if _rc==111 ssc install shufflevar
+capture which parallel
+if _rc==111 {
+	ssc install parallel
+	net install parallel, from(https://raw.github.com/gvegayon/parallel/master/) replace
+	mata mata mlib index
+}
+*+- make directories
+cap mkdir "$PROJECT_ROOT/results/"
+cap mkdir "$PROJECT_ROOT/results/dta/"
+cap mkdir "$PROJECT_ROOT/results/dta/test/"
 
-/********************************************************************************
-********************************************************************************/
-
-*+- SETTINGS
-pause off
-set seed 625
-set matsize 11000, perm
-
-/********************************************************************************
-********************************************************************************/
-
-*+- LOCALS THAT HAVE TO BE SET FOR ROBUSTNESS ANALYSES
-
-/****** LAG FORMS *************************/
-local lag_levels "1 4" // preferred models 
-*local lag_levels "3 5" // robustness check
+*+- define function to call randomization
+program define fit_models
+args var
+	do "$PROJECT_ROOT/programs/stage_3/parallelize/11_helper_file_RI_method_1.do" `var'	
+end
 
 /****** ITERATIONS ************************/
-local num_iterations = 1000
-local max_iterations = 1200 // the file will keep running until it has # convergences equal to num_iterations, until this limit
+global num_iterations = 1000
+global max_iterations = 2000
+
+/****** LAG FORMS *************************/
+local lag_levels "1 4" 
 
 /*** UNION/LONGWALL SPECIFICATION TEST ****/
-* local specification_check "on" // includes "longwall" and "union" indicators 
 local specification_check "off"
 
-/********************************************************************************
-********************************************************************************/
-
-*+- LOCALS THAT NEVER CHANGE (even for robustness tests) 
-
 /****** INJURY TYPES **********************/
-local injury_types "PS MR"
+local injury_types "MR PS"
 
 /****** OUTCOME FORMS *********************/
 local outcome_forms "B C"
 
 /****** RATE VS. COUNTS *******************/
-local violation_forms "rate count"
+local violation_forms "count rate"
 
 /****** COVARIATES ************************/
-* time is included (unlike in fit models) because no prediction is done here
+*+- time is included (unlike in fit models) because no prediction is done here
 local nonfactor_vars "dv_1lag lnoperator_time lnemployment lncoal_prod" 
-local covariates "ib(freq).district ib(freq).time i.appalachia i.safetycommittee `nonfactor_vars'"
+global covariates "ib(freq).district ib(freq).time i.appalachia i.safetycommittee `nonfactor_vars'"
 if "`specification_check'" == "on" {
-	local covariates "`covariates' union longwall"
+	global covariates "$covariates union longwall"
 	local sub_folder "ulw/"
 	local ulw_ext "_ulw"
 }
 
-/********************************************************************************
-********************************************************************************/
+*+- timed_iteration let's us compare performance of serial vs. parallel computing - 2 is parallel (preferred)
+local timed_iteration = 2
 
-*+- MAKE DIRECTORIES
-cap mkdir "$PROJECT_ROOT/results/"
-cap mkdir "$PROJECT_ROOT/results/csv/"
-cap mkdir "$PROJECT_ROOT/results/csv/ulw/"
-cap mkdir "$PROJECT_ROOT/results/dta/"
-cap mkdir "$PROJECT_ROOT/results/dta/lag_3/"
-cap mkdir "$PROJECT_ROOT/results/dta/lag_5/"
-
-/*******************************************************************************
-********************************************************************************/
+*+- if you are parallelizing your code, each cluster will perform num_iterations
+	*+- so you must divide the desired number of coefficients by the number of clusters
+if `timed_iteration' == 2 {
+	local num_clusters = 4
+	global num_iterations = ( $num_iterations / `num_clusters' )
+	global max_iterations = ( $max_iterations / `num_clusters' )
+}
 
 foreach inj_type in `injury_types' {
 	foreach viol_form in `violation_forms' {
@@ -139,14 +148,14 @@ foreach inj_type in `injury_types' {
 			
 			*+- set locals for models, dependent variables, exposure terms, and irrs
 			if "`outcome'" == "C" {
-				local model "nbreg"
-				local depvar "dv"
-				local suffix "exposure(hours) irr"		
+				global model "nbreg"
+				global depvar "dv"
+				global suffix "exposure(hours) irr"		
 			}
 			else {
-				local model "probit"
-				local depvar "dv_indicator"
-				local suffix "offset(lnhours)"
+				global model "probit"
+				global depvar "dv_indicator"
+				global suffix "offset(lnhours)"
 			}
 			
 			pause "before randomization procedure method 1"
@@ -175,98 +184,63 @@ foreach inj_type in `injury_types' {
 				}
 				
 				*+- assign "covars" (local containing covariates of interest) based on current lag level
-				if "`lag'" == "1" local covars "`lag_1_vars'"	
-				if "`lag'" == "3" local covars "`lag_3_vars'"
-				if "`lag'" == "4" local covars "`lag_4_vars'"	
-				if "`lag'" == "5" local covars "`lag_5_vars'"
+				if "`lag'" == "1" global covars "`lag_1_vars'"	
+				if "`lag'" == "3" global covars "`lag_3_vars'"
+				if "`lag'" == "4" global covars "`lag_4_vars'"	
+				if "`lag'" == "5" global covars "`lag_5_vars'"
 
 				*+- drop existing shuffled variables (if this is not the first instance of the lag-level loop)
 				cap drop *_shuffled
+				pause here
 				
 				*+- create empty variables that will store the coefficients from each iteration (for each covariate of interest)
-				foreach var of varlist `covars' {
+				foreach var of varlist $covars {
 					gen x_`var'_shuffled_c = . 
 				}
 				pause "coefficient storage vars created"
 				
 				*+- run preferred models once so we can capture the sample 
 					*+- the sample is injury, violation type, outcome type, and lag specific at this point
-				local cmd "`model' `depvar' `covars' `covariates', vce(cl mineid) `suffix' iter(200)"
+				local cmd "$model $depvar $covars $covariates, vce(cl mineid) $suffix iter(200)"
 				cap qui `cmd'
 				keep if e(sample)
 				pause "sample captured, non-sample observations dropped, ready to iterate"
 				
 				/****** LOOP THAT ITERATES! ********/	
 				
-				local x = 0 // current number in loop
-				local convergence_count = 0  // number of successful/convergent iterations
+				*+- call file in serial
+				if `timed_iteration' == 1 {
+					timer on 1
+					fit_models `inj_type'
+					timer off 1
+					
+					*+- capture time
+					cap log close
+					log using "$PROJECT_ROOT/results/dta/test/run_time_method_1.txt", text replace
+					timer list
+					noi di "serial duration: `r(t1)'"
+					cap log close
+				}
 				
-				while (`convergence_count' < `num_iterations' & `x' < `max_iterations') {
-
-					pause "beginning iteration number `x' of `num_iterations'"
+				*+-  call file in parallel
+				if `timed_iteration' == 2 {
+					parallel setclusters `num_clusters'
+					timer on 2
 					
-					*+- first, add one to x (to keep track of number of completed loops/iterations, regardless of outcome - this starts at zero)
-					local x = (`x' + 1)
+					*+- set seeds (one for each cluster, so each cluster produces different but reproducible results)
+					parallel, prog(fit_models): fit_models `inj_type' seeds(1 2 3 4)
+					parallel clean, all force
+					timer off 2
 					
-					*+- reset locals 
-					local converged ""
-					local cov_of_interest ""
-					
-					*+- drop existing shuffled variables (if this is not the first instance of the loop that iterates)
-					capture drop *shuffled
-
-					*+- shuffle all covariates of interest (i.e. randomly sample without replacement)
-					foreach var of varlist `covars' {
-						qui shufflevar `var'
-					}
-					
-					*+- set local for covariates of interest (now we grab the SHUFFLED variables, instead of the unshuffled variables contained in "covars")
-					foreach var of varlist *_shuffled {
-						local cov_of_interest "`cov_of_interest' `var'"
-					}
-					pause "complete: variables-of-interest local assigned"
-						
-					/****** THE MODEL! ********/	
-					local cmd "`model' `depvar' `cov_of_interest' `covariates', vce(cl mineid) `suffix' iter(50)"
-					cap noi `cmd'
-					pause "model number `x' run"
-					
-					*+- create a local macro containing a binary value indicating whether or not the regression converged
-					local converged = e(converged)
-							
-					*+- count the numver of covariates/subparts of interest (so we know how many positions in the matrix to look for)
-					qui describe `cov_of_interest'
-					local count: word count `cov_of_interest' 
-					
-					*+- sort (stably) on mineid and year so storing the coefficients can be done according to iteration number
-					sort mineid year
-					
-					*+- grab the coefficient on each shuffled variable of interest & replace each corresponding _c var with the proper coefficient
-					if "`converged'" == "1" {
-						foreach var of varlist `cov_of_interest' {
-							qui replace x_`var'_c = _b[`var'] in `x'
-						}
-						pause "coefficients should now be stored in variables"
-						local convergence_count = `convergence_count' + 1
-					}
-					
-					*+- if still in progress
-					if "`convergence_count'" != "`num_iterations'" noi di "not finished! on iteration `x' with `convergence_count' converged"
-					
-					*+- if iteration limit has been reached
-					if ("`x'" == "`max_iterations'") {
-						noi di "`x' (max) iterations completed, convergence NOT achieved `num_iterations' times"
-						keep in 1/`x'
-						keep *shuffled_c
-					}
-					
-					*+- if finished in less than the maximum number of iterations
-					if "`convergence_count'" == "`num_iterations'" {
-						noi di "finished! in `x' iterations"
-						keep in 1/`x'
-						keep *shuffled_c
-					}
-				} // while statement - loop that iterates
+					*+- display performance, relative to first thang
+					/*cap log close
+					log using "$PROJECT_ROOT/results/dta/test/run_time_method_1.txt", text append
+					timer list
+					noi di "parallel duration: `r(t2)'"
+					pause "parallel is `=round(r(t2)/r(t1),.1)' times faster"
+					cap log close*/
+				}
+				
 				pause "iterations complete for model `inj_type' `viol_form' `outcome' `lag'"
 				
 				*+- find and drop rows with missing values(non-convergent observations) 
@@ -287,25 +261,21 @@ foreach inj_type in `injury_types' {
 				local lag_3_vars ""
 				local lag_4_vars ""
 				local lag_5_vars ""
-				local covars ""
-				local cov_of_interest ""
 				restore 
 				pause "data restored"
 					
 			} // lag levels
 			pause "all `inj_type' done"
 		} // outcome form  
-		local covars ""
 		local lag_1_vars ""
 		local lag_2_vars ""
 		local lag_4_vars "" 
 		local lag_5_vars ""
 	} // violation form (rate or count)
-	local covars ""
 	local lag_1_vars ""
 	local lag_2_vars ""
 	local lag_4_vars "" 
 	local lag_5_vars ""
 } // inj type
 
-*end*
+* end*
