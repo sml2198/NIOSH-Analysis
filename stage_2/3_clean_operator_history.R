@@ -8,7 +8,9 @@
   # Cleans controller/operator history data from the MSHA open data portal
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
-# Last edit 1/11/17
+      # and Nikhil Saifullah, nikhil.saifullah@gmail.com
+
+# Last edit 2/7/2017
 
 ################################################################################
 
@@ -17,36 +19,36 @@ library(zoo)
 
 ################################################################################
 
-# set root directory
-# root = "/NIOSH-Analysis/data"
-# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-
+# define root directory
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+ 
 # define file paths
-input.path = paste0(root, "/0_originals", collapse = NULL) 
-output.path = paste0(root, "/1_cleaned", collapse = NULL) 
+originals.path = paste0(root, "/data/0_originals", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
 
 # inputs
   # controller/operator history data from the MSHA open data portal
     # downloaded on 4/20/16 from http://arlweb.msha.gov/OpenGovernmentData/OGIMSHA.asp
-history.in.file.name = paste0(input.path, "/ControllerOperatorHistory.txt", collapse = NULL)
+history.in.file.name = paste0(originals.path, "/ControllerOperatorHistory.txt", collapse = NULL)
 
 # outputs
-  # clean controller/operator history data
-history.out.file.name = paste0(output.path, "/clean_operator_history.rds", collapse = NULL)
+  # cleaned controller/operator history data
+history.out.file.name = paste0(cleaned.path, "/clean_operator_history.rds", collapse = NULL)
 
-# create file paths (recursive = TRUE will create this file structure if it does not exist)
-dir.create(output.path, recursive = TRUE)
+# generate file paths
+dir.create(cleaned.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
 
 # bye
-rm(root, input.path, output.path)
+rm(root, originals.path, cleaned.path)
 
 ################################################################################
 
 # READ DATA
 
 # read controller/operator history data 
-  # 144065 rows; 13 columns; unique on minied-operatorid-operatorstartdt
+  # 144065 rows; 13 columns
 history = read.table(history.in.file.name, header = TRUE, sep = "|")
 
 # bye
@@ -57,11 +59,11 @@ rm(history.in.file.name)
 # CLEAN DATA
 
 # drop data from environments not of interest
-  # 63143 rows; 13 columns; unique on minied-operatorid-operatorstartdt
+  # 63143 rows; 13 columns
 history = history[which(history$COAL_METAL_IND == "C"), ]
 
 # drop unnecessary variables
-  # 63143 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+  # 63143 rows; 4 columns
 history = history[, c("MINE_ID", "OPERATOR_END_DT", "OPERATOR_ID", "OPERATOR_START_DT")]
 
 # rename variables
@@ -70,7 +72,7 @@ names(history)[names(history) == "OPERATOR_END_DT"] = "operatorenddt"
 names(history)[names(history) == "OPERATOR_ID"] = "operatorid"
 names(history)[names(history) == "OPERATOR_START_DT"] = "operatorstartdt"
 
-# format mineid
+# format variables
 history$mineid = str_pad(history$mineid, 7, pad = "0")
 
 # replace end date with 2016 Q1 if missing
@@ -87,8 +89,8 @@ for (i in 1:length(datevars)) {
 }
 
 # drop duplicates
-  # 55776 rows; 4 columns; unique on minied-operatorid-operatorstartdt
-history = history[order(history$mineid),]
+  # 55770 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+history = history[order(history$mineid), ]
 history$operatorid = as.character(history$operatorid)
 history = history[!duplicated(history), ]
 
@@ -97,10 +99,10 @@ rm(i, datevars)
 
 ################################################################################
 
-# OUTPUT CLEAN DATA
+# OUTPUT DATA
 
-# output data 
-  # 63143 rows; 4 columns; unique on minied-operatorid-operatorstartdt
+# output cleaned controller/operator history data 
+  # 55770 rows; 4 columns; unique on minied-operatorid-operatorstartdt
 saveRDS(history, file = history.out.file.name)
 
 # bye

@@ -8,7 +8,8 @@
   # Generates Stage 2 figures
 
 # Coded by: Julia Bodson, juliabodson@gmail.com
-# Last edit 1/6/17
+
+# Last edit 2/8/2017
 
 ################################################################################
 
@@ -17,37 +18,37 @@ library(plyr)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-input.path = paste0(root, "/data/5_prepared", collapse = NULL)
-output.path = paste0(root, "/figures", collapse = NULL)
+prepared.path = paste0(root, "/data/5_prepared", collapse = NULL)
+results.path = paste0(root, "/results/stage 2", collapse = NULL)
 
 # inputs
   # mine-year-level dataset created in 5_prepare_mines
-data.file.name = paste0(input.path, "/prepared_mine_years.rds", collapse = NULL)
+data.file.name = paste0(prepared.path, "/prepared_mine_years.rds", collapse = NULL)
 
 # outputs
   # figures in paper
-out.path = paste0(output.path, "/Figure_", collapse = NULL)
+out.path = paste0(results.path, "/Figure_", collapse = NULL)
   # figures in appendix
-out.path.appendix = paste0(output.path, "/Appendix_Figure_", collapse = NULL)
+out.path.appendix = paste0(results.path, "/Appendix_Figure_", collapse = NULL)
 
 # generate file paths 
-dir.create(output.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
+dir.create(results.path, recursive = TRUE) # (recursive = TRUE creates file structure if it does not exist)
 
 # bye
-rm(root, input.path, output.path)
+rm(root, prepared.path, results.path)
 
-################################################################################
+##############################################################################
 
-# start counters for file naming (these will be over-written in the loop below)
+# counters for file naming
 fig.num = 1
 fig.ab = "a"
 
-for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
+for (injury in c("MR", "PS")) {
 
   # READ DATA
   
@@ -206,7 +207,7 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   # bye
   rm(make.static.var, year.info)
   
-  ##############################################################################  
+  ##############################################################################
   
   # PLOT YEAR AVERAGES AND MEDIANS BY GROUPS OF COVARIATES OF INTEREST
   
@@ -544,7 +545,9 @@ for (injury in c("MR", "PS")) { # make plots for MR and PS injuries
   
 }
 
+################################################################################
+
 # bye
 rm(list = ls())
 
-######################################################################################################
+################################################################################

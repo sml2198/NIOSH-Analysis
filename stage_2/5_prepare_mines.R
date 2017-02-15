@@ -15,7 +15,8 @@
 
 # Coded by: Sarah Levine, sarah.michael.levine@gmail.com
       # and Julia Bodson, juliabodson@gmail.com
-# Last edit 1/11/17
+
+# Last edit 2/8/2017
 
 ################################################################################
 
@@ -24,63 +25,75 @@ library(plyr)
 
 ################################################################################
 
-# set root directory
-# root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/data"
+# define root directory
+# root = "/NIOSH-Analysis"
+# root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
+root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-cleaned.path = paste0(root, "/1_cleaned", collapse = NULL) 
-collapsed.path = paste0(root, "/4_collapsed", collapse = NULL) 
-prepped.path = paste0(root, "/5_prepared", collapse = NULL) 
+cleaned.path = paste0(root, "/data/1_cleaned", collapse = NULL) 
+collapsed.path = paste0(root, "/data/4_collapsed", collapse = NULL) 
+prepared.path = paste0(root, "/data/5_prepared", collapse = NULL) 
 
 # inputs
   # cleaned mines data
     # produced in 1_clean_mines
 mines.in.file.name = paste0(cleaned.path, "/clean_mines.rds", collapse = NULL)
-  # cleaned employment data
+  # cleaned employment/production data
     # produced in 2_clean_employment
 employment.in.file.name = paste0(cleaned.path, "/clean_employment.rds", collapse = NULL)
   # cleaned operator history data
     # produced in 3_clean_operator_history
 history.in.file.name = paste0(cleaned.path, "/clean_operator_history.rds", collapse = NULL)
-  # cleaned MR data
+  # collapsed MR accidents data
     # produced in 4_collapse_accidents
 MR.in.file.name = paste0(collapsed.path, "/collapsed_MR_accidents.rds", collapse = NULL)
-  # cleaned PS data
+  # collapsed PS accidents data
     # produced in 4_collapse_accidents
 PS.in.file.name = paste0(collapsed.path, "/collapsed_PS_accidents.rds", collapse = NULL)
 
 # outputs
   # mine-year-level data
-mine.years.out.file.name = paste0(prepped.path, "/prepared_mine_years.rds", collapse = NULL)
+mine.years.out.file.name = paste0(prepared.path, "/prepared_mine_years.rds", collapse = NULL)
 
 # create file paths 
-dir.create(prepped.path, recursive = TRUE) # (recursive = TRUE will create this file structure if it does not exist)
+dir.create(prepared.path, recursive = TRUE) # (recursive = TRUE will create this file structure if it does not exist)
 
 # bye
-rm(root, cleaned.path, collapsed.path, prepped.path)
+rm(root, cleaned.path, collapsed.path, prepared.path)
 
 ################################################################################
 
-# READ MINES AND EMPLOYMENT DATA
+# READ DATA
 
-# read mines data
+# read cleaned mines data
   # 86362 rows; 9 columns; unique on mineid
 mines = readRDS(mines.in.file.name)
 
-# read employment data
+# read cleaned employment data
   # 42019 rows; 6 columns; unique on mineid-year-quarter
 employment = readRDS(employment.in.file.name)
 
+# read cleaned operator history data
+  # 55770 rows; 4 columns; unique on minied-operatorid-operatorstartdt-operatorenddt
+history = readRDS(history.in.file.name)
+
+# read MR accidents data
+  # 6597 rows; 4 columns; unique on mineid-year
+MR = readRDS(MR.in.file.name)
+
+# read PS accidents data
+  # 6597 rows; 4 columns; unique on mineid-year
+PS = readRDS(PS.in.file.name)
+
 # bye
-rm(mines.in.file.name, employment.in.file.name)
+rm(mines.in.file.name, employment.in.file.name, history.in.file.name, MR.in.file.name, PS.in.file.name)
 
 ################################################################################
 
 # MERGE MINES AND EMPLOYMENT DATA
 
-# merge mines and employment data by mineid (produces mine-quarter data)
+# merge mines and employment data by mineid (produce mine-quarter data)
   # 126313 rows; 14 columns; unique on mineid-year-quarter
 mine.quarters = merge(employment, mines, by = c("mineid"), all = TRUE)
 mine.quarters = mine.quarters[order(mine.quarters$mineid, mine.quarters$year, mine.quarters$quarter), ]
@@ -90,7 +103,7 @@ rm(mines, employment)
 
 ################################################################################
 
-# CLEAN MERGED DATA
+# CLEAN DATA
 
 # some mines did not merge on any employment data
   # Mine Data Retrieval System confirmed that there is no employment data on these mines
@@ -157,12 +170,6 @@ mine.quarters$minestatus = ifelse((mine.quarters$statusquarter >= mine.quarters$
 temp = mine.quarters[, c("appalachia", "district", "mineid", "safetycommittee")]
 temp = unique(temp)
 
-# grab operatortime in the first quarter of the year (this is what we'll use)
-# we'll merge this back on in a hot second
-#time = mine.quarters[, c("mineid", "year", "quarter", "operatortime")]
-#time$q = ifelse(grepl("Q1$", time$quarter), 1, 0)
-#time = time[which(time$q == 1),]
-
 # generate a marker for each quarter to count number of quarters for which we have data in each mine-year
 mine.quarters$numquarters = 1
 
@@ -174,15 +181,10 @@ mine.years = ddply(mine.quarters[, c("employment_qtr", "hours_qtr", "mineid",
 mine.years = merge(mine.years, temp, by = c("mineid"), all = TRUE)
 rm(temp)
 
-# drop mine-years that missing any quarters of data
+# drop mine-years that are missing any quarters of data
   # 6253 rows; 8 columns; unique on mine-year
 mine.years = mine.years[which(mine.years$numquarters == 4), ]
 mine.years$numquarters = NULL
-
-# merge operator time back on to the now mine-year data
-  # 6253 rows; 10 columns; unique on mine-year
-#mine.years = merge(mine.years, time[,c("mineid", "year", "operatortime")], by = c("mineid", "year"))
-#rm(time)
 
 # rename variables
 names(mine.years)[names(mine.years) == "hours_qtr"] = "hours"
@@ -195,17 +197,6 @@ mine.years$appalachia = as.numeric(mine.years$appalachia)
 
 # bye
 rm(mine.quarters)
-
-################################################################################
-
-# READ OPERATOR HISTORY DATA
-
-# read operator history data
-  # 55776 rows; 4 columns; unique on minied-operatorid-operatorstartdt
-history = readRDS(history.in.file.name)
-
-# bye
-rm(history.in.file.name)
 
 ################################################################################
 
@@ -312,21 +303,6 @@ rm(history, fill.in.operator, fill.in.ts, make.op.time)
 
 ################################################################################
 
-# READ ACCIDENTS DATA
-
-# readMR accidents data
-  # 6597 rows; 4 columns; unique on mineid-year
-MR = readRDS(MR.in.file.name)
-
-# read PS accidents data
-  # 6597 rows; 4 columns; unique on mineid-year
-PS = readRDS(PS.in.file.name)
-
-# bye
-rm(MR.in.file.name, PS.in.file.name)
-
-################################################################################
-
 # MERGE MINE-YEAR DATA WITH MR AND PS ACCIDENTS DATA
 
 # merge mine-year-level data with MR accidents data
@@ -358,6 +334,6 @@ rm(MR, PS)
 saveRDS(mine.years, file = mine.years.out.file.name)
 
 # bye
-rm(list = ls())
+#rm(list = ls())
 
 ################################################################################
