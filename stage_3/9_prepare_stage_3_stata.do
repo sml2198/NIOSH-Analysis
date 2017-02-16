@@ -7,11 +7,17 @@ of New Mine Safety Technologies and Technological Applications
 
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
-9 - prepare_stage_3_stata
- # Generate lagged violations and other variables
-
+9 - Prepare Stage 3 Stata Data
+	* generates lagged violation variables and selects sample
+		* inputs
+			* defined dynamically in file 
+				* injury-specific datasets (line 51)
+		* outputs
+			* defined dynamically in file 
+				* injury-specific datasets (line 131)
+ 
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
-Last edit 1/19/17
+Last edit 2/15/17
 
 ********************************************************************************
 ********************************************************************************/
