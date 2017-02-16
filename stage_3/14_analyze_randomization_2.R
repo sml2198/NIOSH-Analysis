@@ -20,9 +20,9 @@ library(foreign)
 ################################################################################
 
 # set root directory
-# root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
+# root = "/NIOSH-Analysis/results/stage 3"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results/stage 3"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results/stage 3"
 
 # inputs
   # defined dynamically within file (see lines 57-118)
@@ -44,8 +44,8 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/res
 specification.test = "off"
 
 # analyze results from lag 3 and 5 robustness tests? (default is "off")
-lag.3 = "on"
-lag.5 = "on"
+lag.3 = "off"
+lag.5 = "off"
 
 ################################################################################
 
@@ -277,8 +277,7 @@ for (injury in c("PS", "MR")) {
   }
   
   # bye
-  rm (a, d, data, fake.coefs, true.coef, p, names,
-      B.1.ri.list, B.4.ri.list, C.1.ri.list, C.4.ri.list,
+  rm (B.1.ri.list, B.4.ri.list, C.1.ri.list, C.4.ri.list,
       B.1.ri.files, B.4.ri.files, C.1.ri.files, C.4.ri.files)
   
   ################################################################################

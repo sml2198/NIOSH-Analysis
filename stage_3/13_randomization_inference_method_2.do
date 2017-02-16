@@ -190,7 +190,7 @@ foreach inj_type in `injury_types' {
 				preserve
 				
 				*+- load in relevant results (produced in method 1)
-				import delimited "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'method_2_input`ulw_ext'", clear 
+				import delimited "$PROJECT_ROOT/results/stage 3/csv/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'method_2_input`ulw_ext'", clear 
 
 				*+- if there are zero observations (i.e. no significant subparts), go onto next item in loop
 				if _N == 0 restore
@@ -267,7 +267,7 @@ foreach inj_type in `injury_types' {
 						
 						*+- capture time and log performance
 						cap log close
-						log using "$PROJECT_ROOT/results/dta/method_2/run_time_method_2_`significant_subpart'_parallel.txt", text replace
+						log using "$PROJECT_ROOT/results/stage 3/dta/method_2/run_time_method_2_`significant_subpart'_parallel.txt", text replace
 						timer list
 						noi di "serial duration: `r(t1)'"
 						cap log close
@@ -285,7 +285,7 @@ foreach inj_type in `injury_types' {
 						
 						*+- display performance, relative to first thang, and log it
 						/*cap log close
-						log using "$PROJECT_ROOT/results/dta/method_2/run_time_method_2_`significant_subpart'_parallel.txt", text append
+						log using "$PROJECT_ROOT/results/stage 3/dta/method_2/run_time_method_2_`significant_subpart'_parallel.txt", text append
 						timer list
 						noi di "parallel duration: `r(t2)'"
 						pause "parallel is `=round(r(t2)/r(t1),.1)' times faster"
@@ -299,7 +299,7 @@ foreach inj_type in `injury_types' {
 					}				
 						
 					*+- save a dta with the distribution of coefficients for the significant subpart of interest
-					saveold "$PROJECT_ROOT/results/dta/`sub_folder'method_2/`inj_type'_`outcome'_`lag'_`violform_ext'`significant_subpart'.dta", replace version(12)
+					saveold "$PROJECT_ROOT/results/stage 3/dta/`sub_folder'method_2/`inj_type'_`outcome'_`lag'_`violform_ext'`significant_subpart'.dta", replace version(12)
 
 					*+- restore data and reset all subpart specific things/counters
 					restore 

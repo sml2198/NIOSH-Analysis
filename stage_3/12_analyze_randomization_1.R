@@ -21,9 +21,9 @@ library(foreign)
 ################################################################################
 
 # define root directory
-# root = "/NIOSH-Analysis/data"
-root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
-# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results"
+# root = "/NIOSH-Analysis/results/stage 3"
+root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results/stage 3"
+# root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/results/stage 3"
 
 # inputs
   # defined dynamically within file (see lines 62-125)
@@ -47,8 +47,8 @@ root = "C:/Users/slevine2/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis/res
 specification.test = "off"
 
 # analyze results from lag 3 and 5 robustness tests? (default is "off")
-lag.3 = "on"
-lag.5 = "on"
+lag.3 = "off"
+lag.5 = "off"
 
 # The default action of this file is to analyze RI method 1 as described above.
   # However, this file can also be used to spit out csvs of robustly significant 

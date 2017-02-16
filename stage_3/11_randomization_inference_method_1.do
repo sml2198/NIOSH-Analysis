@@ -229,7 +229,7 @@ foreach inj_type in `injury_types' {
 					
 					*+- capture time
 					cap log close
-					log using "$PROJECT_ROOT/results/dta/test/run_time_method_1.txt", text replace
+					log using "$PROJECT_ROOT/results/stage 3/dta/run_time_method_1.txt", text replace
 					timer list
 					noi di "serial duration: `r(t1)'"
 					cap log close
@@ -247,7 +247,7 @@ foreach inj_type in `injury_types' {
 					
 					*+- display performance, relative to first thang
 					/*cap log close
-					log using "$PROJECT_ROOT/results/dta/test/run_time_method_1.txt", text append
+					log using "$PROJECT_ROOT/results/stage 3/dta/run_time_method_1.txt", text append
 					timer list
 					noi di "parallel duration: `r(t2)'"
 					pause "parallel is `=round(r(t2)/r(t1),.1)' times faster"
@@ -267,7 +267,7 @@ foreach inj_type in `injury_types' {
 				if "`lag'" == "5" local sub_folder "lag_5/"
 				
 				*+- save a dta with the distribution of coefficients attained for each variable
-				saveold "$PROJECT_ROOT/results/dta/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'ri.dta", replace version(12)
+				saveold "$PROJECT_ROOT/results/stage 3/dta/`sub_folder'`inj_type'_`outcome'_`lag'_`violform_ext'ri.dta", replace version(12)
 				
 				*+- restore all data, reset some locals, and begin this whole shabang again
 				local lag_1_vars ""

@@ -8,9 +8,18 @@ of New Mine Safety Technologies and Technological Applications
 Primary Investigator: Alison Morantz, amorantz@law.stanford.edu
 
 10 - Fit Models
- # Fit preferred models
- # Fit weak and strong null models
- # Fit predictive algorithms
+	* fits preferred models and robustness checks
+	* fits weak and strong null models
+	* fits targeting (predictive) algorithms and specification tests
+		* inputs
+			* defined dynamically in file 
+				* injury-specific datasets (line 109)
+		* outputs
+			* defined dynamically in file 
+				* model-specific .csvs and .tex files containing the significant 
+					* violations (if any) from prefered models
+				* model-specific .dtas containing results (predictions) generated
+					* by targeting algorithms
 
 Coded by Sarah Levine, sarah.michael.levine@gmail.com
 Last edit 1/19/17
@@ -54,8 +63,8 @@ local report_add_covars "off" // preferred models
 * local report_add_covars "on" // if you want to produce tables reports all model covariates EXCEPT significant subparts
 
 /*********** RUN NULL MODELS? *************/
-local targeting_algorithms "on" // if you want to run the nulls (preferred)
-*local targeting_algorithms "off" // if you do NOT want to run null models  (if conducting a robustness assessment)
+local targeting_algorithms "on" // if you want to run the nulls
+*local targeting_algorithms "off" // if you do NOT want to run null models (if conducting a robustness assessment)
 if "`specification_check'" == "on" local targeting_algorithms "off" // never do this with the union/longwall covariates
 if "`lag_levels'" == "3 5" local targeting_algorithms "off" // never do this with the union/longwall covariates
 
@@ -86,10 +95,10 @@ if "`specification_check'" == "on" {
 
 *+- MAKE DIRECTORIES
 
-cap mkdir "$PROJECT_ROOT/results/"
-cap mkdir "$PROJECT_ROOT/results/tex/"
-cap mkdir "$PROJECT_ROOT/results/csv/"
-cap mkdir "$PROJECT_ROOT/results/dta/"
+cap mkdir "$PROJECT_ROOT/results/stage 3/"
+cap mkdir "$PROJECT_ROOT/results/stage 3/tex/"
+cap mkdir "$PROJECT_ROOT/results/stage 3/csv/"
+cap mkdir "$PROJECT_ROOT/results/stage 3/dta/"
 
 /********************************************************************************
 ********************************************************************************/
@@ -112,9 +121,9 @@ foreach inj_type in `injury_types' {
 		*+- if doing the union/longwall specification test, create "ulw" subfolder, and file name extension ("_ulw")
 		if "`specification_check'" != "on" local sub_folder ""
 		if "`specification_check'" == "on" local sub_folder "ulw/"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/tex/`sub_folder'"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/csv/`sub_folder'"
-		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/dta/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/stage 3/tex/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/stage 3/csv/`sub_folder'"
+		if "`specification_check'" == "on" cap mkdir "$PROJECT_ROOT/results/stage 3/dta/`sub_folder'"
 		if "`specification_check'" == "on" local spec_file_ext "_ulw"
 		if "`specification_check'" == "on" local title_options " (Specification Test: Union and Longwall Indicators)"
 
@@ -199,9 +208,9 @@ foreach inj_type in `injury_types' {
 					*+- set locals & file extensions for covariates of interest if doing a lag 3/5 robustness assessment
 					if "`lag'" == "3" local sub_folder "lag_3/"
 					if "`lag'" == "5" local sub_folder "lag_5/"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/tex/`sub_folder'"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/csv/`sub_folder'"
-					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/dta/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/stage 3/tex/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/stage 3/csv/`sub_folder'"
+					if ("`lag'" == "3" | "`lag'" == "5") cap mkdir "$PROJECT_ROOT/results/stage 3/dta/`sub_folder'"
 					
 					*+- set file and table title options if using violation counts (not a rate)
 					if "`viol_form'" == "rate" local file_ext "_VR"
@@ -298,11 +307,11 @@ foreach inj_type in `injury_types' {
 						if "`train_test_split'" == "2012" {
 							*+- create tex file with estimates and csv file with only significant variable estimates (used for randomization inference)
 								*+- we only do this for preferred models (not rpediction robustness assessments with different year cutoffs
-							esttab using "$PROJECT_ROOT/results/tex/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`add_covars_ext'.tex", replace ///
+							esttab using "$PROJECT_ROOT/results/stage 3/tex/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'`cutoff_ext'`spec_file_ext'`add_covars_ext'.tex", replace ///
 								mlabels() label eform b(3) not booktabs longtable /// use labels, report irrs, grab coefficients and no se's
 								`table_notes' noomitted noconstant nonote /// add table notes and suppress automated notes
 								`keep_statement' title(`inj_type' Injuries, `outcome_label', `title_lag_level'`title_options') 
-							esttab using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`add_covars_ext'.csv", replace ///
+							esttab using "$PROJECT_ROOT/results/stage 3/csv/`sub_folder'`inj_type'_`outcome'_`lag'`file_ext'_sig`cutoff_ext'`spec_file_ext'`add_covars_ext'.csv", replace ///
 								`keep_statement' plain p noobs wide star // no eform - we want coefficients
 						}
 					} // converge == 1 
@@ -379,7 +388,7 @@ foreach inj_type in `injury_types' {
 		* save new data (with produced predictions as new vars) - needs to happen outside outcome loop
 		if "`targeting_algorithms'" != "off" {
 			drop p* sp*
-			export delimited using "$PROJECT_ROOT/results/csv/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.csv", replace
+			export delimited using "$PROJECT_ROOT/results/stage 3/csv/`sub_folder'`inj_type'`file_ext'`cutoff_ext'_predictions.csv", replace
 		}
 		
 		* reset locals

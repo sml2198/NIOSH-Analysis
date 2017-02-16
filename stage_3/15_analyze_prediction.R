@@ -22,8 +22,8 @@
 root = "C:/Users/jbodson/Dropbox (Stanford Law School)/NIOSH/NIOSH-Analysis"
 
 # define file paths
-results.in.path = paste0(root, "/results/csv", collapse = NULL) 
-results.out.path = paste0(root, "/results/csv/prediction", collapse = NULL) 
+results.in.path = paste0(root, "/results/stage 3/csv", collapse = NULL) 
+results.out.path = paste0(root, "/results/stage 3/csv/prediction", collapse = NULL) 
 
 # inputs - defined dynamically within file (see line 85)
   # predictions for 16 targeting algorithms and 12 null models
